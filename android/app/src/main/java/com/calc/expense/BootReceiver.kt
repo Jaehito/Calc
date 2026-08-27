@@ -12,7 +12,8 @@ class BootReceiver : BroadcastReceiver() {
         ) return
 
         val app = context.applicationContext
-        if (SettingsStore.load(app).isComplete) {
+        // 사용자가 앱에서 켜 둔 상태였을 때만 되살린다.
+        if (NotificationState.isOn(app) && SettingsStore.load(app).isComplete) {
             NotificationHelper.show(app)
         }
     }

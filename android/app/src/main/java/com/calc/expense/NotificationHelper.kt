@@ -27,6 +27,8 @@ object NotificationHelper {
 
     /** 곳간마다 다른 requestCode 를 쓰기 위한 기준값. */
     private const val REQUEST_REPLY_BASE = 100
+    private const val REQUEST_OPEN_INPUT = 1
+    private const val REQUEST_DISMISSED = 2
 
     fun ensureChannel(context: Context) {
         val channel = NotificationChannel(
@@ -60,10 +62,22 @@ object NotificationHelper {
         val purses: List<Purse> = settings.linkedPurses.ifEmpty { listOf(Purse.PERSONAL) }
         val labelled: Boolean = purses.size > 1
 
-        val openApp = PendingIntent.getActivity(
+        // 알림 카드 전체가 입력 화면을 여는 버튼이 된다. 작은 액션 버튼보다 조준이 쉽다.
+        val openInput = PendingIntent.getActivity(
             context,
-            1,
-            Intent(context, MainActivity::class.java),
+            REQUEST_OPEN_INPUT,
+            Intent(context, QuickInputActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        // 안드로이드 13 부터 setOngoing 으로는 스와이프도 «지우기» 도 막지 못한다.
+        // 지워지면 이 인텐트가 불리고, 앱에서 끈 게 아니면 되살린다.
+        val onDismissed = PendingIntent.getBroadcast(
+            context,
+            REQUEST_DISMISSED,
+            Intent(context, DismissReceiver::class.java)
+                .setAction(DismissReceiver.ACTION_DISMISSED),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
@@ -77,7 +91,8 @@ object NotificationHelper {
             .setOnlyAlertOnce(true)
             .setSilent(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setContentIntent(openApp)
+            .setContentIntent(openInput)
+            .setDeleteIntent(onDismissed)
 
         for (purse in purses) {
             builder.addAction(

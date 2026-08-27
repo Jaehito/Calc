@@ -1,4 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.ExpenseLogger" parent="Theme.Material3.DayNight.NoActionBar" />
+
+    <!-- 빠른 입력 화면. 아래에서 올라오는 카드처럼 보이게 띄운다. -->
+    <style name="Theme.ExpenseLogger.QuickInput" parent="Theme.Material3.Light.Dialog">
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:backgroundDimAmount">0.45</item>
+        <item name="android:windowAnimationStyle">@style/Animation.ExpenseLogger.Sheet</item>
+    </style>
+
+    <style name="Animation.ExpenseLogger.Sheet" parent="@android:style/Animation.Dialog" />
 </resources>

@@ -34,8 +34,10 @@ class MainActivity : AppCompatActivity() {
         ui.buttonSaveTest.setOnClickListener { saveAndVerify() }
         ui.buttonEnable.setOnClickListener { requestNotificationThenEnable() }
         ui.buttonDisable.setOnClickListener {
+            // 먼저 꺼야 DismissReceiver 가 되살리지 않는다.
+            NotificationState.setOn(this, false)
             NotificationHelper.hide(this)
-            setStatus("알림을 껐습니다.")
+            setStatus("알림을 껐습니다. 다시 켜기 전까지 잠금화면에 나오지 않습니다.")
         }
         ui.buttonNotificationSettings.setOnClickListener { openNotificationSettings() }
     }
@@ -203,19 +205,23 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun enableNotification() {
+        NotificationState.setOn(this, true)
         NotificationHelper.show(this)
         if (NotificationHelper.isEnabled(this)) {
             val settings = SettingsStore.load(this)
             val purses = settings.linkedPurses
-            val howTo = if (purses.size > 1) {
-                val names = purses.joinToString(" 또는 ") { "«${settings.labelOf(it)}»" }
-                "잠금화면 알림에서 $names 를 누르고 «커피 4500» 처럼 입력하세요."
-            } else {
-                "잠금화면에서 알림의 «기록»을 누르고 «커피 4500» 처럼 입력하세요."
-            }
+            val howTo =
+                "알림 카드를 누르면 입력 화면이 바로 뜹니다. «커피 4500» 처럼 적으세요.\n" +
+                    if (purses.size > 1) {
+                        "곳간은 입력 화면에서 고릅니다. 알림의 «${settings.labelOf(purses[0])}» · " +
+                            "«${settings.labelOf(purses[1])}» 버튼으로 바로 적어도 됩니다."
+                    } else {
+                        "알림의 «기록» 버튼으로 바로 적어도 됩니다."
+                    }
             setStatus(
-                "알림을 켰습니다.\n\n" + howTo + "\n" +
-                    "잠금화면에 내용이 안 보이면 아래 버튼으로 «잠금화면에 알림 내용 표시»를 켜주세요."
+                "알림을 켰습니다.\n\n" + howTo + "\n\n" +
+                    "실수로 지워도 다시 올라옵니다. 끄려면 아래 «알림 끄기»를 누르세요.\n" +
+                    "잠금화면에 내용이 안 보이면 «잠금화면에 알림 내용 표시»를 켜주세요."
             )
         } else {
             setStatus("이 앱의 알림이 차단되어 있습니다. 아래 버튼으로 설정에서 허용해 주세요.", isError = true)

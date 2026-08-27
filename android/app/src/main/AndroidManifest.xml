@@ -23,6 +23,26 @@
             </intent-filter>
         </activity>
 
+        <!--
+            알림 카드를 누르면 뜨는 빠른 입력 화면.
+            showWhenLocked 로 잠금 해제 없이 뜨도록 요청한다 (제조사 정책이 막을 수 있다).
+        -->
+        <activity
+            android:name=".QuickInputActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:showWhenLocked="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.ExpenseLogger.QuickInput"
+            android:turnScreenOn="true"
+            android:windowSoftInputMode="adjustResize|stateAlwaysVisible" />
+
+        <!-- 알림이 지워지면 되살린다. 앱에서 끈 경우에는 되살리지 않는다. -->
+        <receiver
+            android:name=".DismissReceiver"
+            android:exported="false" />
+
         <!-- 잠금화면 알림의 인라인 답장을 받는다. 외부 앱이 부를 이유가 없으므로 exported=false. -->
         <receiver
             android:name=".ReplyReceiver"
