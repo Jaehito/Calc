@@ -29,6 +29,10 @@ jobs:
           yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
           "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" > /dev/null
 
+      # 파일 모드가 다시 644 로 되돌아가도 빌드가 죽지 않게 한다.
+      - name: gradlew 실행 권한
+        run: chmod +x android/gradlew
+
       - name: 단위 테스트
         working-directory: android
         run: ./gradlew --no-daemon testDebugUnitTest
