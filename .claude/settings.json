@@ -1,0 +1,85 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(legacy-document/**)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit|mcp__unityMCP__manage_script|mcp__unityMCP__create_script|mcp__unityMCP__delete_script|mcp__unityMCP__script_apply_edits|mcp__unityMCP__apply_text_edits",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -File \".claude/hooks/main-edit-gate.ps1\"",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__unityMCP__run_tests|mcp__unityMCP__manage_editor|mcp__unityMCP__manage_scene|mcp__unityMCP__execute_code",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -File \".claude/hooks/unity-playmode-gate.ps1\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit|mcp__unityMCP__manage_script|mcp__unityMCP__create_script|mcp__unityMCP__delete_script|mcp__unityMCP__script_apply_edits|mcp__unityMCP__apply_text_edits",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -File \".claude/hooks/playtest-gate.ps1\" -Mode edit-marker",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -File \".claude/hooks/playtest-gate.ps1\" -Mode ask-marker",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__unityMCP__run_tests",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -File \".claude/hooks/playtest-gate.ps1\" -Mode run-marker",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -File \".claude/hooks/playtest-gate.ps1\" -Mode agent-stop",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -File \".claude/hooks/playtest-gate.ps1\" -Mode stop-gate",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}
