@@ -225,16 +225,11 @@ class MainActivity : AppCompatActivity() {
         NotificationState.setOn(this, true)
         NotificationHelper.show(this)
         if (NotificationHelper.isEnabled(this)) {
-            val settings = SettingsStore.load(this)
-            val purses = settings.linkedPurses
+            val purses = SettingsStore.load(this).linkedPurses
             val howTo =
                 "알림 카드를 누르면 입력 화면이 바로 뜹니다. «커피 4500» 처럼 적으세요.\n" +
-                    if (purses.size > 1) {
-                        "곳간은 입력 화면에서 고릅니다. 알림의 «${settings.labelOf(purses[0])}» · " +
-                            "«${settings.labelOf(purses[1])}» 버튼으로 바로 적어도 됩니다."
-                    } else {
-                        "알림의 «기록» 버튼으로 바로 적어도 됩니다."
-                    }
+                    "엔터를 칠 때마다 한 건씩 들어가고 위의 숫자가 줄어듭니다.\n" +
+                    if (purses.size > 1) "곳간은 입력 화면 위에서 고릅니다." else ""
             setStatus(
                 "알림을 켰습니다.\n\n" + howTo + "\n\n" +
                     "실수로 지워도 다시 올라옵니다. 끄려면 아래 «알림 끄기»를 누르세요.\n" +

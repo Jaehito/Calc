@@ -8,7 +8,12 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-/** 잠금화면 알림에서 전송된 텍스트를 받아 기록한다. 실제 순서는 [RecordExpense] 가 안다. */
+/**
+ * 잠금화면 알림에서 전송된 텍스트를 받아 기록한다. 실제 순서는 [RecordExpense] 가 안다.
+ *
+ * 지금은 알림에 인라인 답장 액션이 없어 이 경로로 들어오지 않는다. 기기가 잠금화면 위로
+ * 액티비티를 띄우는 걸 막는 경우를 대비해 남겨 둔다. [TIME_FORMAT] 은 계속 쓰인다.
+ */
 class ReplyReceiver : BroadcastReceiver() {
 
     companion object {

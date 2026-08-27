@@ -6,16 +6,15 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.app.RemoteInput
 
 /**
  * 잠금화면에 상주하는 입력용 알림.
  *
- * 핵심은 인라인 답장(RemoteInput)이다. Action 의 authenticationRequired 가 false 여야
- * 잠금 해제 없이 바로 전송된다 (API 31+ 기본값이 false).
+ * 버튼이 없다. 카드를 누르면 [QuickInputActivity] 가 뜨고 거기서 적는다.
+ * 인라인 답장(RemoteInput)도 잠금 해제 없이 되지만, 그 좁은 칸에는 오늘 쓸 수 있는 돈이
+ * 보이지 않고 한 건마다 알림이 닫힌다 — 적으면서 판단하고 여러 건을 이어 적는 쪽을 택했다.
  */
 object NotificationHelper {
 
@@ -23,10 +22,8 @@ object NotificationHelper {
     const val NOTIF_ID = 1001
     const val KEY_REPLY = "key_expense_reply"
 
-    private const val IDLE_TEXT = "금액과 내용을 입력하세요 · 예: 커피 4500"
+    private const val IDLE_TEXT = "눌러서 기록하세요 · 예: 커피 4500"
 
-    /** 곳간마다 다른 requestCode 를 쓰기 위한 기준값. */
-    private const val REQUEST_REPLY_BASE = 100
     private const val REQUEST_OPEN_INPUT = 1
     private const val REQUEST_DISMISSED = 2
 
@@ -57,12 +54,8 @@ object NotificationHelper {
     fun show(context: Context, lines: StatusLines? = null) {
         ensureChannel(context)
 
-        // 연결된 곳간이 하나뿐이면 고르게 하지 않는다. 애매한 지출에서 멈칫하는 3초가 이탈 지점이다.
-        val settings = SettingsStore.load(context)
-        val purses: List<Purse> = settings.linkedPurses.ifEmpty { listOf(Purse.PERSONAL) }
-        val labelled: Boolean = purses.size > 1
-
-        // 알림 카드 전체가 입력 화면을 여는 버튼이 된다. 작은 액션 버튼보다 조준이 쉽다.
+        // 알림 카드 전체가 입력 화면을 여는 버튼이 된다. 작은 액션 버튼보다 조준이 쉽고,
+        // 무엇보다 적는 동안 오늘 쓸 수 있는 돈이 보인다. 그래서 «기록» 액션 버튼은 두지 않는다.
         val openInput = PendingIntent.getActivity(
             context,
             REQUEST_OPEN_INPUT,
@@ -81,7 +74,7 @@ object NotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_wallet)
             .setContentTitle("지출 기록")
             .setContentText(lines?.summary ?: IDLE_TEXT)
@@ -93,61 +86,13 @@ object NotificationHelper {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setContentIntent(openInput)
             .setDeleteIntent(onDismissed)
-
-        for (purse in purses) {
-            builder.addAction(
-                replyAction(context, purse, if (labelled) settings.labelOf(purse) else "기록")
-            )
-        }
-
-        val notification = builder.build()
+            .build()
 
         try {
             NotificationManagerCompat.from(context).notify(NOTIF_ID, notification)
         } catch (_: SecurityException) {
             // POST_NOTIFICATIONS 권한이 없는 경우. 설정 화면에서 안내한다.
         }
-    }
-
-    /**
-     * 곳간 하나에 대응하는 인라인 답장 액션.
-     *
-     * PendingIntent 는 extras 를 동일성 비교에 넣지 않는다. 곳간마다 requestCode 를 달리 주지
-     * 않으면 FLAG_UPDATE_CURRENT 가 두 액션을 하나로 합쳐 버린다.
-     */
-    private fun replyAction(
-        context: Context,
-        purse: Purse,
-        label: String,
-    ): NotificationCompat.Action {
-        val remoteInput = RemoteInput.Builder(KEY_REPLY)
-            .setLabel("예: 커피 4500")
-            .build()
-
-        // RemoteInput 이 결과를 주입하려면 PendingIntent 가 MUTABLE 이어야 한다.
-        var flags = PendingIntent.FLAG_UPDATE_CURRENT
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            flags = flags or PendingIntent.FLAG_MUTABLE
-        }
-
-        val intent = Intent(context, ReplyReceiver::class.java)
-            .setAction("${ReplyReceiver.ACTION_REPLY}.${purse.key}")
-            .putExtra(ReplyReceiver.EXTRA_PURSE, purse.key)
-
-        val replyIntent = PendingIntent.getBroadcast(
-            context,
-            REQUEST_REPLY_BASE + purse.ordinal,
-            intent,
-            flags,
-        )
-
-        return NotificationCompat.Action.Builder(R.drawable.ic_add, label, replyIntent)
-            .addRemoteInput(remoteInput)
-            .setAllowGeneratedReplies(false)
-            // 잠금 해제를 요구하지 않아야 잠금화면에서 바로 전송된다.
-            .setAuthenticationRequired(false)
-            .setShowsUserInterface(false)
-            .build()
     }
 
     fun hide(context: Context) {
