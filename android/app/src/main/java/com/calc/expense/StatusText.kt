@@ -22,13 +22,20 @@ object StatusText {
 
     fun won(amount: Long): String = format(amount) + "원"
 
-    /** 기록이 성공했을 때. [snapshot] 이 null 이면 월 예산이 아직 없다. */
+    /**
+     * 기록이 성공했을 때.
+     *
+     * @param snapshot null 이면 그 곳간에 월 예산이 아직 없다
+     * @param showPurse 곳간이 둘 다 연결됐을 때만 true — 하나뿐이면 이름을 붙이지 않는다
+     */
     fun recorded(
         name: String,
         amount: Long,
         snapshot: LedgerSnapshot?,
         time: String,
+        showPurse: Boolean = false,
     ): StatusLines {
+        val tag: String = if (showPurse && snapshot != null) "${snapshot.purse.label} " else ""
         val head = "✓ $name ${won(amount)} 기록됨 · $time"
 
         if (snapshot == null) {
@@ -41,17 +48,19 @@ object StatusText {
         val available: Long = snapshot.available
         if (available < 0L) {
             return StatusLines(
-                summary = "✓ $name ${format(amount)} · 오늘 ${format(-available)} 초과",
+                summary = "✓ $name ${format(amount)} · ${tag}오늘 ${format(-available)} 초과",
                 detail = head +
-                    "\n\n오늘 ${won(-available)} 초과" +
+                    "\n\n${tag}오늘 ${won(-available)} 초과" +
                     "\n곳간을 다 쓰고 넘은 만큼은 남은 날에 나눠 조정됩니다.",
             )
         }
 
         return StatusLines(
-            summary = "✓ $name ${format(amount)} · 오늘 쓸 수 있는 돈 ${format(available)}",
+            summary =
+                if (tag.isEmpty()) "✓ $name ${format(amount)} · 오늘 쓸 수 있는 돈 ${format(available)}"
+                else "✓ $name ${format(amount)} · ${tag}오늘 ${format(available)}",
             detail = head +
-                "\n\n오늘 쓸 수 있는 돈 ${won(available)}" +
+                "\n\n${tag}오늘 쓸 수 있는 돈 ${won(available)}" +
                 "\n하루치 ${format(snapshot.dailyRate)}" +
                 " + 곳간 ${format(snapshot.vault)}" +
                 " − 오늘 ${format(snapshot.todaySpent)}",
@@ -65,13 +74,19 @@ object StatusText {
     }
 
     /** 설정 화면에 보여줄 현재 상태. 홈 화면이 생기기 전까지 곳간을 눈으로 확인하는 창구다. */
-    fun overview(snapshot: LedgerSnapshot?): String {
-        if (snapshot == null) return "월 예산을 정하면 오늘 쓸 수 있는 돈이 여기에 표시됩니다."
+    fun overview(snapshots: List<LedgerSnapshot>): String {
+        if (snapshots.isEmpty()) {
+            return "DB를 연결하고 월 예산을 정하면 오늘 쓸 수 있는 돈이 여기에 표시됩니다."
+        }
 
+        return snapshots.joinToString("\n\n") { snapshot -> block(snapshot) }
+    }
+
+    private fun block(snapshot: LedgerSnapshot): String {
         val available: Long = snapshot.available
         val headline: String =
-            if (available >= 0L) "오늘 쓸 수 있는 돈  ${won(available)}"
-            else "오늘 ${won(-available)} 초과"
+            if (available >= 0L) "${snapshot.purse.label} · 오늘 쓸 수 있는 돈  ${won(available)}"
+            else "${snapshot.purse.label} · 오늘 ${won(-available)} 초과"
 
         return headline +
             "\n하루치 ${format(snapshot.dailyRate)}" +

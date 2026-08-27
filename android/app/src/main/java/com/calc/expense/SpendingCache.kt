@@ -22,26 +22,26 @@ object SpendingCache {
     private fun prefs(context: Context): SharedPreferences =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
 
-    private fun key(month: YearMonth): String = month.toString()
+    private fun key(purse: Purse, month: YearMonth): String = "${purse.key}.$month"
 
-    /** 그 달의 날짜별 합계. 없으면 빈 맵. */
-    fun totals(context: Context, month: YearMonth): Map<LocalDate, Long> =
-        MonthTotals.decode(prefs(context).getString(key(month), null))
+    /** 그 곳간, 그 달의 날짜별 합계. 없으면 빈 맵. */
+    fun totals(context: Context, purse: Purse, month: YearMonth): Map<LocalDate, Long> =
+        MonthTotals.decode(prefs(context).getString(key(purse, month), null))
 
-    /** 그 날의 지출 합계. 기록이 없으면 0. */
-    fun spentOn(context: Context, day: LocalDate): Long =
-        totals(context, YearMonth.from(day))[day] ?: 0L
+    /** 그 곳간, 그 날의 지출 합계. 기록이 없으면 0. */
+    fun spentOn(context: Context, purse: Purse, day: LocalDate): Long =
+        totals(context, purse, YearMonth.from(day))[day] ?: 0L
 
     /** 기록 한 건을 더한다. Notion 쓰기가 성공한 뒤에만 부른다. */
-    fun add(context: Context, day: LocalDate, amount: Long) {
+    fun add(context: Context, purse: Purse, day: LocalDate, amount: Long) {
         val month = YearMonth.from(day)
-        val updated = LinkedHashMap(totals(context, month))
+        val updated = LinkedHashMap(totals(context, purse, month))
         updated[day] = (updated[day] ?: 0L) + amount
-        prefs(context).edit().putString(key(month), MonthTotals.encode(updated)).apply()
+        prefs(context).edit().putString(key(purse, month), MonthTotals.encode(updated)).apply()
     }
 
     /** Notion 조회 결과로 그 달을 통째로 교체한다. 다른 기기에서 고친 것도 이때 반영된다. */
-    fun replaceMonth(context: Context, month: YearMonth, totals: Map<LocalDate, Long>) {
-        prefs(context).edit().putString(key(month), MonthTotals.encode(totals)).apply()
+    fun replaceMonth(context: Context, purse: Purse, month: YearMonth, totals: Map<LocalDate, Long>) {
+        prefs(context).edit().putString(key(purse, month), MonthTotals.encode(totals)).apply()
     }
 }

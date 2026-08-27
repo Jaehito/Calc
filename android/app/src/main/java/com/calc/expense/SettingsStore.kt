@@ -12,6 +12,10 @@ object SettingsStore {
     private const val SECURE_FILE = "expense_secure"
     private const val PLAIN_FILE = "expense_plain"
 
+    /** 곳간이 하나였던 시절의 키. 개인 곳간으로 옮겨 준다. */
+    private const val LEGACY_DATABASE_ID = "databaseId"
+    private const val LEGACY_MONTHLY_BUDGET = "monthlyBudget"
+
     /** 기기 키스토어가 말썽이면 평문 저장으로 내려앉는다. UI에서 이 값을 표시해 알린다. */
     @Volatile var usingEncryption: Boolean = true
         private set
@@ -44,24 +48,44 @@ object SettingsStore {
     fun load(context: Context): Settings {
         val p = prefs(context)
         val d = Settings()
+
         return Settings(
             token = p.getString("token", d.token) ?: d.token,
-            databaseId = p.getString("databaseId", d.databaseId) ?: d.databaseId,
             nameProp = p.getString("nameProp", d.nameProp) ?: d.nameProp,
             priceProp = p.getString("priceProp", d.priceProp) ?: d.priceProp,
             dateProp = p.getString("dateProp", d.dateProp) ?: d.dateProp,
-            monthlyBudget = p.getLong("monthlyBudget", d.monthlyBudget),
+            personal = loadPurse(p, Purse.PERSONAL),
+            shared = loadPurse(p, Purse.SHARED),
+        )
+    }
+
+    private fun loadPurse(p: SharedPreferences, purse: Purse): PurseSettings {
+        // 곳간이 하나였을 때 저장한 값은 개인 곳간으로 읽는다. 토큰과 DB를 다시 넣지 않아도 되게.
+        val legacyId: String =
+            if (purse == Purse.PERSONAL) p.getString(LEGACY_DATABASE_ID, "").orEmpty() else ""
+        val legacyBudget: Long =
+            if (purse == Purse.PERSONAL) p.getLong(LEGACY_MONTHLY_BUDGET, 0L) else 0L
+
+        return PurseSettings(
+            databaseId = p.getString("${purse.key}.databaseId", legacyId).orEmpty(),
+            monthlyBudget = p.getLong("${purse.key}.monthlyBudget", legacyBudget),
         )
     }
 
     fun save(context: Context, s: Settings) {
-        prefs(context).edit()
+        val edit = prefs(context).edit()
             .putString("token", s.token.trim())
-            .putString("databaseId", NotionIds.normalize(s.databaseId))
             .putString("nameProp", s.nameProp.trim())
             .putString("priceProp", s.priceProp.trim())
             .putString("dateProp", s.dateProp.trim())
-            .putLong("monthlyBudget", if (s.monthlyBudget > 0L) s.monthlyBudget else 0L)
-            .apply()
+
+        for (purse in Purse.entries) {
+            val p = s.of(purse)
+            edit.putString("${purse.key}.databaseId", NotionIds.normalize(p.databaseId))
+                .putLong("${purse.key}.monthlyBudget", if (p.monthlyBudget > 0L) p.monthlyBudget else 0L)
+        }
+
+        // 옮겨 담았으니 옛 키는 지운다. 남겨두면 다음 로드에서 되살아난다.
+        edit.remove(LEGACY_DATABASE_ID).remove(LEGACY_MONTHLY_BUDGET).apply()
     }
 }

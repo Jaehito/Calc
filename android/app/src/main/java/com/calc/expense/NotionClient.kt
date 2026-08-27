@@ -11,7 +11,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 
 /** Notion REST API 최소 클라이언트. 반드시 백그라운드 스레드에서 호출할 것. */
-class NotionClient(private val settings: Settings) {
+class NotionClient(private val target: NotionTarget) {
 
     sealed class Outcome {
         /** addExpense 는 만들어진 페이지 URL, verify 는 DB 제목을 담는다. */
@@ -41,7 +41,7 @@ class NotionClient(private val settings: Settings) {
     fun addExpense(expense: Expense, isoDate: String): Outcome {
         val properties = JSONObject().apply {
             put(
-                settings.nameProp,
+                target.nameProp,
                 JSONObject().put(
                     "title",
                     JSONArray().put(
@@ -49,12 +49,12 @@ class NotionClient(private val settings: Settings) {
                     )
                 )
             )
-            put(settings.priceProp, JSONObject().put("number", expense.amount))
-            put(settings.dateProp, JSONObject().put("date", JSONObject().put("start", isoDate)))
+            put(target.priceProp, JSONObject().put("number", expense.amount))
+            put(target.dateProp, JSONObject().put("date", JSONObject().put("start", isoDate)))
         }
 
         val body = JSONObject()
-            .put("parent", JSONObject().put("database_id", settings.databaseId))
+            .put("parent", JSONObject().put("database_id", target.databaseId))
             .put("properties", properties)
 
         return when (val r = send("POST", "/v1/pages", body)) {
@@ -90,11 +90,11 @@ class NotionClient(private val settings: Settings) {
                 .put("page_size", PAGE_SIZE)
             if (cursor != null) body.put("start_cursor", cursor)
 
-            val r = send("POST", "/v1/databases/${settings.databaseId}/query", body)
+            val r = send("POST", "/v1/databases/${target.databaseId}/query", body)
             if (r is Raw.Err) return MonthOutcome.Err(r.message)
 
             val json = (r as Raw.Ok).json
-            NotionRows.accumulate(json, settings.dateProp, settings.priceProp, totals)
+            NotionRows.accumulate(json, target.dateProp, target.priceProp, totals)
 
             cursor = NotionRows.nextCursor(json) ?: return MonthOutcome.Ok(totals)
             page++
@@ -106,21 +106,21 @@ class NotionClient(private val settings: Settings) {
 
     private fun dateBound(iso: String, condition: String): JSONObject =
         JSONObject()
-            .put("property", settings.dateProp)
+            .put("property", target.dateProp)
             .put("date", JSONObject().put(condition, iso))
 
     /** 토큰과 DB 접근 권한, 속성 이름이 맞는지 확인한다. */
     fun verify(): Outcome {
-        val r = send("GET", "/v1/databases/${settings.databaseId}", null)
+        val r = send("GET", "/v1/databases/${target.databaseId}", null)
         if (r is Raw.Err) return Outcome.Err(r.message)
 
         val db = (r as Raw.Ok).json
         val props = db.optJSONObject("properties") ?: JSONObject()
 
         val missing = mutableListOf<String>()
-        checkProp(props, settings.nameProp, "title")?.let { missing += it }
-        checkProp(props, settings.priceProp, "number")?.let { missing += it }
-        checkProp(props, settings.dateProp, "date")?.let { missing += it }
+        checkProp(props, target.nameProp, "title")?.let { missing += it }
+        checkProp(props, target.priceProp, "number")?.let { missing += it }
+        checkProp(props, target.dateProp, "date")?.let { missing += it }
 
         if (missing.isNotEmpty()) {
             val available = props.keys().asSequence().joinToString(", ")
@@ -156,7 +156,7 @@ class NotionClient(private val settings: Settings) {
                 requestMethod = method
                 connectTimeout = CONNECT_TIMEOUT_MS
                 readTimeout = READ_TIMEOUT_MS
-                setRequestProperty("Authorization", "Bearer ${settings.token}")
+                setRequestProperty("Authorization", "Bearer ${target.token}")
                 setRequestProperty("Notion-Version", NOTION_VERSION)
                 setRequestProperty("Accept", "application/json")
                 if (body != null) {

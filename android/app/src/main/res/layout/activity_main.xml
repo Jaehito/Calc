@@ -35,7 +35,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingBottom="16dp"
-            android:text="인테그레이션 시크릿과 지출 DB를 연결합니다. DB 페이지의 점 세 개 메뉴에서 연결(Connections)에 인테그레이션을 먼저 추가해야 합니다."
+            android:text="인테그레이션 시크릿 하나로 두 DB를 씁니다. 각 DB 페이지의 점 세 개 메뉴에서 연결(Connections)에 인테그레이션을 먼저 추가해야 합니다."
             android:textSize="13sp" />
 
         <com.google.android.material.textfield.TextInputLayout
@@ -50,21 +50,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textPassword"
-                android:maxLines="1" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="DB ID 또는 DB URL 통째로">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputDatabaseId"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="textUri"
                 android:maxLines="1" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -118,30 +103,101 @@
                 android:maxLines="1" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="24dp"
+            android:background="#33000000" />
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingTop="20dp"
             android:paddingBottom="4dp"
-            android:text="곳간"
-            android:textSize="16sp"
+            android:text="개인 곳간"
+            android:textSize="20sp"
             android:textStyle="bold" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingBottom="12dp"
-            android:text="월 예산을 그 달의 일수로 나눈 값이 하루치입니다. 아낀 돈은 곳간에 쌓이고, 넘긴 돈은 곳간에서 먼저 빠집니다. 처음에는 지난달 실제 지출보다 조금 넉넉하게 잡으세요."
+            android:text="내 용돈. 월 예산을 그 달의 일수로 나눈 값이 하루치이고, 아낀 만큼 곳간에 쌓입니다. 처음에는 지난달 실제 지출보다 조금 넉넉하게 잡으세요."
             android:textSize="13sp" />
 
         <com.google.android.material.textfield.TextInputLayout
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:hint="DB ID 또는 DB URL 통째로">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputPersonalDatabaseId"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textUri"
+                android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
             android:hint="월 예산 (예: 930000 또는 93만)">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputMonthlyBudget"
+                android:id="@+id/inputPersonalBudget"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="24dp"
+            android:background="#33000000" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="20dp"
+            android:paddingBottom="4dp"
+            android:text="공용 곳간"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="12dp"
+            android:text="같이 쓰는 생활비. 아직 공용 계좌가 없으면 비워 두세요 — 비어 있으면 알림에 개인 하나만 나옵니다. 나중에 여기만 채우면 됩니다."
+            android:textSize="13sp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="DB ID 또는 DB URL 통째로">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputSharedDatabaseId"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textUri"
+                android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:hint="월 예산 (예: 930000 또는 93만)">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputSharedBudget"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:maxLines="1" />

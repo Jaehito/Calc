@@ -1,7 +1,8 @@
 package com.calc.expense
 
-/** 화면과 알림이 필요로 하는 오늘의 숫자 한 벌. */
+/** 곳간 하나의 오늘 숫자 한 벌. */
 data class LedgerSnapshot(
+    val purse: Purse,
     val dailyRate: Long,
     val vault: Long,
     val todaySpent: Long,

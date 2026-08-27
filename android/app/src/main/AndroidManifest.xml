@@ -26,11 +26,7 @@
         <!-- 잠금화면 알림의 인라인 답장을 받는다. 외부 앱이 부를 이유가 없으므로 exported=false. -->
         <receiver
             android:name=".ReplyReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.calc.expense.ACTION_REPLY" />
-            </intent-filter>
-        </receiver>
+            android:exported="false" />
 
         <receiver
             android:name=".BootReceiver"

@@ -10,28 +10,24 @@ import java.time.LocalDate
  * 지출 기록과 달리 곳간은 Notion 에 없다. 여기서만 산다. 그래서 값이 사라지면
  * 곳간은 0 부터 다시 쌓인다 — 과거를 소급해 복원하지 않는다.
  *
- * 곳간이 공동·개인 둘로 갈릴 것을 감안해 키에 [purse] 를 붙여 둔다. 나중에 값 하나만
- * 더 넘기면 되고 저장된 데이터를 옮길 필요가 없다.
+ * 키에 [Purse.key] 를 붙여 개인과 공용을 따로 담는다.
  */
 object BudgetStore {
 
     private const val FILE = "expense_budget"
 
-    /** 기본 곳간. 부부 모드가 붙으면 "shared" / "personal" 이 추가된다. */
-    const val MAIN = "main"
-
     private fun prefs(context: Context): SharedPreferences =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
 
-    fun load(context: Context, purse: String = MAIN): BudgetState? {
+    fun load(context: Context, purse: Purse): BudgetState? {
         val p = prefs(context)
-        val settled = p.getString("$purse.settledThrough", null) ?: return null
+        val settled = p.getString("${purse.key}.settledThrough", null) ?: return null
 
         return try {
             BudgetState(
-                monthlyBudget = p.getLong("$purse.monthlyBudget", 0L),
-                dailyRate = p.getLong("$purse.dailyRate", 0L),
-                vault = p.getLong("$purse.vault", 0L),
+                monthlyBudget = p.getLong("${purse.key}.monthlyBudget", 0L),
+                dailyRate = p.getLong("${purse.key}.dailyRate", 0L),
+                vault = p.getLong("${purse.key}.vault", 0L),
                 settledThrough = LocalDate.parse(settled),
             )
         } catch (_: Exception) {
@@ -41,21 +37,21 @@ object BudgetStore {
         }
     }
 
-    fun save(context: Context, state: BudgetState, purse: String = MAIN) {
+    fun save(context: Context, state: BudgetState, purse: Purse) {
         prefs(context).edit()
-            .putLong("$purse.monthlyBudget", state.monthlyBudget)
-            .putLong("$purse.dailyRate", state.dailyRate)
-            .putLong("$purse.vault", state.vault)
-            .putString("$purse.settledThrough", state.settledThrough.toString())
+            .putLong("${purse.key}.monthlyBudget", state.monthlyBudget)
+            .putLong("${purse.key}.dailyRate", state.dailyRate)
+            .putLong("${purse.key}.vault", state.vault)
+            .putString("${purse.key}.settledThrough", state.settledThrough.toString())
             .apply()
     }
 
-    fun clear(context: Context, purse: String = MAIN) {
+    fun clear(context: Context, purse: Purse) {
         prefs(context).edit()
-            .remove("$purse.monthlyBudget")
-            .remove("$purse.dailyRate")
-            .remove("$purse.vault")
-            .remove("$purse.settledThrough")
+            .remove("${purse.key}.monthlyBudget")
+            .remove("${purse.key}.dailyRate")
+            .remove("${purse.key}.vault")
+            .remove("${purse.key}.settledThrough")
             .apply()
     }
 }
