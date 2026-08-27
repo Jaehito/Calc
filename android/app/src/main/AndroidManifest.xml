@@ -12,16 +12,24 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ExpenseLogger">
 
+        <!-- 앱을 열면 나오는 화면. 곳간 숫자만 보여준다 (Compose). -->
         <activity
-            android:name=".MainActivity"
+            android:name=".HomeActivity"
             android:exported="true"
-            android:label="@string/app_name"
-            android:windowSoftInputMode="adjustResize">
+            android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- 설정. 홈의 «설정» 에서만 들어온다. -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="false"
+            android:label="설정"
+            android:parentActivityName=".HomeActivity"
+            android:windowSoftInputMode="adjustResize" />
 
         <!--
             알림 카드를 누르면 뜨는 빠른 입력 화면.
