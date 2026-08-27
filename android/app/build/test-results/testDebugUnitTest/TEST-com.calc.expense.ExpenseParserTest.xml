@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.calc.expense.ExpenseParserTest" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-08-26T10:30:43" hostname="최재호" time="0.071">
+  <properties/>
+  <testcase name="단위만 있는 토큰" classname="com.calc.expense.ExpenseParserTest" time="0.043"/>
+  <testcase name="앞뒤 공백과 중복 공백" classname="com.calc.expense.ExpenseParserTest" time="0.022"/>
+  <testcase name="한글 단위 천" classname="com.calc.expense.ExpenseParserTest" time="0.001"/>
+  <testcase name="이름에 공백 포함" classname="com.calc.expense.ExpenseParserTest" time="0.0"/>
+  <testcase name="금액 없음" classname="com.calc.expense.ExpenseParserTest" time="0.0"/>
+  <testcase name="0원" classname="com.calc.expense.ExpenseParserTest" time="0.0"/>
+  <testcase name="금액 뒤에 이름" classname="com.calc.expense.ExpenseParserTest" time="0.0"/>
+  <testcase name="금액이 아닌 토큰" classname="com.calc.expense.ExpenseParserTest" time="0.0"/>
+  <testcase name="이름 뒤에 금액" classname="com.calc.expense.ExpenseParserTest" time="0.0"/>
+  <testcase name="이름 없음" classname="com.calc.expense.ExpenseParserTest" time="0.0"/>
+  <testcase name="이름에 숫자가 섞여 있어도 마지막 숫자를 금액으로" classname="com.calc.expense.ExpenseParserTest" time="0.0"/>
+  <testcase name="빈 입력" classname="com.calc.expense.ExpenseParserTest" time="0.0"/>
+  <testcase name="천단위 쉼표" classname="com.calc.expense.ExpenseParserTest" time="0.0"/>
+  <testcase name="한글 단위 만 소수" classname="com.calc.expense.ExpenseParserTest" time="0.0"/>
+  <testcase name="원 단위 접미사" classname="com.calc.expense.ExpenseParserTest" time="0.0"/>
+  <testcase name="과도한 금액" classname="com.calc.expense.ExpenseParserTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

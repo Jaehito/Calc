@@ -1,0 +1,168 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.calc.expense"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="26"
+9        android:targetSdkVersion="35" />
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->C:\Calc\android\app\src\main\AndroidManifest.xml:4:5-67
+11-->C:\Calc\android\app\src\main\AndroidManifest.xml:4:22-64
+12    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+12-->C:\Calc\android\app\src\main\AndroidManifest.xml:5:5-77
+12-->C:\Calc\android\app\src\main\AndroidManifest.xml:5:22-74
+13    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+13-->C:\Calc\android\app\src\main\AndroidManifest.xml:6:5-81
+13-->C:\Calc\android\app\src\main\AndroidManifest.xml:6:22-78
+14
+15    <permission
+15-->[androidx.core:core:1.15.0] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\04a50db01a75948e7d21abb901016fbb\transformed\core-1.15.0\AndroidManifest.xml:22:5-24:47
+16        android:name="com.calc.expense.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+16-->[androidx.core:core:1.15.0] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\04a50db01a75948e7d21abb901016fbb\transformed\core-1.15.0\AndroidManifest.xml:23:9-81
+17        android:protectionLevel="signature" />
+17-->[androidx.core:core:1.15.0] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\04a50db01a75948e7d21abb901016fbb\transformed\core-1.15.0\AndroidManifest.xml:24:9-44
+18
+19    <uses-permission android:name="com.calc.expense.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+19-->[androidx.core:core:1.15.0] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\04a50db01a75948e7d21abb901016fbb\transformed\core-1.15.0\AndroidManifest.xml:26:5-97
+19-->[androidx.core:core:1.15.0] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\04a50db01a75948e7d21abb901016fbb\transformed\core-1.15.0\AndroidManifest.xml:26:22-94
+20
+21    <application
+21-->C:\Calc\android\app\src\main\AndroidManifest.xml:8:5-44:19
+22        android:allowBackup="false"
+22-->C:\Calc\android\app\src\main\AndroidManifest.xml:9:9-36
+23        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+23-->[androidx.core:core:1.15.0] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\04a50db01a75948e7d21abb901016fbb\transformed\core-1.15.0\AndroidManifest.xml:28:18-86
+24        android:debuggable="true"
+25        android:extractNativeLibs="false"
+26        android:icon="@mipmap/ic_launcher"
+26-->C:\Calc\android\app\src\main\AndroidManifest.xml:10:9-43
+27        android:label="@string/app_name"
+27-->C:\Calc\android\app\src\main\AndroidManifest.xml:11:9-41
+28        android:supportsRtl="true"
+28-->C:\Calc\android\app\src\main\AndroidManifest.xml:12:9-35
+29        android:theme="@style/Theme.ExpenseLogger" >
+29-->C:\Calc\android\app\src\main\AndroidManifest.xml:13:9-51
+30        <activity
+30-->C:\Calc\android\app\src\main\AndroidManifest.xml:15:9-24:20
+31            android:name="com.calc.expense.MainActivity"
+31-->C:\Calc\android\app\src\main\AndroidManifest.xml:16:13-41
+32            android:exported="true"
+32-->C:\Calc\android\app\src\main\AndroidManifest.xml:17:13-36
+33            android:label="@string/app_name"
+33-->C:\Calc\android\app\src\main\AndroidManifest.xml:18:13-45
+34            android:windowSoftInputMode="adjustResize" >
+34-->C:\Calc\android\app\src\main\AndroidManifest.xml:19:13-55
+35            <intent-filter>
+35-->C:\Calc\android\app\src\main\AndroidManifest.xml:20:13-23:29
+36                <action android:name="android.intent.action.MAIN" />
+36-->C:\Calc\android\app\src\main\AndroidManifest.xml:21:17-69
+36-->C:\Calc\android\app\src\main\AndroidManifest.xml:21:25-66
+37
+38                <category android:name="android.intent.category.LAUNCHER" />
+38-->C:\Calc\android\app\src\main\AndroidManifest.xml:22:17-77
+38-->C:\Calc\android\app\src\main\AndroidManifest.xml:22:27-74
+39            </intent-filter>
+40        </activity>
+41
+42        <!-- 잠금화면 알림의 인라인 답장을 받는다. 외부 앱이 부를 이유가 없으므로 exported=false. -->
+43        <receiver
+43-->C:\Calc\android\app\src\main\AndroidManifest.xml:27:9-33:20
+44            android:name="com.calc.expense.ReplyReceiver"
+44-->C:\Calc\android\app\src\main\AndroidManifest.xml:28:13-42
+45            android:exported="false" >
+45-->C:\Calc\android\app\src\main\AndroidManifest.xml:29:13-37
+46            <intent-filter>
+46-->C:\Calc\android\app\src\main\AndroidManifest.xml:30:13-32:29
+47                <action android:name="com.calc.expense.ACTION_REPLY" />
+47-->C:\Calc\android\app\src\main\AndroidManifest.xml:31:17-72
+47-->C:\Calc\android\app\src\main\AndroidManifest.xml:31:25-69
+48            </intent-filter>
+49        </receiver>
+50        <receiver
+50-->C:\Calc\android\app\src\main\AndroidManifest.xml:35:9-42:20
+51            android:name="com.calc.expense.BootReceiver"
+51-->C:\Calc\android\app\src\main\AndroidManifest.xml:36:13-41
+52            android:exported="true" >
+52-->C:\Calc\android\app\src\main\AndroidManifest.xml:37:13-36
+53            <intent-filter>
+53-->C:\Calc\android\app\src\main\AndroidManifest.xml:38:13-41:29
+54                <action android:name="android.intent.action.BOOT_COMPLETED" />
+54-->C:\Calc\android\app\src\main\AndroidManifest.xml:39:17-79
+54-->C:\Calc\android\app\src\main\AndroidManifest.xml:39:25-76
+55                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+55-->C:\Calc\android\app\src\main\AndroidManifest.xml:40:17-82
+55-->C:\Calc\android\app\src\main\AndroidManifest.xml:40:25-79
+56            </intent-filter>
+57        </receiver>
+58
+59        <provider
+59-->[androidx.emoji2:emoji2:1.3.0] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\24ca809d090882475229cd07b0858eb1\transformed\emoji2-1.3.0\AndroidManifest.xml:24:9-32:20
+60            android:name="androidx.startup.InitializationProvider"
+60-->[androidx.emoji2:emoji2:1.3.0] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\24ca809d090882475229cd07b0858eb1\transformed\emoji2-1.3.0\AndroidManifest.xml:25:13-67
+61            android:authorities="com.calc.expense.androidx-startup"
+61-->[androidx.emoji2:emoji2:1.3.0] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\24ca809d090882475229cd07b0858eb1\transformed\emoji2-1.3.0\AndroidManifest.xml:26:13-68
+62            android:exported="false" >
+62-->[androidx.emoji2:emoji2:1.3.0] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\24ca809d090882475229cd07b0858eb1\transformed\emoji2-1.3.0\AndroidManifest.xml:27:13-37
+63            <meta-data
+63-->[androidx.emoji2:emoji2:1.3.0] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\24ca809d090882475229cd07b0858eb1\transformed\emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
+64                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+64-->[androidx.emoji2:emoji2:1.3.0] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\24ca809d090882475229cd07b0858eb1\transformed\emoji2-1.3.0\AndroidManifest.xml:30:17-75
+65                android:value="androidx.startup" />
+65-->[androidx.emoji2:emoji2:1.3.0] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\24ca809d090882475229cd07b0858eb1\transformed\emoji2-1.3.0\AndroidManifest.xml:31:17-49
+66            <meta-data
+66-->[androidx.lifecycle:lifecycle-process:2.6.2] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\545b3d7497697af29451c39adc410b58\transformed\lifecycle-process-2.6.2\AndroidManifest.xml:29:13-31:52
+67                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+67-->[androidx.lifecycle:lifecycle-process:2.6.2] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\545b3d7497697af29451c39adc410b58\transformed\lifecycle-process-2.6.2\AndroidManifest.xml:30:17-78
+68                android:value="androidx.startup" />
+68-->[androidx.lifecycle:lifecycle-process:2.6.2] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\545b3d7497697af29451c39adc410b58\transformed\lifecycle-process-2.6.2\AndroidManifest.xml:31:17-49
+69            <meta-data
+69-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\fab1b08425cc0fa9866b016974a370de\transformed\profileinstaller-1.3.1\AndroidManifest.xml:29:13-31:52
+70                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+70-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\fab1b08425cc0fa9866b016974a370de\transformed\profileinstaller-1.3.1\AndroidManifest.xml:30:17-85
+71                android:value="androidx.startup" />
+71-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\fab1b08425cc0fa9866b016974a370de\transformed\profileinstaller-1.3.1\AndroidManifest.xml:31:17-49
+72        </provider>
+73
+74        <receiver
+74-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\fab1b08425cc0fa9866b016974a370de\transformed\profileinstaller-1.3.1\AndroidManifest.xml:34:9-52:20
+75            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+75-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\fab1b08425cc0fa9866b016974a370de\transformed\profileinstaller-1.3.1\AndroidManifest.xml:35:13-76
+76            android:directBootAware="false"
+76-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\fab1b08425cc0fa9866b016974a370de\transformed\profileinstaller-1.3.1\AndroidManifest.xml:36:13-44
+77            android:enabled="true"
+77-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\fab1b08425cc0fa9866b016974a370de\transformed\profileinstaller-1.3.1\AndroidManifest.xml:37:13-35
+78            android:exported="true"
+78-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\fab1b08425cc0fa9866b016974a370de\transformed\profileinstaller-1.3.1\AndroidManifest.xml:38:13-36
+79            android:permission="android.permission.DUMP" >
+79-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\fab1b08425cc0fa9866b016974a370de\transformed\profileinstaller-1.3.1\AndroidManifest.xml:39:13-57
+80            <intent-filter>
+80-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\fab1b08425cc0fa9866b016974a370de\transformed\profileinstaller-1.3.1\AndroidManifest.xml:40:13-42:29
+81                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+81-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\fab1b08425cc0fa9866b016974a370de\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:17-91
+81-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\fab1b08425cc0fa9866b016974a370de\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:25-88
+82            </intent-filter>
+83            <intent-filter>
+83-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\fab1b08425cc0fa9866b016974a370de\transformed\profileinstaller-1.3.1\AndroidManifest.xml:43:13-45:29
+84                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+84-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\fab1b08425cc0fa9866b016974a370de\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:17-85
+84-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\fab1b08425cc0fa9866b016974a370de\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:25-82
+85            </intent-filter>
+86            <intent-filter>
+86-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\fab1b08425cc0fa9866b016974a370de\transformed\profileinstaller-1.3.1\AndroidManifest.xml:46:13-48:29
+87                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+87-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\fab1b08425cc0fa9866b016974a370de\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:17-88
+87-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\fab1b08425cc0fa9866b016974a370de\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:25-85
+88            </intent-filter>
+89            <intent-filter>
+89-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\fab1b08425cc0fa9866b016974a370de\transformed\profileinstaller-1.3.1\AndroidManifest.xml:49:13-51:29
+90                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+90-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\fab1b08425cc0fa9866b016974a370de\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:17-95
+90-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\cjh07\.gradle\caches\8.11.1\transforms\fab1b08425cc0fa9866b016974a370de\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:25-92
+91            </intent-filter>
+92        </receiver>
+93    </application>
+94
+95</manifest>

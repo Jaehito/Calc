@@ -1,0 +1,22 @@
+[
+    {
+        "merged": "com.calc.expense.app-debug-4:/layout_activity_main.xml.flat",
+        "source": "com.calc.expense.app-main-6:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.calc.expense.app-debug-4:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.calc.expense.app-main-6:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.calc.expense.app-debug-4:/drawable_ic_add.xml.flat",
+        "source": "com.calc.expense.app-main-6:/drawable/ic_add.xml"
+    },
+    {
+        "merged": "com.calc.expense.app-debug-4:/drawable_ic_wallet.xml.flat",
+        "source": "com.calc.expense.app-main-6:/drawable/ic_wallet.xml"
+    },
+    {
+        "merged": "com.calc.expense.app-debug-4:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.calc.expense.app-main-6:/mipmap-anydpi-v26/ic_launcher.xml"
+    }
+]
