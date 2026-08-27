@@ -54,10 +54,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           SHORT="${GITHUB_SHA::7}"
-          cp android/app/build/outputs/apk/debug/app-debug.apk "expense-$SHORT.apk"
+          BRANCH="${GITHUB_REF_NAME}"
+          # 파일 이름에 브랜치를 넣는다. apk-latest 태그는 하나뿐이라
+          # 나중에 빌드된 브랜치가 덮어쓰는데, 그때 어느 쪽인지 알 수 있어야 한다.
+          SAFE_BRANCH="$(echo "$BRANCH" | tr '/' '-')"
+          cp android/app/build/outputs/apk/debug/app-debug.apk "expense-$SAFE_BRANCH-$SHORT.apk"
           gh release delete apk-latest --yes --cleanup-tag || true
           gh release create apk-latest \
-            --title "최신 APK" \
-            --notes "커밋 \`$SHORT\` 로 빌드했습니다. 아래 .apk 를 폰 브라우저에서 눌러 받으세요. 디버그 서명이라 «출처를 알 수 없는 앱 설치»를 허용해야 합니다." \
+            --target "$GITHUB_SHA" \
+            --title "최신 APK · $BRANCH" \
+            --notes "브랜치 \`$BRANCH\` · 커밋 \`$SHORT\` 로 빌드했습니다.
+
+          아래 .apk 를 폰 브라우저에서 눌러 받으세요. 디버그 서명이라 «출처를 알 수 없는 앱 설치»를 허용해야 합니다.
+
+          이 태그는 항상 **가장 최근에 빌드된 브랜치**의 APK 를 가리킵니다." \
             --prerelease \
-            "expense-$SHORT.apk"
+            "expense-$SAFE_BRANCH-$SHORT.apk"
