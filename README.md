@@ -76,11 +76,19 @@
 
 ## 2. 앱 설치
 
-빌드된 APK:
+**먼저 빌드합니다.** APK는 git에 없습니다 — 커밋해 두면 낡은 걸 설치하고 옛 화면을 보게 됩니다.
+
+```bash
+cd C:/Calc/android && ./gradlew.bat assembleDebug
+```
+
+빌드하면 여기 생깁니다:
 
 ```
 android/app/build/outputs/apk/debug/app-debug.apk
 ```
+
+설치 후 앱을 열었을 때 **맨 위에 곳간 현황 상자**가 있으면 최신 버전입니다. 바로 «Notion 연결»이 나오면 옛 APK입니다.
 
 **USB 연결이 되는 경우** — 개발자 옵션에서 USB 디버깅을 켜고:
 
