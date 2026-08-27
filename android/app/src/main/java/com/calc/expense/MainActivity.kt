@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.calc.expense.databinding.ActivityMainBinding
+import java.time.YearMonth
 import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
@@ -43,6 +44,8 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         refreshStorageNotice()
+        refreshLedger()
+        resyncInBackground()
     }
 
     override fun onDestroy() {
@@ -57,6 +60,7 @@ class MainActivity : AppCompatActivity() {
         ui.inputNameProp.setText(s.nameProp)
         ui.inputPriceProp.setText(s.priceProp)
         ui.inputDateProp.setText(s.dateProp)
+        ui.inputMonthlyBudget.setText(if (s.monthlyBudget > 0L) s.monthlyBudget.toString() else "")
     }
 
     private fun currentForm() = Settings(
@@ -65,7 +69,36 @@ class MainActivity : AppCompatActivity() {
         nameProp = ui.inputNameProp.text?.toString().orEmpty().trim(),
         priceProp = ui.inputPriceProp.text?.toString().orEmpty().trim(),
         dateProp = ui.inputDateProp.text?.toString().orEmpty().trim(),
+        // "930000" 도 "93만" 도 받는다. 잠금화면 입력과 같은 규칙이라 따로 배울 게 없다.
+        monthlyBudget = ExpenseParser.parseAmount(
+            ui.inputMonthlyBudget.text?.toString().orEmpty().trim()
+        ) ?: 0L,
     )
+
+    /** 곳간 현황을 다시 그린다. 홈 화면이 생기기 전까지 숫자를 눈으로 확인하는 창구다. */
+    private fun refreshLedger() {
+        ui.textLedger.text = StatusText.overview(Ledger.snapshot(this))
+    }
+
+    /**
+     * 앱을 연 김에 Notion 을 기준으로 이번 달 캐시를 다시 맞춘다.
+     * 잠금화면 기록은 로컬 사본만 보고 계산하므로, 다른 기기에서 고친 것은 여기서 들어온다.
+     */
+    private fun resyncInBackground() {
+        val settings = SettingsStore.load(this)
+        if (!settings.isComplete || !settings.hasBudget) return
+
+        io.execute {
+            val error = Ledger.resync(applicationContext, YearMonth.now())
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                refreshLedger()
+                if (error != null) {
+                    setStatus("Notion 대조에 실패해 로컬 기록으로 표시 중입니다.\n\n$error", isError = true)
+                }
+            }
+        }
+    }
 
     private fun refreshStorageNotice() {
         ui.textStorageNotice.visibility =
@@ -92,8 +125,11 @@ class MainActivity : AppCompatActivity() {
             runOnUiThread {
                 ui.buttonSaveTest.isEnabled = true
                 when (outcome) {
-                    is NotionClient.Outcome.Ok ->
+                    is NotionClient.Outcome.Ok -> {
                         setStatus("저장 완료. DB 연결 확인됨: ${outcome.detail}")
+                        refreshLedger()
+                        resyncInBackground()
+                    }
                     is NotionClient.Outcome.Err ->
                         setStatus("저장은 됐지만 연결에 실패했습니다.\n\n${outcome.message}", isError = true)
                 }

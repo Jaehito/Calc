@@ -43,9 +43,13 @@ object NotificationHelper {
 
     /**
      * 상시 알림을 띄우거나 갱신한다.
-     * @param status 직전 기록 결과. null 이면 기본 안내 문구를 보여준다.
+     *
+     * @param lines 직전 기록 결과. null 이면 기본 안내 문구를 보여준다.
+     *   [StatusLines.summary] 는 잠금화면에 접힌 채로 보이는 한 줄이고,
+     *   [StatusLines.detail] 은 펼쳤을 때의 본문이다. 접힌 줄에 가장 중요한 숫자를 둔다 —
+     *   대부분은 펼치지 않는다.
      */
-    fun show(context: Context, status: String? = null) {
+    fun show(context: Context, lines: StatusLines? = null) {
         ensureChannel(context)
 
         val remoteInput = RemoteInput.Builder(KEY_REPLY)
@@ -87,8 +91,8 @@ object NotificationHelper {
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_wallet)
             .setContentTitle("지출 기록")
-            .setContentText(status ?: IDLE_TEXT)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(status ?: IDLE_TEXT))
+            .setContentText(lines?.summary ?: IDLE_TEXT)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(lines?.detail ?: IDLE_TEXT))
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
