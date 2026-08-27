@@ -7,6 +7,8 @@ import java.net.HttpURLConnection
 import java.net.SocketTimeoutException
 import java.net.URL
 import java.nio.charset.StandardCharsets
+import java.time.LocalDate
+import java.time.YearMonth
 
 /** Notion REST API 최소 클라이언트. 반드시 백그라운드 스레드에서 호출할 것. */
 class NotionClient(private val settings: Settings) {
@@ -17,6 +19,12 @@ class NotionClient(private val settings: Settings) {
         data class Err(val message: String) : Outcome()
     }
 
+    /** 한 달치 조회 결과. 날짜별 지출 합계를 담는다. */
+    sealed class MonthOutcome {
+        data class Ok(val totals: Map<LocalDate, Long>) : MonthOutcome()
+        data class Err(val message: String) : MonthOutcome()
+    }
+
     companion object {
         private const val BASE = "https://api.notion.com"
         private const val NOTION_VERSION = "2022-06-28"
@@ -24,6 +32,9 @@ class NotionClient(private val settings: Settings) {
         // 끝나야 결과를 알림에 반영할 수 있으므로 넉넉히 잡지 않는다.
         private const val CONNECT_TIMEOUT_MS = 4_000
         private const val READ_TIMEOUT_MS = 5_000
+        private const val PAGE_SIZE = 100
+        // 한 달 지출이 이만큼을 넘을 일은 없다. 응답이 이상할 때 무한 루프를 막는 안전장치다.
+        private const val MAX_PAGES = 20
     }
 
     /** 지출 한 건을 DB에 추가한다. isoDate 는 "2026-08-26" 형식. */
@@ -51,6 +62,52 @@ class NotionClient(private val settings: Settings) {
             is Raw.Err -> Outcome.Err(r.message)
         }
     }
+
+    /**
+     * 한 달치 지출을 날짜별 합계로 가져온다. 로컬 캐시를 Notion 기준으로 다시 맞출 때 쓴다.
+     *
+     * 잠금화면 기록 경로에서는 쓰지 않는다 — 브로드캐스트 수명 안에 왕복을 두 번 할 수 없다.
+     * 앱을 열었을 때 백그라운드에서만 부른다.
+     */
+    fun queryMonth(month: YearMonth): MonthOutcome {
+        val first: LocalDate = month.atDay(1)
+        val last: LocalDate = month.atEndOfMonth()
+
+        val filter = JSONObject().put(
+            "and",
+            JSONArray()
+                .put(dateBound(first.toString(), "on_or_after"))
+                .put(dateBound(last.toString(), "on_or_before")),
+        )
+
+        val totals = LinkedHashMap<LocalDate, Long>()
+        var cursor: String? = null
+        var page = 0
+
+        while (page < MAX_PAGES) {
+            val body = JSONObject()
+                .put("filter", filter)
+                .put("page_size", PAGE_SIZE)
+            if (cursor != null) body.put("start_cursor", cursor)
+
+            val r = send("POST", "/v1/databases/${settings.databaseId}/query", body)
+            if (r is Raw.Err) return MonthOutcome.Err(r.message)
+
+            val json = (r as Raw.Ok).json
+            NotionRows.accumulate(json, settings.dateProp, settings.priceProp, totals)
+
+            cursor = NotionRows.nextCursor(json) ?: return MonthOutcome.Ok(totals)
+            page++
+        }
+
+        // 여기까지 왔으면 응답이 계속 다음 페이지를 가리킨 것이다. 받은 만큼만 쓴다.
+        return MonthOutcome.Ok(totals)
+    }
+
+    private fun dateBound(iso: String, condition: String): JSONObject =
+        JSONObject()
+            .put("property", settings.dateProp)
+            .put("date", JSONObject().put(condition, iso))
 
     /** 토큰과 DB 접근 권한, 속성 이름이 맞는지 확인한다. */
     fun verify(): Outcome {

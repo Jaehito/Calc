@@ -39,4 +39,7 @@ dependencies {
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
     testImplementation("junit:junit:4.13.2")
+    // 유닛 테스트의 android.jar 은 org.json 이 던지도록 스텁돼 있다.
+    // NotionRows / MonthTotals 를 테스트하려면 실제 구현이 필요하다.
+    testImplementation("org.json:json:20240303")
 }

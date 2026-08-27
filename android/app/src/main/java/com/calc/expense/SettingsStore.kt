@@ -6,18 +6,6 @@ import android.util.Log
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 
-data class Settings(
-    val token: String = "",
-    val databaseId: String = "",
-    val nameProp: String = "이름",
-    val priceProp: String = "금액",
-    val dateProp: String = "날짜",
-) {
-    val isComplete: Boolean
-        get() = token.isNotBlank() && databaseId.isNotBlank() &&
-            nameProp.isNotBlank() && priceProp.isNotBlank() && dateProp.isNotBlank()
-}
-
 object SettingsStore {
 
     private const val TAG = "SettingsStore"
@@ -62,6 +50,7 @@ object SettingsStore {
             nameProp = p.getString("nameProp", d.nameProp) ?: d.nameProp,
             priceProp = p.getString("priceProp", d.priceProp) ?: d.priceProp,
             dateProp = p.getString("dateProp", d.dateProp) ?: d.dateProp,
+            monthlyBudget = p.getLong("monthlyBudget", d.monthlyBudget),
         )
     }
 
@@ -72,6 +61,7 @@ object SettingsStore {
             .putString("nameProp", s.nameProp.trim())
             .putString("priceProp", s.priceProp.trim())
             .putString("dateProp", s.dateProp.trim())
+            .putLong("monthlyBudget", if (s.monthlyBudget > 0L) s.monthlyBudget else 0L)
             .apply()
     }
 }

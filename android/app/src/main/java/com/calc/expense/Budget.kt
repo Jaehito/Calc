@@ -105,6 +105,45 @@ object Budget {
         )
     }
 
+    /**
+     * 저장할 앵커와 오늘 화면에 쓸 상태.
+     *
+     * 둘을 나누는 이유는 곳간이 **캐시에서 매번 다시 계산되어야** 하기 때문이다. 정산 결과를
+     * 그대로 저장해 버리면, Notion 재동기화로 이번 달 지난 날짜가 고쳐져도 곳간이 따라오지 않는다.
+     */
+    data class Reckoning(val anchor: BudgetState, val today: BudgetState)
+
+    /**
+     * 저장된 앵커와 오늘 날짜로부터 화면에 쓸 상태를 만든다.
+     *
+     * [Reckoning.anchor] 는 이번 달 1일 기준값이라 달이 바뀔 때만 움직인다 — 지난 달 캐시가
+     * 사라져도 곳간이 흔들리지 않게 고정해 두는 값이다. [Reckoning.today] 는 그 앵커에서
+     * 오늘까지 다시 접은 결과이고 저장하지 않는다.
+     *
+     * 이번 달 안의 수정은 즉시 반영되고, 지난 달의 수정은 반영되지 않는다. 이미 앵커로
+     * 굳었기 때문이다. 그건 의도한 것이다 — 지난 달을 다시 계산하기 시작하면 곳간이
+     * 언제든 뒤집힐 수 있게 되고, 그러면 오늘의 숫자를 믿을 수 없다.
+     */
+    fun reckon(
+        stored: BudgetState?,
+        monthlyBudget: Long,
+        today: LocalDate,
+        spentOn: (LocalDate) -> Long,
+    ): Reckoning {
+        var anchor: BudgetState = stored ?: start(monthlyBudget, today)
+
+        if (anchor.monthlyBudget != monthlyBudget) {
+            anchor = updateBudget(anchor, monthlyBudget, today)
+        }
+
+        val previousMonthEnd: LocalDate = today.withDayOfMonth(1).minusDays(1)
+        if (anchor.settledThrough.isBefore(previousMonthEnd)) {
+            anchor = settle(anchor, previousMonthEnd.plusDays(1), spentOn)
+        }
+
+        return Reckoning(anchor = anchor, today = settle(anchor, today, spentOn))
+    }
+
     /** 두 값 모두 양수일 때만 쓴다. */
     private fun ceilDiv(a: Long, b: Long): Long = (a + b - 1L) / b
 }
