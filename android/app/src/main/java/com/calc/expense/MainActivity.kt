@@ -77,6 +77,7 @@ class MainActivity : AppCompatActivity() {
         ui.inputNameProp.setText(s.nameProp)
         ui.inputPriceProp.setText(s.priceProp)
         ui.inputDateProp.setText(s.dateProp)
+        ui.inputPurseProp.setText(s.purseProp)
         ui.inputPayDay.setText(s.payDay.toString())
 
         ui.inputPersonalName.setText(s.personal.name)
@@ -94,6 +95,7 @@ class MainActivity : AppCompatActivity() {
         nameProp = ui.inputNameProp.text?.toString().orEmpty().trim(),
         priceProp = ui.inputPriceProp.text?.toString().orEmpty().trim(),
         dateProp = ui.inputDateProp.text?.toString().orEmpty().trim(),
+        purseProp = ui.inputPurseProp.text?.toString().orEmpty().trim(),
         payDay = Payday.normalize(
             ui.inputPayDay.text?.toString()?.trim()?.toIntOrNull() ?: Payday.DEFAULT
         ),

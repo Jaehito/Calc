@@ -95,6 +95,75 @@ class SettingsTest {
     }
 
     @Test
+    fun `한 DB를 나눠 쓰면 곳간 속성으로 갈린다`() {
+        val s = base.copy(
+            personal = PurseSettings("db-one", 310_000L),
+            shared = PurseSettings("db-one", 500_000L),
+        )
+
+        assertTrue(s.sharesOneDatabase)
+
+        val p = s.target(Purse.PERSONAL)!!
+        val h = s.target(Purse.SHARED)!!
+        assertEquals("db-one", p.databaseId)
+        assertEquals("db-one", h.databaseId)
+        assertEquals("곳간", p.purseProp)
+        assertEquals("개인", p.purseTag)
+        assertEquals("공용", h.purseTag)
+        assertTrue(p.splitsByPurse)
+        assertTrue(h.splitsByPurse)
+    }
+
+    @Test
+    fun `DB를 따로 쓰면 곳간 속성을 쓰지 않는다`() {
+        // 거를 것이 없다. 속성 이름이 채워져 있어도 좌표에는 실리지 않는다
+        val s = base.copy(
+            personal = PurseSettings("db-personal", 310_000L),
+            shared = PurseSettings("db-shared", 500_000L),
+        )
+
+        assertFalse(s.sharesOneDatabase)
+        assertFalse(s.target(Purse.PERSONAL)!!.splitsByPurse)
+        assertEquals("", s.target(Purse.SHARED)!!.purseProp)
+    }
+
+    @Test
+    fun `URL과 ID로 각각 넣어도 같은 DB로 본다`() {
+        val id = "3c9808f1cd0f80e78926d8dc541ac442"
+        val s = base.copy(
+            personal = PurseSettings(id),
+            shared = PurseSettings("https://www.notion.so/gamsyu/$id?v=abc123"),
+        )
+
+        assertTrue(s.sharesOneDatabase)
+    }
+
+    @Test
+    fun `곳간 속성을 비우면 한 DB여도 가르지 않는다`() {
+        val s = base.copy(
+            purseProp = "",
+            personal = PurseSettings("db-one"),
+            shared = PurseSettings("db-one"),
+        )
+
+        assertFalse(s.target(Purse.PERSONAL)!!.splitsByPurse)
+    }
+
+    @Test
+    fun `Notion 값은 곳간 이름을 바꿔도 개인 공용 그대로다`() {
+        // 이름을 바꿨다고 Notion select 값까지 바뀌면 새 옵션이 생겨 기록이 쪼개진다
+        val s = base.copy(
+            personal = PurseSettings("db-one", name = "재호 용돈"),
+            shared = PurseSettings("db-one", name = "우리집"),
+        )
+
+        assertEquals("재호 용돈", s.labelOf(Purse.PERSONAL))
+        assertEquals("개인", s.tagOf(Purse.PERSONAL))
+        assertEquals("공용", s.tagOf(Purse.SHARED))
+        assertEquals("개인", s.target(Purse.PERSONAL)!!.purseTag)
+    }
+
+    @Test
     fun `공용만 연결해도 된다`() {
         val s = base.copy(shared = PurseSettings("db-shared", 1_550_000L))
 

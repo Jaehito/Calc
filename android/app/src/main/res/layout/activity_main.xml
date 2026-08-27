@@ -103,6 +103,28 @@
                 android:maxLines="1" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:hint="곳간 속성 (select 타입)">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputPurseProp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="개인·공용을 한 DB에서 쓰려면 아래 두 곳간에 같은 DB를 넣고, Notion에 «개인»·«공용» 옵션을 가진 select 속성을 만드세요. DB를 따로 쓸 거면 이 칸은 비워도 됩니다."
+            android:textColor="#666666"
+            android:textSize="12sp" />
+
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"

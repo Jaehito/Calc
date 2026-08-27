@@ -51,6 +51,13 @@ class NotionClient(private val target: NotionTarget) {
             )
             put(target.priceProp, JSONObject().put("number", expense.amount))
             put(target.dateProp, JSONObject().put("date", JSONObject().put("start", isoDate)))
+            // 한 DB 를 두 곳간이 나눠 쓸 때만 붙는다. 이 값이 없으면 조회에서 걸러지지 않는다.
+            if (target.splitsByPurse) {
+                put(
+                    target.purseProp,
+                    JSONObject().put("select", JSONObject().put("name", target.purseTag)),
+                )
+            }
         }
 
         val body = JSONObject()
@@ -73,12 +80,13 @@ class NotionClient(private val target: NotionTarget) {
         val first: LocalDate = month.atDay(1)
         val last: LocalDate = month.atEndOfMonth()
 
-        val filter = JSONObject().put(
-            "and",
-            JSONArray()
-                .put(dateBound(first.toString(), "on_or_after"))
-                .put(dateBound(last.toString(), "on_or_before")),
-        )
+        val conditions = JSONArray()
+            .put(dateBound(first.toString(), "on_or_after"))
+            .put(dateBound(last.toString(), "on_or_before"))
+        // 한 DB 를 나눠 쓰면 남의 곳간 행까지 더해진다. 거르지 않으면 숫자가 거짓말을 한다.
+        if (target.splitsByPurse) conditions.put(purseBound())
+
+        val filter = JSONObject().put("and", conditions)
 
         val totals = LinkedHashMap<LocalDate, Long>()
         var cursor: String? = null
@@ -109,6 +117,11 @@ class NotionClient(private val target: NotionTarget) {
             .put("property", target.dateProp)
             .put("date", JSONObject().put(condition, iso))
 
+    private fun purseBound(): JSONObject =
+        JSONObject()
+            .put("property", target.purseProp)
+            .put("select", JSONObject().put("equals", target.purseTag))
+
     /** 토큰과 DB 접근 권한, 속성 이름이 맞는지 확인한다. */
     fun verify(): Outcome {
         val r = send("GET", "/v1/databases/${target.databaseId}", null)
@@ -121,6 +134,14 @@ class NotionClient(private val target: NotionTarget) {
         checkProp(props, target.nameProp, "title")?.let { missing += it }
         checkProp(props, target.priceProp, "number")?.let { missing += it }
         checkProp(props, target.dateProp, "date")?.let { missing += it }
+        if (target.splitsByPurse) {
+            val wrongType: String? = checkProp(props, target.purseProp, "select")
+            if (wrongType != null) {
+                missing += wrongType
+            } else {
+                checkOption(props, target.purseProp, target.purseTag)?.let { missing += it }
+            }
+        }
 
         if (missing.isNotEmpty()) {
             val available = props.keys().asSequence().joinToString(", ")
@@ -142,6 +163,28 @@ class NotionClient(private val target: NotionTarget) {
         return if (actual != expectedType) {
             "· '$name' 은 $expectedType 이어야 하는데 $actual 입니다"
         } else null
+    }
+
+    /**
+     * select 속성에 그 옵션이 있는지 본다.
+     *
+     * 없어도 Notion 은 기록할 때 옵션을 새로 만들어 주지만, 그러면 오타가 조용히
+     * 새 곳간이 되어 기록이 두 갈래로 쪼개진다. 저장 전에 잡는 편이 낫다.
+     */
+    private fun checkOption(props: JSONObject, name: String, option: String): String? {
+        val options = props.optJSONObject(name)
+            ?.optJSONObject("select")
+            ?.optJSONArray("options")
+            ?: return null
+
+        val found = (0 until options.length()).any {
+            options.getJSONObject(it).optString("name") == option
+        }
+        if (found) return null
+
+        val available = (0 until options.length())
+            .joinToString(", ") { options.getJSONObject(it).optString("name") }
+        return "· '$name' 속성에 '$option' 옵션이 없습니다 (있는 옵션: $available)"
     }
 
     private sealed class Raw {
