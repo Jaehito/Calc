@@ -29,11 +29,9 @@
         -->
         <activity
             android:name=".QuickInputActivity"
-            android:excludeFromRecents="true"
             android:exported="false"
             android:launchMode="singleTop"
             android:showWhenLocked="true"
-            android:taskAffinity=""
             android:theme="@style/Theme.ExpenseLogger.QuickInput"
             android:turnScreenOn="true"
             android:windowSoftInputMode="adjustResize|stateAlwaysVisible" />

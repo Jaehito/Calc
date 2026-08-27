@@ -40,13 +40,30 @@ class MainActivity : AppCompatActivity() {
             setStatus("알림을 껐습니다. 다시 켜기 전까지 잠금화면에 나오지 않습니다.")
         }
         ui.buttonNotificationSettings.setOnClickListener { openNotificationSettings() }
+        ui.buttonOpenInput.setOnClickListener {
+            startActivity(Intent(this, QuickInputActivity::class.java))
+        }
     }
 
     override fun onResume() {
         super.onResume()
         refreshStorageNotice()
+        republishNotification()
         refreshLedger()
         resyncInBackground()
+    }
+
+    /**
+     * 켜 둔 상태면 알림을 다시 띄운다.
+     *
+     * 앱을 업데이트해도 셰이드에 남아 있던 옛 알림은 그대로다. 그 안의 PendingIntent 는
+     * 옛 버전을 가리켜, 눌러도 아무 일이 일어나지 않는다. 앱을 열 때마다 다시 띄워
+     * 항상 지금 버전의 알림이 걸려 있게 한다.
+     */
+    private fun republishNotification() {
+        if (!NotificationState.isOn(this)) return
+        if (!SettingsStore.load(this).isComplete) return
+        NotificationHelper.show(this)
     }
 
     override fun onDestroy() {

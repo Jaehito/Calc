@@ -2,7 +2,6 @@ package com.calc.expense
 
 import android.os.Build
 import android.os.Bundle
-import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
@@ -45,11 +44,8 @@ class QuickInputActivity : AppCompatActivity() {
         ui = ActivityQuickInputBinding.inflate(layoutInflater)
         setContentView(ui.root)
 
-        window.setGravity(Gravity.BOTTOM)
-        window.setLayout(
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
-        )
+        // 창은 화면 전체를 덮고, 카드는 레이아웃에서 아래에 붙는다.
+        // setLayout 은 floating 창에서만 먹히므로 쓰지 않는다.
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
 
         // 카드 바깥을 누르면 닫는다.

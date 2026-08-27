@@ -2,15 +2,17 @@
 <resources>
     <style name="Theme.ExpenseLogger" parent="Theme.Material3.DayNight.NoActionBar" />
 
-    <!-- 빠른 입력 화면. 아래에서 올라오는 카드처럼 보이게 띄운다. -->
-    <style name="Theme.ExpenseLogger.QuickInput" parent="Theme.Material3.Light.Dialog">
-        <item name="android:windowIsFloating">false</item>
-        <item name="android:windowIsTranslucent">true</item>
+    <!--
+        빠른 입력 화면. Dialog 테마를 상속하지 않는다 — 그쪽은 windowIsFloating 과
+        타이틀 처리가 기기마다 달라 액티비티가 조용히 안 뜨는 경우가 있다.
+        평범한 반투명 액티비티로 두고, 카드는 레이아웃에서 아래에 붙인다.
+    -->
+    <style name="Theme.ExpenseLogger.QuickInput" parent="Theme.ExpenseLogger">
         <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowNoTitle">true</item>
         <item name="android:backgroundDimEnabled">true</item>
         <item name="android:backgroundDimAmount">0.45</item>
-        <item name="android:windowAnimationStyle">@style/Animation.ExpenseLogger.Sheet</item>
     </style>
-
-    <style name="Animation.ExpenseLogger.Sheet" parent="@android:style/Animation.Dialog" />
 </resources>
