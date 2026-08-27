@@ -102,6 +102,14 @@ class StatusTextTest {
     }
 
     @Test
+    fun `연속으로 적으면 몇 건째인지 붙는다`() {
+        // 한 건만 적었을 때는 셀 것이 없으니 개수를 붙이지 않는다
+        assertEquals("✓ 양파 5,500", StatusText.entered("양파", 5_500L, 1))
+        assertEquals("✓ 쓰레기봉투 400 · 2건째", StatusText.entered("쓰레기봉투", 400L, 2))
+        assertEquals("✓ 장난감 1,200 · 3건째", StatusText.entered("장난감", 1_200L, 3))
+    }
+
+    @Test
     fun `실패는 접힌 줄과 펼친 본문이 같다`() {
         val lines = StatusText.failed("금액을 찾을 수 없습니다", "오후 3:21")
 
@@ -118,6 +126,7 @@ class StatusTextTest {
                 personal.copy(vault = 0L, todaySpent = 90_000L), "오후 7:05",
             ).detail,
             StatusText.overview(listOf(personal)),
+            StatusText.entered("양파", 5_500L, 2),
         )
 
         for (text in texts) {

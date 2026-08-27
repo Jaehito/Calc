@@ -52,7 +52,7 @@
             android:autofillHints=""
             android:background="@drawable/bg_input"
             android:hint="예: 커피 4500"
-            android:imeOptions="actionDone"
+            android:imeOptions="actionSend"
             android:inputType="text"
             android:maxLines="1"
             android:paddingStart="14dp"
@@ -89,12 +89,31 @@
                 android:text="공용" />
         </com.google.android.material.button.MaterialButtonToggleGroup>
 
-        <TextView
-            android:id="@+id/textResult"
+        <!-- 결과와 «완료» 를 한 줄에 둔다. 기록할 때마다 카드 높이가 변하지 않게. -->
+        <LinearLayout
+            android:id="@+id/rowResult"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:textSize="13sp"
-            android:visibility="gone" />
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/textResult"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="13sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonDone"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="0dp"
+                android:text="완료"
+                android:visibility="gone" />
+        </LinearLayout>
     </LinearLayout>
 </FrameLayout>

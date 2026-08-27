@@ -88,6 +88,16 @@ object StatusText {
         )
     }
 
+    /**
+     * 빠른 입력 화면의 결과 줄. 한 줄 고정이라 카드 높이가 출렁이지 않는다.
+     *
+     * 한 건만 적었으면 개수를 붙이지 않는다 — 셀 것이 없을 때 세지 않는다.
+     */
+    fun entered(name: String, amount: Long, count: Int): String {
+        val head = "✓ $name ${format(amount)}"
+        return if (count <= 1) head else "$head · ${count}건째"
+    }
+
     /** 파싱이나 기록이 실패했을 때. 실패는 그 자리에서 무엇이 잘못됐는지 말한다. */
     fun failed(message: String, time: String): StatusLines {
         val line = "✗ $message · $time"

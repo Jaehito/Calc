@@ -19,6 +19,12 @@ import java.util.concurrent.Executors
  * 알림 커스텀 레이아웃은 EditText 를 지원하지 않는다. 그래서 알림 카드 전체를
  * 이 화면을 여는 버튼으로 쓴다. 탭 수는 같지만 조준할 필요가 없고,
  * 무엇보다 **적는 동안 오늘 쓸 수 있는 돈이 보인다.**
+ *
+ * 기록해도 화면을 닫지 않는다. 장보기처럼 여러 건을 적을 때 엔터마다 한 건씩 들어가고
+ * 위의 숫자가 그때그때 줄어든다. 여러 줄을 모아 한 번에 보내면 그 감각이 한 번뿐이고,
+ * 엔터가 줄바꿈이 되어 한 건만 적을 때도 전송 버튼을 눌러야 한다.
+ *
+ * 자동으로 닫지 않는다 — "몇 초 뒤 닫힘" 은 두 번째 항목을 적으려는 순간 닫히면 최악이다.
  */
 class QuickInputActivity : AppCompatActivity() {
 
@@ -28,6 +34,9 @@ class QuickInputActivity : AppCompatActivity() {
     private var purses: List<Purse> = emptyList()
     private var selected: Purse = Purse.PERSONAL
     private var submitting: Boolean = false
+
+    /** 이 화면을 연 뒤로 기록한 건수. 결과 줄에 «2건째» 를 붙일지 정한다. */
+    private var recorded: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,13 +54,16 @@ class QuickInputActivity : AppCompatActivity() {
 
         // 카드 바깥을 누르면 닫는다.
         ui.sheetRoot.setOnClickListener { finish() }
+        ui.buttonDone.setOnClickListener { finish() }
 
         setUpPurses()
         refreshNumbers()
 
         ui.inputExpense.requestFocus()
+        // actionSend 로 둔다. actionDone 은 일부 키보드가 처리 후 키보드를 내려버려
+        // 다음 건을 이어 적을 수 없다.
         ui.inputExpense.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_DONE) {
+            if (actionId == EditorInfo.IME_ACTION_SEND || actionId == EditorInfo.IME_ACTION_DONE) {
                 submit()
                 true
             } else {
@@ -157,27 +169,41 @@ class QuickInputActivity : AppCompatActivity() {
 
             runOnUiThread {
                 if (isFinishing || isDestroyed) return@runOnUiThread
+
+                submitting = false
+                ui.inputExpense.isEnabled = true
+                ui.inputExpense.requestFocus()
+
                 if (result.ok) {
-                    finish()
+                    // 입력창만 비우고 화면은 그대로 둔다. 다음 건을 바로 이어 적을 수 있게.
+                    recorded++
+                    ui.inputExpense.setText("")
+                    ui.buttonDone.visibility = View.VISIBLE
+                    refreshNumbers()
+
+                    val e: Expense? = result.expense
+                    showResult(
+                        if (e == null) "기록됨" else StatusText.entered(e.name, e.amount, recorded),
+                        isError = false,
+                        highlight = true,
+                    )
                 } else {
-                    // 실패하면 닫지 않는다. 입력한 내용을 잃지 않고 고쳐서 다시 보낼 수 있게.
-                    submitting = false
-                    ui.inputExpense.isEnabled = true
-                    ui.inputExpense.requestFocus()
+                    // 실패하면 입력한 내용을 그대로 둔다. 고쳐서 다시 엔터를 누르면 된다.
                     showResult(result.lines.summary, isError = true)
                 }
             }
         }
     }
 
-    private fun showResult(message: String, isError: Boolean) {
-        ui.textResult.visibility = View.VISIBLE
+    private fun showResult(message: String, isError: Boolean, highlight: Boolean = false) {
+        ui.rowResult.visibility = View.VISIBLE
         ui.textResult.text = message
-        ui.textResult.setTextColor(
-            ContextCompat.getColor(
-                this,
-                if (isError) R.color.app_over else R.color.app_muted
-            )
-        )
+
+        val color: Int = when {
+            isError -> R.color.app_over
+            highlight -> R.color.app_accent
+            else -> R.color.app_muted
+        }
+        ui.textResult.setTextColor(ContextCompat.getColor(this, color))
     }
 }

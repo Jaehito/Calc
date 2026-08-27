@@ -3,8 +3,17 @@ package com.calc.expense
 import android.content.Context
 import java.time.LocalDate
 
-/** 기록 한 번의 결과. [lines] 는 알림과 입력 화면이 그대로 쓰는 문구다. */
-data class RecordResult(val ok: Boolean, val lines: StatusLines)
+/**
+ * 기록 한 번의 결과.
+ *
+ * @param lines 알림이 그대로 쓰는 문구
+ * @param expense 성공했을 때 무엇이 들어갔는지. 입력 화면이 결과 줄을 만들 때 쓴다
+ */
+data class RecordResult(
+    val ok: Boolean,
+    val lines: StatusLines,
+    val expense: Expense? = null,
+)
 
 /**
  * 지출 한 건을 기록하는 유일한 경로.
@@ -49,6 +58,7 @@ object RecordExpense {
                 // 로컬 사본만으로 계산하고, Notion 과의 대조는 앱을 열 때 한다.
                 RecordResult(
                     ok = true,
+                    expense = parsed,
                     lines = StatusText.recorded(
                         name = parsed.name,
                         amount = parsed.amount,
