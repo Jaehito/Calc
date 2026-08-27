@@ -11,7 +11,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.calc.expense.databinding.ActivityMainBinding
-import java.time.YearMonth
 import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
@@ -59,6 +58,7 @@ class MainActivity : AppCompatActivity() {
         ui.inputNameProp.setText(s.nameProp)
         ui.inputPriceProp.setText(s.priceProp)
         ui.inputDateProp.setText(s.dateProp)
+        ui.inputPayDay.setText(s.payDay.toString())
 
         ui.inputPersonalDatabaseId.setText(s.personal.databaseId)
         ui.inputPersonalBudget.setText(budgetText(s.personal.monthlyBudget))
@@ -73,6 +73,9 @@ class MainActivity : AppCompatActivity() {
         nameProp = ui.inputNameProp.text?.toString().orEmpty().trim(),
         priceProp = ui.inputPriceProp.text?.toString().orEmpty().trim(),
         dateProp = ui.inputDateProp.text?.toString().orEmpty().trim(),
+        payDay = Payday.normalize(
+            ui.inputPayDay.text?.toString()?.trim()?.toIntOrNull() ?: Payday.DEFAULT
+        ),
         personal = PurseSettings(
             databaseId = ui.inputPersonalDatabaseId.text?.toString().orEmpty().trim(),
             monthlyBudget = readBudget(ui.inputPersonalBudget.text?.toString()),
@@ -102,10 +105,9 @@ class MainActivity : AppCompatActivity() {
         val purses: List<Purse> = Purse.entries.filter { settings.of(it).isActive }
         if (settings.token.isBlank() || purses.isEmpty()) return
 
-        val month = YearMonth.now()
         io.execute {
             val failures: List<String> = purses.mapNotNull { purse ->
-                Ledger.resync(applicationContext, purse, month)?.let { "${purse.label}: $it" }
+                Ledger.resync(applicationContext, purse)?.let { "${purse.label}: $it" }
             }
             runOnUiThread {
                 if (isFinishing || isDestroyed) return@runOnUiThread

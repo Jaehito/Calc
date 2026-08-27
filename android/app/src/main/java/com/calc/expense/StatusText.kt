@@ -1,6 +1,7 @@
 package com.calc.expense
 
 import java.text.NumberFormat
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /** 알림 한 줄과 펼쳤을 때의 본문. */
@@ -17,15 +18,33 @@ data class StatusLines(val summary: String, val detail: String)
  */
 object StatusText {
 
+    private val DAY_FORMAT: DateTimeFormatter =
+        DateTimeFormatter.ofPattern("M월 d일", Locale.KOREA)
+
     private fun format(amount: Long): String =
         NumberFormat.getNumberInstance(Locale.KOREA).format(amount)
 
     fun won(amount: Long): String = format(amount) + "원"
 
     /**
+     * 목표일(다음 월급날 전날)까지의 여유. 오늘 하루가 아니라 주기 전체를 보는 줄이다.
+     * 오늘 쓸 수 있는 돈이 "지금 괜찮나"라면 이건 "이 페이스로 가도 되나"에 답한다.
+     */
+    fun untilTarget(snapshot: LedgerSnapshot): String {
+        val target: String = snapshot.targetDay.format(DAY_FORMAT)
+        val left: Long = snapshot.untilTarget
+
+        if (left < 0L) {
+            return "${target}까지 ${won(-left)} 초과 · 남은 ${snapshot.daysLeft}일"
+        }
+        return "${target}까지 ${won(left)}" +
+            " · 남은 ${snapshot.daysLeft}일 (하루 ${format(snapshot.perDayLeft)})"
+    }
+
+    /**
      * 기록이 성공했을 때.
      *
-     * @param snapshot null 이면 그 곳간에 월 예산이 아직 없다
+     * @param snapshot null 이면 그 곳간에 예산이 아직 없다
      * @param showPurse 곳간이 둘 다 연결됐을 때만 true — 하나뿐이면 이름을 붙이지 않는다
      */
     fun recorded(
@@ -41,7 +60,7 @@ object StatusText {
         if (snapshot == null) {
             return StatusLines(
                 summary = head,
-                detail = head + "\n\n앱에서 월 예산을 정하면 오늘 쓸 수 있는 돈이 함께 표시됩니다.",
+                detail = head + "\n\n앱에서 예산을 정하면 오늘 쓸 수 있는 돈이 함께 표시됩니다.",
             )
         }
 
@@ -51,7 +70,8 @@ object StatusText {
                 summary = "✓ $name ${format(amount)} · ${tag}오늘 ${format(-available)} 초과",
                 detail = head +
                     "\n\n${tag}오늘 ${won(-available)} 초과" +
-                    "\n곳간을 다 쓰고 넘은 만큼은 남은 날에 나눠 조정됩니다.",
+                    "\n곳간을 다 쓰고 넘은 만큼은 남은 날에 나눠 조정됩니다." +
+                    "\n\n" + untilTarget(snapshot),
             )
         }
 
@@ -63,7 +83,8 @@ object StatusText {
                 "\n\n${tag}오늘 쓸 수 있는 돈 ${won(available)}" +
                 "\n하루치 ${format(snapshot.dailyRate)}" +
                 " + 곳간 ${format(snapshot.vault)}" +
-                " − 오늘 ${format(snapshot.todaySpent)}",
+                " − 오늘 ${format(snapshot.todaySpent)}" +
+                "\n\n" + untilTarget(snapshot),
         )
     }
 
@@ -76,7 +97,7 @@ object StatusText {
     /** 설정 화면에 보여줄 현재 상태. 홈 화면이 생기기 전까지 곳간을 눈으로 확인하는 창구다. */
     fun overview(snapshots: List<LedgerSnapshot>): String {
         if (snapshots.isEmpty()) {
-            return "DB를 연결하고 월 예산을 정하면 오늘 쓸 수 있는 돈이 여기에 표시됩니다."
+            return "DB를 연결하고 예산을 정하면 오늘 쓸 수 있는 돈이 여기에 표시됩니다."
         }
 
         return snapshots.joinToString("\n\n") { snapshot -> block(snapshot) }
@@ -92,6 +113,6 @@ object StatusText {
             "\n하루치 ${format(snapshot.dailyRate)}" +
             " + 곳간 ${format(snapshot.vault)}" +
             " − 오늘 ${format(snapshot.todaySpent)}" +
-            "\n이번 달 ${format(snapshot.monthSpent)} / ${format(snapshot.monthlyBudget)}"
+            "\n" + untilTarget(snapshot)
     }
 }

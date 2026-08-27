@@ -3,13 +3,17 @@ package com.calc.expense
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.LocalDate
-import java.time.YearMonth
 
 class BudgetTest {
 
     /** 8월 = 31일. 930,000 / 31 = 30,000 으로 딱 떨어져 계산을 눈으로 좇기 쉽다. */
     private val budget = 930_000L
-    private val aug = YearMonth.of(2026, 8)
+
+    /** 월급날 1일 = 달력 월과 같은 주기. 곳간 규칙 자체를 보는 테스트라 여기서는 이걸 쓴다. */
+    private val monthly = Payday.DEFAULT
+
+    private fun cycleOn(year: Int, month: Int, day: Int): BudgetCycle =
+        Payday.cycleOf(LocalDate.of(year, month, day), monthly)
 
     private fun spent(vararg pairs: Pair<LocalDate, Long>): (LocalDate) -> Long {
         val map = pairs.toMap()
@@ -18,14 +22,14 @@ class BudgetTest {
 
     @Test
     fun `하루치는 월 예산을 그 달 일수로 나눈 값이다`() {
-        assertEquals(30_000L, Budget.baseRate(budget, aug))
+        assertEquals(30_000L, Budget.baseRate(budget, cycleOn(2026, 8, 15)))
         // 2월은 28일이라 같은 예산이어도 하루치가 커진다
-        assertEquals(33_214L, Budget.baseRate(930_000L, YearMonth.of(2026, 2)))
+        assertEquals(33_214L, Budget.baseRate(budget, cycleOn(2026, 2, 15)))
     }
 
     @Test
     fun `시작할 때는 곳간이 비어 있고 과거를 소급하지 않는다`() {
-        val s = Budget.start(budget, LocalDate.of(2026, 8, 27))
+        val s = Budget.start(budget, LocalDate.of(2026, 8, 27), monthly)
         assertEquals(0L, s.vault)
         assertEquals(30_000L, s.dailyRate)
         assertEquals(LocalDate.of(2026, 8, 26), s.settledThrough)
@@ -34,10 +38,11 @@ class BudgetTest {
     @Test
     fun `아낀 만큼 곳간에 쌓이고 오늘 쓸 수 있는 돈이 늘어난다`() {
         // 8/25 에 시작 → 8/25 20,000 / 8/26 15,000 을 쓰고 8/27 을 맞는다
-        val start = Budget.start(budget, LocalDate.of(2026, 8, 25))
+        val start = Budget.start(budget, LocalDate.of(2026, 8, 25), monthly)
         val settled = Budget.settle(
             start,
             LocalDate.of(2026, 8, 27),
+            monthly,
             spent(
                 LocalDate.of(2026, 8, 25) to 20_000L,
                 LocalDate.of(2026, 8, 26) to 15_000L,
@@ -55,10 +60,11 @@ class BudgetTest {
 
     @Test
     fun `초과분은 곳간이 먼저 흡수한다`() {
-        val start = Budget.start(budget, LocalDate.of(2026, 8, 25))
+        val start = Budget.start(budget, LocalDate.of(2026, 8, 25), monthly)
         val settled = Budget.settle(
             start,
             LocalDate.of(2026, 8, 27),
+            monthly,
             spent(
                 LocalDate.of(2026, 8, 25) to 10_000L, // +20,000 → 곳간 20,000
                 LocalDate.of(2026, 8, 26) to 45_000L, // -15,000 → 곳간 5,000
@@ -84,6 +90,7 @@ class BudgetTest {
         val settled = Budget.settle(
             state,
             LocalDate.of(2026, 8, 28),
+            monthly,
             spent(LocalDate.of(2026, 8, 27) to 90_000L),
         )
 
@@ -105,7 +112,7 @@ class BudgetTest {
         )
 
         // 9월 = 30일 → 하루치 31,000, 상한 155,000
-        val settled = Budget.settle(state, LocalDate.of(2026, 9, 1), spent())
+        val settled = Budget.settle(state, LocalDate.of(2026, 9, 1), monthly, spent())
 
         assertEquals(31_000L, settled.dailyRate)
         assertEquals(31_000L * Budget.VAULT_CAP_DAYS, settled.vault)
@@ -121,7 +128,7 @@ class BudgetTest {
             settledThrough = LocalDate.of(2026, 8, 31),
         )
 
-        val settled = Budget.settle(state, LocalDate.of(2026, 9, 1), spent())
+        val settled = Budget.settle(state, LocalDate.of(2026, 9, 1), monthly, spent())
 
         assertEquals(42_000L, settled.vault)
         assertEquals(31_000L, settled.dailyRate)
@@ -129,10 +136,11 @@ class BudgetTest {
 
     @Test
     fun `며칠 앱을 안 열어도 한 번에 정산된다`() {
-        val start = Budget.start(budget, LocalDate.of(2026, 8, 20))
+        val start = Budget.start(budget, LocalDate.of(2026, 8, 20), monthly)
         val settled = Budget.settle(
             start,
             LocalDate.of(2026, 8, 25),
+            monthly,
             spent(
                 LocalDate.of(2026, 8, 20) to 30_000L, // ±0
                 LocalDate.of(2026, 8, 21) to 10_000L, // +20,000
@@ -148,13 +156,14 @@ class BudgetTest {
 
     @Test
     fun `같은 날 두 번 정산해도 결과가 변하지 않는다`() {
-        val start = Budget.start(budget, LocalDate.of(2026, 8, 25))
+        val start = Budget.start(budget, LocalDate.of(2026, 8, 25), monthly)
         val once = Budget.settle(
             start,
             LocalDate.of(2026, 8, 27),
+            monthly,
             spent(LocalDate.of(2026, 8, 25) to 20_000L, LocalDate.of(2026, 8, 26) to 15_000L),
         )
-        val twice = Budget.settle(once, LocalDate.of(2026, 8, 27)) { 0L }
+        val twice = Budget.settle(once, LocalDate.of(2026, 8, 27), monthly) { 0L }
 
         assertEquals(once, twice)
     }
@@ -172,6 +181,7 @@ class BudgetTest {
         val settled = Budget.settle(
             state,
             LocalDate.of(2026, 9, 1),
+            monthly,
             spent(LocalDate.of(2026, 8, 31) to 130_000L),
         )
 
@@ -188,7 +198,7 @@ class BudgetTest {
             settledThrough = LocalDate.of(2026, 8, 26),
         )
 
-        val changed = Budget.updateBudget(state, 620_000L, LocalDate.of(2026, 8, 27))
+        val changed = Budget.updateBudget(state, 620_000L, LocalDate.of(2026, 8, 27), monthly)
 
         assertEquals(20_000L, changed.dailyRate)
         assertEquals(51_000L, changed.vault)

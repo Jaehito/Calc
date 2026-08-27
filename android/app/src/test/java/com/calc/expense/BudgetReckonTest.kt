@@ -12,6 +12,8 @@ import java.time.LocalDate
 class BudgetReckonTest {
 
     private val budget = 930_000L // 8월 31일 → 하루치 30,000 / 9월 30일 → 31,000
+    /** 월급날 1일 = 달력 월과 같은 주기. */
+    private val monthly = Payday.DEFAULT
 
     private fun spent(vararg pairs: Pair<LocalDate, Long>): (LocalDate) -> Long {
         val map = pairs.toMap()
@@ -20,7 +22,7 @@ class BudgetReckonTest {
 
     @Test
     fun `저장된 앵커가 없으면 오늘부터 시작한다`() {
-        val r = Budget.reckon(null, budget, LocalDate.of(2026, 8, 27), spent())
+        val r = Budget.reckon(null, budget, LocalDate.of(2026, 8, 27), monthly, spent())
 
         assertEquals(0L, r.anchor.vault)
         assertEquals(LocalDate.of(2026, 8, 26), r.anchor.settledThrough)
@@ -39,12 +41,12 @@ class BudgetReckonTest {
         val today = LocalDate.of(2026, 8, 5)
 
         val before = Budget.reckon(
-            anchor, budget, today,
+            anchor, budget, today, monthly,
             spent(LocalDate.of(2026, 8, 1) to 30_000L),
         )
         // Notion 재동기화로 8/1 지출이 10,000 으로 고쳐졌다
         val after = Budget.reckon(
-            anchor, budget, today,
+            anchor, budget, today, monthly,
             spent(LocalDate.of(2026, 8, 1) to 10_000L),
         )
 
@@ -66,7 +68,7 @@ class BudgetReckonTest {
         )
 
         val r = Budget.reckon(
-            anchor, budget, LocalDate.of(2026, 9, 3),
+            anchor, budget, LocalDate.of(2026, 9, 3), monthly,
             spent(LocalDate.of(2026, 8, 25) to 60_000L),
         )
 
@@ -87,11 +89,11 @@ class BudgetReckonTest {
         val today = LocalDate.of(2026, 9, 3)
 
         val withAugust = Budget.reckon(
-            anchor, budget, today,
+            anchor, budget, today, monthly,
             spent(LocalDate.of(2026, 8, 15) to 999_999L, LocalDate.of(2026, 9, 1) to 10_000L),
         )
         val withoutAugust = Budget.reckon(
-            anchor, budget, today,
+            anchor, budget, today, monthly,
             spent(LocalDate.of(2026, 9, 1) to 10_000L),
         )
 
@@ -109,7 +111,7 @@ class BudgetReckonTest {
             settledThrough = LocalDate.of(2026, 8, 26),
         )
 
-        val r = Budget.reckon(anchor, 620_000L, LocalDate.of(2026, 8, 27), spent())
+        val r = Budget.reckon(anchor, 620_000L, LocalDate.of(2026, 8, 27), monthly, spent())
 
         assertEquals(620_000L, r.anchor.monthlyBudget)
         assertEquals(20_000L, r.anchor.dailyRate)
@@ -127,8 +129,8 @@ class BudgetReckonTest {
         val cache = spent(LocalDate.of(2026, 8, 1) to 10_000L)
         val today = LocalDate.of(2026, 8, 5)
 
-        val once = Budget.reckon(anchor, budget, today, cache)
-        val twice = Budget.reckon(once.anchor, budget, today, cache)
+        val once = Budget.reckon(anchor, budget, today, monthly, cache)
+        val twice = Budget.reckon(once.anchor, budget, today, monthly, cache)
 
         assertEquals(once.anchor, twice.anchor)
         assertEquals(once.today, twice.today)

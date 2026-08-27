@@ -11,6 +11,8 @@ data class Settings(
     val nameProp: String = "이름",
     val priceProp: String = "금액",
     val dateProp: String = "날짜",
+    /** 예산 주기의 경계가 되는 날. 두 곳간이 공유한다. 1 이면 달력 월과 같다. */
+    val payDay: Int = Payday.DEFAULT,
     val personal: PurseSettings = PurseSettings(),
     val shared: PurseSettings = PurseSettings(),
 ) {

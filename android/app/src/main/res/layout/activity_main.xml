@@ -114,6 +114,42 @@
             android:layout_height="wrap_content"
             android:paddingTop="20dp"
             android:paddingBottom="4dp"
+            android:text="예산 주기"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="12dp"
+            android:text="월급날을 경계로 예산이 리셋됩니다. 25일이면 25일부터 다음 달 24일까지가 한 주기이고, 그 마지막 날이 «목표일»이 됩니다. 달력 1일 기준으로 쓰려면 1을 넣으세요."
+            android:textSize="13sp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="월급날 (1~31)">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputPayDay"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="24dp"
+            android:background="#33000000" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="20dp"
+            android:paddingBottom="4dp"
             android:text="개인 곳간"
             android:textSize="20sp"
             android:textStyle="bold" />

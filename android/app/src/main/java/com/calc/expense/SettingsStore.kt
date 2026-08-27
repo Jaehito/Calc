@@ -54,6 +54,7 @@ object SettingsStore {
             nameProp = p.getString("nameProp", d.nameProp) ?: d.nameProp,
             priceProp = p.getString("priceProp", d.priceProp) ?: d.priceProp,
             dateProp = p.getString("dateProp", d.dateProp) ?: d.dateProp,
+            payDay = Payday.normalize(p.getInt("payDay", d.payDay)),
             personal = loadPurse(p, Purse.PERSONAL),
             shared = loadPurse(p, Purse.SHARED),
         )
@@ -78,6 +79,7 @@ object SettingsStore {
             .putString("nameProp", s.nameProp.trim())
             .putString("priceProp", s.priceProp.trim())
             .putString("dateProp", s.dateProp.trim())
+            .putInt("payDay", Payday.normalize(s.payDay))
 
         for (purse in Purse.entries) {
             val p = s.of(purse)
