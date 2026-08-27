@@ -10,6 +10,7 @@ class StatusTextTest {
     /** 월급날 25일 · 오늘 8/27 → 목표일 9/24, 남은 29일 중 22일 가정. */
     private val personal = LedgerSnapshot(
         purse = Purse.PERSONAL,
+        label = "개인",
         dailyRate = 30_000L,
         vault = 23_400L,
         todaySpent = 12_400L,
@@ -81,7 +82,7 @@ class StatusTextTest {
 
     @Test
     fun `초과하면 음수 대신 초과액으로 말한다`() {
-        val over = personal.copy(purse = Purse.SHARED, vault = 0L, todaySpent = 34_200L)
+        val over = personal.copy(purse = Purse.SHARED, label = "공용", vault = 0L, todaySpent = 34_200L)
         val lines = StatusText.recorded("장보기", 28_700L, over, "오후 7:05", showPurse = true)
 
         assertEquals("✓ 장보기 28,700 · 공용 오늘 4,200 초과", lines.summary)
@@ -130,6 +131,7 @@ class StatusTextTest {
     fun `현황에 곳간마다 한 덩어리씩 나온다`() {
         val shared = LedgerSnapshot(
             purse = Purse.SHARED,
+            label = "공용",
             dailyRate = 50_000L,
             vault = 64_000L,
             todaySpent = 34_200L,
@@ -148,6 +150,15 @@ class StatusTextTest {
                 "9월 24일까지 430,000원 · 남은 22일 (하루 19,545)",
             StatusText.overview(listOf(personal, shared)),
         )
+    }
+
+    @Test
+    fun `이름을 바꾸면 알림과 현황에 그 이름이 나온다`() {
+        val renamed = personal.copy(label = "재호 용돈")
+
+        val lines = StatusText.recorded("커피", 4_500L, renamed, "오후 3:21", showPurse = true)
+        assertEquals("✓ 커피 4,500 · 재호 용돈 오늘 41,000", lines.summary)
+        assertTrue(StatusText.overview(listOf(renamed)).startsWith("재호 용돈 · 오늘 쓸 수 있는 돈"))
     }
 
     @Test

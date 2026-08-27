@@ -16,6 +16,9 @@ data class Settings(
     val personal: PurseSettings = PurseSettings(),
     val shared: PurseSettings = PurseSettings(),
 ) {
+    /** 화면과 알림에 쓸 이름. 사용자가 정한 게 없으면 기본 이름. */
+    fun labelOf(purse: Purse): String = of(purse).name.ifBlank { purse.defaultLabel }
+
     fun of(purse: Purse): PurseSettings = when (purse) {
         Purse.PERSONAL -> personal
         Purse.SHARED -> shared

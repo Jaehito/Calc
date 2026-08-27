@@ -70,6 +70,7 @@ object SettingsStore {
         return PurseSettings(
             databaseId = p.getString("${purse.key}.databaseId", legacyId).orEmpty(),
             monthlyBudget = p.getLong("${purse.key}.monthlyBudget", legacyBudget),
+            name = p.getString("${purse.key}.name", "").orEmpty(),
         )
     }
 
@@ -85,6 +86,7 @@ object SettingsStore {
             val p = s.of(purse)
             edit.putString("${purse.key}.databaseId", NotionIds.normalize(p.databaseId))
                 .putLong("${purse.key}.monthlyBudget", if (p.monthlyBudget > 0L) p.monthlyBudget else 0L)
+                .putString("${purse.key}.name", p.name.trim().take(Purse.MAX_NAME_LENGTH))
         }
 
         // 옮겨 담았으니 옛 키는 지운다. 남겨두면 다음 로드에서 되살아난다.

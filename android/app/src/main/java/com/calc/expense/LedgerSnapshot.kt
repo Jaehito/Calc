@@ -5,6 +5,8 @@ import java.time.LocalDate
 /** 곳간 하나의 오늘 숫자 한 벌. */
 data class LedgerSnapshot(
     val purse: Purse,
+    /** 사용자가 정한 곳간 이름. 화면과 알림에 이대로 나온다. */
+    val label: String,
     val dailyRate: Long,
     val vault: Long,
     val todaySpent: Long,

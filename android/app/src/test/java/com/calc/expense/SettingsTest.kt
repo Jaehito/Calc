@@ -71,6 +71,30 @@ class SettingsTest {
     }
 
     @Test
+    fun `이름을 정하지 않으면 기본 이름을 쓴다`() {
+        assertEquals("개인", base.labelOf(Purse.PERSONAL))
+        assertEquals("공용", base.labelOf(Purse.SHARED))
+    }
+
+    @Test
+    fun `이름을 정하면 그 이름을 쓴다`() {
+        val s = base.copy(
+            personal = PurseSettings("db1", 310_000L, name = "재호 용돈"),
+            shared = PurseSettings("db2", 1_550_000L, name = "우리집"),
+        )
+
+        assertEquals("재호 용돈", s.labelOf(Purse.PERSONAL))
+        assertEquals("우리집", s.labelOf(Purse.SHARED))
+    }
+
+    @Test
+    fun `공백만 있는 이름은 기본 이름으로 되돌아간다`() {
+        val s = base.copy(personal = PurseSettings("db1", name = "   "))
+
+        assertEquals("개인", s.labelOf(Purse.PERSONAL))
+    }
+
+    @Test
     fun `공용만 연결해도 된다`() {
         val s = base.copy(shared = PurseSettings("db-shared", 1_550_000L))
 

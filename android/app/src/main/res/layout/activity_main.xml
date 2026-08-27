@@ -158,8 +158,23 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingBottom="12dp"
-            android:text="내 용돈. 월 예산을 그 달의 일수로 나눈 값이 하루치이고, 아낀 만큼 곳간에 쌓입니다. 처음에는 지난달 실제 지출보다 조금 넉넉하게 잡으세요."
+            android:text="내 용돈. 이름은 자유롭게 정하세요 — 알림 버튼과 현황에 그대로 나옵니다. 예산을 주기 일수로 나눈 값이 하루치이고, 아낀 만큼 곳간에 쌓입니다. 처음에는 지난달 실제 지출보다 조금 넉넉하게 잡으세요."
             android:textSize="13sp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:hint="이름 (비우면 «개인»)">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputPersonalName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:maxLength="8"
+                android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
@@ -208,8 +223,23 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingBottom="12dp"
-            android:text="같이 쓰는 생활비. 아직 공용 계좌가 없으면 비워 두세요 — 비어 있으면 알림에 개인 하나만 나옵니다. 나중에 여기만 채우면 됩니다."
+            android:text="같이 쓰는 생활비. 아직 공용 계좌가 없으면 DB를 비워 두세요 — 비어 있으면 알림 버튼이 하나만 나옵니다. 나중에 여기만 채우면 됩니다."
             android:textSize="13sp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:hint="이름 (비우면 «공용»)">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputSharedName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:maxLength="8"
+                android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"

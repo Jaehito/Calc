@@ -56,8 +56,8 @@ object NotificationHelper {
         ensureChannel(context)
 
         // 연결된 곳간이 하나뿐이면 고르게 하지 않는다. 애매한 지출에서 멈칫하는 3초가 이탈 지점이다.
-        val purses: List<Purse> = SettingsStore.load(context).linkedPurses
-            .ifEmpty { listOf(Purse.PERSONAL) }
+        val settings = SettingsStore.load(context)
+        val purses: List<Purse> = settings.linkedPurses.ifEmpty { listOf(Purse.PERSONAL) }
         val labelled: Boolean = purses.size > 1
 
         val openApp = PendingIntent.getActivity(
@@ -80,7 +80,9 @@ object NotificationHelper {
             .setContentIntent(openApp)
 
         for (purse in purses) {
-            builder.addAction(replyAction(context, purse, if (labelled) purse.label else "기록"))
+            builder.addAction(
+                replyAction(context, purse, if (labelled) settings.labelOf(purse) else "기록")
+            )
         }
 
         val notification = builder.build()

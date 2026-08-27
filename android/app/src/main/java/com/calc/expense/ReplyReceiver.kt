@@ -55,7 +55,7 @@ class ReplyReceiver : BroadcastReceiver() {
         // 알림 액션이 곳간을 실어 보낸다. 옛 알림이 남아 있어 값이 없으면 첫 곳간으로 본다.
         val purse: Purse = linked.firstOrNull { it.key == purseKey } ?: linked.first()
         val target: NotionTarget = settings.target(purse)
-            ?: return StatusText.failed("${purse.label} 곳간에 DB가 연결되지 않았습니다", now)
+            ?: return StatusText.failed("${settings.labelOf(purse)} 곳간에 DB가 연결되지 않았습니다", now)
 
         val today = LocalDate.now()
         return when (val r = NotionClient(target).addExpense(parsed, today.toString())) {

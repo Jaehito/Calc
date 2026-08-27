@@ -60,8 +60,10 @@ class MainActivity : AppCompatActivity() {
         ui.inputDateProp.setText(s.dateProp)
         ui.inputPayDay.setText(s.payDay.toString())
 
+        ui.inputPersonalName.setText(s.personal.name)
         ui.inputPersonalDatabaseId.setText(s.personal.databaseId)
         ui.inputPersonalBudget.setText(budgetText(s.personal.monthlyBudget))
+        ui.inputSharedName.setText(s.shared.name)
         ui.inputSharedDatabaseId.setText(s.shared.databaseId)
         ui.inputSharedBudget.setText(budgetText(s.shared.monthlyBudget))
     }
@@ -79,10 +81,12 @@ class MainActivity : AppCompatActivity() {
         personal = PurseSettings(
             databaseId = ui.inputPersonalDatabaseId.text?.toString().orEmpty().trim(),
             monthlyBudget = readBudget(ui.inputPersonalBudget.text?.toString()),
+            name = ui.inputPersonalName.text?.toString().orEmpty().trim(),
         ),
         shared = PurseSettings(
             databaseId = ui.inputSharedDatabaseId.text?.toString().orEmpty().trim(),
             monthlyBudget = readBudget(ui.inputSharedBudget.text?.toString()),
+            name = ui.inputSharedName.text?.toString().orEmpty().trim(),
         ),
     )
 
@@ -107,7 +111,8 @@ class MainActivity : AppCompatActivity() {
 
         io.execute {
             val failures: List<String> = purses.mapNotNull { purse ->
-                Ledger.resync(applicationContext, purse)?.let { "${purse.label}: $it" }
+                Ledger.resync(applicationContext, purse)
+                    ?.let { "${settings.labelOf(purse)}: $it" }
             }
             runOnUiThread {
                 if (isFinishing || isDestroyed) return@runOnUiThread
@@ -132,7 +137,7 @@ class MainActivity : AppCompatActivity() {
         val form = currentForm()
         if (!form.isComplete) {
             setStatus(
-                "토큰과 속성 이름을 채우고, 개인 · 공용 중 최소 한 곳에 DB를 연결하세요.",
+                "토큰과 속성 이름을 채우고, 두 곳간 중 최소 한 곳에 DB를 연결하세요.",
                 isError = true,
             )
             return
@@ -149,10 +154,11 @@ class MainActivity : AppCompatActivity() {
         io.execute {
             val results: List<Pair<Boolean, String>> = saved.linkedPurses.map { purse ->
                 val target: NotionTarget = saved.target(purse)
-                    ?: return@map false to "${purse.label}: DB를 읽지 못했습니다"
+                    ?: return@map false to "${saved.labelOf(purse)}: DB를 읽지 못했습니다"
                 when (val outcome = NotionClient(target).verify()) {
-                    is NotionClient.Outcome.Ok -> true to "${purse.label}: ${outcome.detail}"
-                    is NotionClient.Outcome.Err -> false to "${purse.label}\n${outcome.message}"
+                    is NotionClient.Outcome.Ok -> true to "${saved.labelOf(purse)}: ${outcome.detail}"
+                    is NotionClient.Outcome.Err ->
+                        false to "${saved.labelOf(purse)}\n${outcome.message}"
                 }
             }
 
@@ -199,9 +205,11 @@ class MainActivity : AppCompatActivity() {
     private fun enableNotification() {
         NotificationHelper.show(this)
         if (NotificationHelper.isEnabled(this)) {
-            val purses = SettingsStore.load(this).linkedPurses
+            val settings = SettingsStore.load(this)
+            val purses = settings.linkedPurses
             val howTo = if (purses.size > 1) {
-                "잠금화면 알림에서 «개인» 또는 «공용»을 누르고 «커피 4500» 처럼 입력하세요."
+                val names = purses.joinToString(" 또는 ") { "«${settings.labelOf(it)}»" }
+                "잠금화면 알림에서 $names 를 누르고 «커피 4500» 처럼 입력하세요."
             } else {
                 "잠금화면에서 알림의 «기록»을 누르고 «커피 4500» 처럼 입력하세요."
             }

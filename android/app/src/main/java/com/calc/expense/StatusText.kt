@@ -54,7 +54,7 @@ object StatusText {
         time: String,
         showPurse: Boolean = false,
     ): StatusLines {
-        val tag: String = if (showPurse && snapshot != null) "${snapshot.purse.label} " else ""
+        val tag: String = if (showPurse && snapshot != null) "${snapshot.label} " else ""
         val head = "✓ $name ${won(amount)} 기록됨 · $time"
 
         if (snapshot == null) {
@@ -106,8 +106,8 @@ object StatusText {
     private fun block(snapshot: LedgerSnapshot): String {
         val available: Long = snapshot.available
         val headline: String =
-            if (available >= 0L) "${snapshot.purse.label} · 오늘 쓸 수 있는 돈  ${won(available)}"
-            else "${snapshot.purse.label} · 오늘 ${won(-available)} 초과"
+            if (available >= 0L) "${snapshot.label} · 오늘 쓸 수 있는 돈  ${won(available)}"
+            else "${snapshot.label} · 오늘 ${won(-available)} 초과"
 
         return headline +
             "\n하루치 ${format(snapshot.dailyRate)}" +

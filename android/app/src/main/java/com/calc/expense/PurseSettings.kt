@@ -1,9 +1,11 @@
 package com.calc.expense
 
-/** 곳간 하나의 설정. Notion DB 와 월 예산은 곳간마다 따로 둔다. */
+/** 곳간 하나의 설정. Notion DB 와 예산은 곳간마다 따로 둔다. */
 data class PurseSettings(
     val databaseId: String = "",
     val monthlyBudget: Long = 0L,
+    /** 사용자가 정한 이름. 비어 있으면 [Purse.defaultLabel] 을 쓴다. */
+    val name: String = "",
 ) {
     /** DB 가 연결돼 있으면 이 곳간으로 기록할 수 있다. */
     val isLinked: Boolean

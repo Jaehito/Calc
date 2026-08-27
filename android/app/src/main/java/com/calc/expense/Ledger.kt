@@ -46,6 +46,7 @@ object Ledger {
 
         return LedgerSnapshot(
             purse = purse,
+            label = settings.labelOf(purse),
             dailyRate = reckoning.today.dailyRate,
             vault = reckoning.today.vault,
             todaySpent = SpendingCache.spentOn(context, purse, today),
@@ -93,7 +94,7 @@ object Ledger {
     ): String? {
         val settings = SettingsStore.load(context)
         val target: NotionTarget = settings.target(purse)
-            ?: return "${purse.label} 곳간에 DB가 연결되지 않았습니다"
+            ?: return "${settings.labelOf(purse)} 곳간에 DB가 연결되지 않았습니다"
 
         val cycle: BudgetCycle = Payday.cycleOf(today, settings.payDay)
         val client = NotionClient(target)
