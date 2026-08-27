@@ -7,6 +7,10 @@ import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import com.calc.expense.databinding.ActivityQuickInputBinding
 import java.time.LocalTime
 import java.util.concurrent.Executors
@@ -47,6 +51,7 @@ class QuickInputActivity : AppCompatActivity() {
         // 창은 화면 전체를 덮고, 카드는 레이아웃에서 아래에 붙는다.
         // setLayout 은 floating 창에서만 먹히므로 쓰지 않는다.
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
+        keepSheetAboveSystemBars()
 
         // 카드 바깥을 누르면 닫는다.
         ui.sheetRoot.setOnClickListener { finish() }
@@ -71,6 +76,36 @@ class QuickInputActivity : AppCompatActivity() {
     override fun onDestroy() {
         io.shutdown()
         super.onDestroy()
+    }
+
+    /**
+     * 키보드와 내비게이션 바가 카드를 가리지 않게 아래 여백을 직접 준다.
+     *
+     * targetSdk 35 라 안드로이드 15 에서는 창이 무조건 시스템 바 아래까지 그려지고,
+     * 3버튼 내비게이션이면 시스템이 그 위에 **반투명 회색 띠**를 덮는다 — 이게 결과 줄을
+     * 가리던 바다. 게다가 반투명 창에서는 adjustResize 가 먹지 않아 키보드가 입력창을 덮는다.
+     *
+     * 그래서 회색 띠를 끄고(카드가 흰색이라 대비 보정이 필요 없다) 인셋만큼 카드 아래
+     * 여백을 직접 준다. 키보드가 올라오면 그 높이가 내비 바보다 크므로 둘 중 큰 값만 쓴다.
+     */
+    private fun keepSheetAboveSystemBars() {
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+        }
+        // 카드가 항상 흰색이므로(values-night 없음) 내비 버튼·제스처 바는 어둡게 그린다.
+        WindowCompat.getInsetsController(window, ui.root).isAppearanceLightNavigationBars = true
+
+        val basePadding: Int = ui.sheet.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(ui.sheet) { view, insets ->
+            val ime: Int = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
+            val navigation: Int =
+                insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+            view.updatePadding(bottom = basePadding + maxOf(ime, navigation))
+            insets
+        }
+        ViewCompat.requestApplyInsets(ui.sheet)
     }
 
     /** 잠금 해제 없이 뜨도록 요청한다. 제조사 정책이 막으면 인증을 먼저 요구할 수 있다. */
