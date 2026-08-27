@@ -22,6 +22,10 @@ data class LedgerSnapshot(
     val available: Long
         get() = dailyRate + vault - todaySpent
 
+    /** 오늘 쓸 수 있는 돈을 넘겼는지. 색을 정하는 유일한 기준이다. */
+    val isOver: Boolean
+        get() = available < 0L
+
     /** 목표일까지 쓸 수 있는 돈. 곳간과 무관하게 예산에서 이번 주기 지출을 뺀 값이다. */
     val untilTarget: Long
         get() = monthlyBudget - cycleSpent

@@ -148,28 +148,36 @@ class QuickInputActivity : AppCompatActivity() {
         }
     }
 
-    /** 고른 곳간의 숫자를 입력창 위에 띄운다. 적으면서 판단할 수 있게 하는 것이 이 화면의 존재 이유다. */
-    private fun refreshNumbers() {
+    /**
+     * 고른 곳간의 숫자를 입력창 위에 띄우고 그 스냅샷을 돌려준다.
+     * 적으면서 판단할 수 있게 하는 것이 이 화면의 존재 이유다.
+     *
+     * 큰 숫자에도 색을 입힌다 — 넘겼으면 빨강, 남았으면 초록. 글자를 읽기 전에 눈에 들어온다.
+     */
+    private fun refreshNumbers(): LedgerSnapshot? {
         val snapshot: LedgerSnapshot? = Ledger.snapshot(this, selected)
 
         if (snapshot == null) {
             ui.textCaption.text = "예산을 정하지 않은 곳간"
             ui.textAvailable.text = "—"
+            ui.textAvailable.setTextColor(colorOf(Tone.NEUTRAL))
             ui.textBreakdown.visibility = View.GONE
-            return
+            return null
         }
 
         val available: Long = snapshot.available
-        if (available >= 0L) {
-            ui.textCaption.text = "오늘 쓸 수 있는 돈"
-            ui.textAvailable.text = StatusText.won(available)
-        } else {
+        if (snapshot.isOver) {
             ui.textCaption.text = "오늘 초과"
             ui.textAvailable.text = StatusText.won(-available)
+        } else {
+            ui.textCaption.text = "오늘 쓸 수 있는 돈"
+            ui.textAvailable.text = StatusText.won(available)
         }
+        ui.textAvailable.setTextColor(colorOf(if (snapshot.isOver) Tone.OVER else Tone.REMAINING))
 
         ui.textBreakdown.visibility = View.VISIBLE
         ui.textBreakdown.text = StatusText.untilTarget(snapshot)
+        return snapshot
     }
 
     private fun submit() {
@@ -179,7 +187,7 @@ class QuickInputActivity : AppCompatActivity() {
 
         submitting = true
         ui.inputExpense.isEnabled = false
-        showResult("기록 중…", isError = false)
+        showResult("기록 중…", Tone.NEUTRAL)
 
         val app = applicationContext
         val purseKey: String = selected.key
@@ -210,31 +218,35 @@ class QuickInputActivity : AppCompatActivity() {
                     recorded++
                     ui.inputExpense.setText("")
                     ui.buttonDone.visibility = View.VISIBLE
-                    refreshNumbers()
+                    val after: LedgerSnapshot? = refreshNumbers()
 
                     val e: Expense? = result.expense
                     showResult(
                         if (e == null) "기록됨" else StatusText.entered(e.name, e.amount, recorded),
-                        isError = false,
-                        highlight = true,
+                        Tone.of(ok = true, snapshot = after),
                     )
                 } else {
                     // 실패하면 입력한 내용을 그대로 둔다. 고쳐서 다시 엔터를 누르면 된다.
-                    showResult(result.lines.summary, isError = true)
+                    showResult(result.lines.summary, Tone.of(ok = false, snapshot = null))
                 }
             }
         }
     }
 
-    private fun showResult(message: String, isError: Boolean, highlight: Boolean = false) {
+    private fun showResult(message: String, tone: Tone) {
         ui.rowResult.visibility = View.VISIBLE
         ui.textResult.text = message
+        ui.textResult.setTextColor(colorOf(tone))
+    }
 
-        val color: Int = when {
-            isError -> R.color.app_over
-            highlight -> R.color.app_accent
-            else -> R.color.app_muted
+    /** [Tone] 을 이 화면의 색으로 옮긴다. 판정은 [Tone.of] 가 하고 여기서는 고르기만 한다. */
+    private fun colorOf(tone: Tone): Int {
+        val res: Int = when (tone) {
+            Tone.REMAINING -> R.color.app_accent
+            Tone.OVER -> R.color.app_over
+            Tone.FAILED -> R.color.app_over
+            Tone.NEUTRAL -> R.color.app_muted
         }
-        ui.textResult.setTextColor(ContextCompat.getColor(this, color))
+        return ContextCompat.getColor(this, res)
     }
 }
