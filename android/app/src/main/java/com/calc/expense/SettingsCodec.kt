@@ -23,6 +23,7 @@ object SettingsCodec {
             "priceProp$SEP${s.priceProp}",
             "dateProp$SEP${s.dateProp}",
             "purseProp$SEP${s.purseProp}",
+            "categoryProp$SEP${s.categoryProp}",
             "payDay$SEP${s.payDay}",
             "personal.db$SEP${s.personal.databaseId}",
             "personal.budget$SEP${s.personal.monthlyBudget}",
@@ -62,6 +63,7 @@ object SettingsCodec {
             priceProp = map["priceProp"].orEmpty().ifBlank { Settings().priceProp },
             dateProp = map["dateProp"].orEmpty().ifBlank { Settings().dateProp },
             purseProp = map["purseProp"].orEmpty().ifBlank { Settings().purseProp },
+            categoryProp = map["categoryProp"].orEmpty().ifBlank { Settings().categoryProp },
             payDay = Payday.normalize(map["payDay"]?.toIntOrNull() ?: Payday.DEFAULT),
             personal = PurseSettings(
                 databaseId = map["personal.db"].orEmpty(),

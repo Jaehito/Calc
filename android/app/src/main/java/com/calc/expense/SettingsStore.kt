@@ -55,6 +55,7 @@ object SettingsStore {
             priceProp = p.getString("priceProp", d.priceProp) ?: d.priceProp,
             dateProp = p.getString("dateProp", d.dateProp) ?: d.dateProp,
             purseProp = p.getString("purseProp", d.purseProp) ?: d.purseProp,
+            categoryProp = p.getString("categoryProp", d.categoryProp) ?: d.categoryProp,
             payDay = Payday.normalize(p.getInt("payDay", d.payDay)),
             personal = loadPurse(p, Purse.PERSONAL),
             shared = loadPurse(p, Purse.SHARED),
@@ -82,6 +83,7 @@ object SettingsStore {
             .putString("priceProp", s.priceProp.trim())
             .putString("dateProp", s.dateProp.trim())
             .putString("purseProp", s.purseProp.trim())
+            .putString("categoryProp", s.categoryProp.trim())
             .putInt("payDay", Payday.normalize(s.payDay))
 
         for (purse in Purse.entries) {

@@ -4,37 +4,93 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.sp
 import java.time.LocalDate
+import java.time.YearMonth
 import java.util.concurrent.Executors
 
 /**
- * 앱을 열면 나오는 화면. 곳간 숫자를 보여주는 것 하나만 한다.
+ * 앱을 열면 나오는 화면. 하단 탭으로 홈·통계를 오간다.
  *
  * 설정과 빠른 입력은 XML 그대로다 — 잘 도는 화면을 다시 만들 이유가 없다.
- * 여기만 Compose 인 이유는 이 화면이 새로 만드는 화면이기 때문이다.
+ * 여기만 Compose 인 이유는 이 화면들이 새로 만드는 화면이기 때문이다.
  */
 class HomeActivity : ComponentActivity() {
 
     private val io = Executors.newSingleThreadExecutor()
 
+    private var tab: Int by mutableStateOf(0)
     private var snapshots: List<LedgerSnapshot> by mutableStateOf(emptyList())
     private var notice: String? by mutableStateOf(null)
+
+    private var stats: StatsData? by mutableStateOf(null)
+    /** 카테고리 막대가 보는 달. 0 = 이번 달, 1 = 지난 달. */
+    private var categoryMonthBack: Int by mutableStateOf(0)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            HomeScreen(
-                today = LocalDate.now(),
-                snapshots = snapshots,
-                notice = notice,
-                onOpenSettings = { startActivity(Intent(this, MainActivity::class.java)) },
-                onRecord = { startActivity(Intent(this, QuickInputActivity::class.java)) },
+            Scaffold(bottomBar = { BottomBar() }) { padding ->
+                Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+                    when (tab) {
+                        1 -> StatsScreen(
+                            data = stats ?: StatsRepository.localOnly(this@HomeActivity),
+                            onToggleCategoryMonth = { toggleCategoryMonth() },
+                        )
+                        else -> HomeScreen(
+                            today = LocalDate.now(),
+                            snapshots = snapshots,
+                            notice = notice,
+                            onOpenSettings = { startActivity(Intent(this@HomeActivity, MainActivity::class.java)) },
+                            onRecord = { startActivity(Intent(this@HomeActivity, QuickInputActivity::class.java)) },
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @androidx.compose.runtime.Composable
+    private fun BottomBar() {
+        NavigationBar(containerColor = HomePalette.Card) {
+            NavigationBarItem(
+                selected = tab == 0,
+                onClick = { tab = 0 },
+                icon = { Text("🏠", fontSize = 18.sp) },
+                label = { Text("홈") },
+                colors = navColors(),
+            )
+            NavigationBarItem(
+                selected = tab == 1,
+                onClick = { selectStats() },
+                icon = { Text("📊", fontSize = 18.sp) },
+                label = { Text("통계") },
+                colors = navColors(),
             )
         }
     }
+
+    @androidx.compose.runtime.Composable
+    private fun navColors() = NavigationBarItemDefaults.colors(
+        selectedIconColor = HomePalette.Accent,
+        selectedTextColor = HomePalette.Accent,
+        indicatorColor = HomePalette.Soft,
+        unselectedIconColor = HomePalette.Muted,
+        unselectedTextColor = HomePalette.Muted,
+    )
 
     override fun onResume() {
         super.onResume()
@@ -46,6 +102,46 @@ class HomeActivity : ComponentActivity() {
     override fun onDestroy() {
         io.shutdown()
         super.onDestroy()
+    }
+
+    /** 통계 탭으로 옮기며 데이터를 채운다. 기간 비교는 즉시, 카테고리는 노션에서 뒤따라. */
+    private fun selectStats() {
+        tab = 1
+        loadStats()
+    }
+
+    private fun toggleCategoryMonth() {
+        categoryMonthBack = if (categoryMonthBack == 0) 1 else 0
+        loadStats()
+    }
+
+    private fun loadStats() {
+        val today: LocalDate = LocalDate.now()
+        val base: StatsData = StatsRepository.localOnly(this, today)
+        val month: YearMonth = YearMonth.from(today).minusMonths(categoryMonthBack.toLong())
+        val label: String = if (categoryMonthBack == 0) "이번 달" else "지난 달"
+        stats = base.copy(categoryMonthLabel = label, loadingCategories = true, error = null)
+
+        val app = applicationContext
+        io.execute {
+            val (totals: Map<String, Long>, error: String?) =
+                try {
+                    StatsRepository.fetchCategories(app, month)
+                } catch (e: Exception) {
+                    emptyMap<String, Long>() to "오류: ${e.message ?: e.javaClass.simpleName}"
+                }
+
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                stats = base.copy(
+                    categoryMonthLabel = label,
+                    categories = CategoryBreakdown.of(totals),
+                    categoryTotal = CategoryBreakdown.total(totals),
+                    loadingCategories = false,
+                    error = error,
+                )
+            }
+        }
     }
 
     /** 로컬 캐시만으로 즉시 그린다. Notion 왕복은 그 뒤에 따라온다. */
@@ -94,6 +190,8 @@ class HomeActivity : ComponentActivity() {
                 if (isFinishing || isDestroyed) return@runOnUiThread
                 notice = failure
                 refresh()
+                // 통계 탭을 보고 있으면 캐시 갱신을 반영한다.
+                if (tab == 1) loadStats()
             }
         }
     }

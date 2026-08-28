@@ -16,6 +16,8 @@ data class Settings(
      * 비워 두면 곳간을 구분하지 않는다 — DB 를 따로 쓰는 구성이 그렇다.
      */
     val purseProp: String = "곳간",
+    /** 통계용 카테고리 select 속성. 비어 있으면 카테고리 통계를 만들지 않는다. */
+    val categoryProp: String = "카테고리",
     /** 예산 주기의 경계가 되는 날. 두 곳간이 공유한다. 1 이면 달력 월과 같다. */
     val payDay: Int = Payday.DEFAULT,
     val personal: PurseSettings = PurseSettings(),
@@ -69,6 +71,7 @@ data class Settings(
             // 한 DB 를 나눠 쓸 때만 곳간 속성이 필요하다. DB 가 다르면 거를 것이 없다.
             purseProp = if (sharesOneDatabase) purseProp.trim() else "",
             purseTag = if (sharesOneDatabase) tagOf(purse) else "",
+            categoryProp = categoryProp.trim(),
         )
     }
 }

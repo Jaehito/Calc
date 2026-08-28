@@ -25,6 +25,12 @@ class NotionClient(private val target: NotionTarget) {
         data class Err(val message: String) : MonthOutcome()
     }
 
+    /** 한 달치 카테고리별 합계 조회 결과. */
+    sealed class CategoryOutcome {
+        data class Ok(val totals: Map<String, Long>) : CategoryOutcome()
+        data class Err(val message: String) : CategoryOutcome()
+    }
+
     companion object {
         private const val BASE = "https://api.notion.com"
         private const val NOTION_VERSION = "2022-06-28"
@@ -126,6 +132,45 @@ class NotionClient(private val target: NotionTarget) {
 
         // 여기까지 왔으면 응답이 계속 다음 페이지를 가리킨 것이다. 받은 만큼만 쓴다.
         return MonthOutcome.Ok(totals)
+    }
+
+    /**
+     * 한 달치를 카테고리별 합계로 가져온다. 통계 탭이 쓴다.
+     *
+     * 곳간(개인/공용) 구분 없이 그 DB 전체를 카테고리로만 나눈다 — 사용자가 카테고리 기준으로
+     * 보길 원했다. 카테고리 속성이 없으면 빈 결과를 준다.
+     */
+    fun queryMonthCategories(month: YearMonth): CategoryOutcome {
+        if (target.categoryProp.isBlank()) return CategoryOutcome.Ok(emptyMap())
+
+        val first: LocalDate = month.atDay(1)
+        val last: LocalDate = month.atEndOfMonth()
+
+        val filter = JSONObject().put(
+            "and",
+            JSONArray()
+                .put(dateBound(first.toString(), "on_or_after"))
+                .put(dateBound(last.toString(), "on_or_before")),
+        )
+
+        val totals = LinkedHashMap<String, Long>()
+        var cursor: String? = null
+        var page = 0
+
+        while (page < MAX_PAGES) {
+            val body = JSONObject().put("filter", filter).put("page_size", PAGE_SIZE)
+            if (cursor != null) body.put("start_cursor", cursor)
+
+            val r = send("POST", "/v1/databases/${target.databaseId}/query", body)
+            if (r is Raw.Err) return CategoryOutcome.Err(r.message)
+
+            val json = (r as Raw.Ok).json
+            NotionRows.accumulateByCategory(json, target.categoryProp, target.priceProp, totals)
+
+            cursor = NotionRows.nextCursor(json) ?: return CategoryOutcome.Ok(totals)
+            page++
+        }
+        return CategoryOutcome.Ok(totals)
     }
 
     private fun dateBound(iso: String, condition: String): JSONObject =

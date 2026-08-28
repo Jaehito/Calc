@@ -17,6 +17,8 @@ data class NotionTarget(
     val purseProp: String = "",
     /** 이 곳간이 쓰는 select 값. 비어 있으면 곳간을 구분하지 않는다. */
     val purseTag: String = "",
+    /** 통계용 카테고리 select 속성 이름. 비어 있으면 카테고리 통계를 만들지 않는다. */
+    val categoryProp: String = "",
 ) {
     /** 곳간 속성으로 갈라야 하는지. 이름과 값이 둘 다 있어야 성립한다. */
     val splitsByPurse: Boolean

@@ -103,4 +103,38 @@ class NotionRowsTest {
         // has_more 가 true 인데 커서가 없으면 멈춘다 — 무한 루프를 만들지 않는다
         assertNull(NotionRows.nextCursor(page(hasMore = true, cursor = null)))
     }
+
+    @Test
+    fun `카테고리별로 금액을 합친다`() {
+        val page = org.json.JSONObject(
+            """
+            {"results":[
+              {"properties":{
+                "금액":{"number":6600},
+                "카테고리":{"select":{"name":"식비"}}
+              }},
+              {"properties":{
+                "금액":{"number":3000},
+                "카테고리":{"select":{"name":"식비"}}
+              }},
+              {"properties":{
+                "금액":{"number":9900},
+                "카테고리":{"select":{"name":"교육"}}
+              }},
+              {"properties":{
+                "금액":{"number":400},
+                "카테고리":{"select":null}
+              }}
+            ]}
+            """.trimIndent(),
+        )
+        val into = LinkedHashMap<String, Long>()
+        NotionRows.accumulateByCategory(page, "카테고리", "금액", into)
+
+        assertEquals(9_600L, into["식비"])
+        assertEquals(9_900L, into["교육"])
+        // 카테고리 없는 행은 빈 문자열 키로 모인다
+        assertEquals(400L, into[""])
+    }
+
 }

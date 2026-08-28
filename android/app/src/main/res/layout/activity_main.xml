@@ -125,6 +125,28 @@
             android:textColor="#666666"
             android:textSize="12sp" />
 
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:hint="카테고리 속성 (통계용 select, 선택)">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputCategoryProp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="통계 탭의 카테고리별 막대가 이 select 속성을 읽습니다. 비워 두면 카테고리 통계는 표시되지 않습니다."
+            android:textColor="#666666"
+            android:textSize="12sp" />
+
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"

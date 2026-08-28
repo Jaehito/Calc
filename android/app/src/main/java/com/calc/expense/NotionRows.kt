@@ -31,6 +31,33 @@ object NotionRows {
         }
     }
 
+    /** 응답 한 페이지의 행들을 카테고리별 합계로 누적한다. 카테고리가 비면 빈 문자열 키로 모은다. */
+    fun accumulateByCategory(
+        page: JSONObject,
+        categoryProp: String,
+        priceProp: String,
+        into: MutableMap<String, Long>,
+    ) {
+        val results = page.optJSONArray("results") ?: return
+
+        for (i in 0 until results.length()) {
+            val props = results.optJSONObject(i)?.optJSONObject("properties") ?: continue
+
+            val amount = readNumber(props, priceProp) ?: continue
+            val category: String = readSelect(props, categoryProp).orEmpty()
+
+            into[category] = (into[category] ?: 0L) + amount
+        }
+    }
+
+    /** select 속성의 고른 값 이름. 없으면 null. */
+    private fun readSelect(props: JSONObject, prop: String): String? {
+        val name = props.optJSONObject(prop)
+            ?.optJSONObject("select")
+            ?.optString("name")
+        return if (name.isNullOrBlank() || name == "null") null else name
+    }
+
     /** 다음 페이지가 있으면 커서를, 없으면 null 을 준다. */
     fun nextCursor(page: JSONObject): String? {
         if (!page.optBoolean("has_more", false)) return null
