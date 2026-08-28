@@ -98,6 +98,21 @@ object StatusText {
         return if (count <= 1) head else "$head · ${count}건째"
     }
 
+    /**
+     * 지난 주기 이맘때와 견준 한 줄. 과거의 나와 겨루는 재미가 이 앱이 노리는 동기다.
+     *
+     * [LedgerSnapshot.vsLastCycle] 이 null(비교할 기록 없음)이면 줄을 만들지 않는다.
+     * 채점하지 않는다 — 덜 썼다·더 썼다는 사실만 말하고 잘잘못을 붙이지 않는다.
+     */
+    fun comparison(snapshot: LedgerSnapshot): String? {
+        val diff: Long = snapshot.vsLastCycle ?: return null
+        return when {
+            diff < 0L -> "지난 주기 이맘때보다 ${won(-diff)} 덜 썼어요"
+            diff > 0L -> "지난 주기 이맘때보다 ${won(diff)} 더 썼어요"
+            else -> "지난 주기 이맘때와 똑같이 쓰고 있어요"
+        }
+    }
+
     /** 파싱이나 기록이 실패했을 때. 실패는 그 자리에서 무엇이 잘못됐는지 말한다. */
     fun failed(message: String, time: String): StatusLines {
         val line = "✗ $message · $time"

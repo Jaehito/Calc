@@ -43,6 +43,7 @@ object Ledger {
         if (reckoning.anchor != stored) BudgetStore.save(context, reckoning.anchor, purse)
 
         val cycle: BudgetCycle = Payday.cycleOf(today, settings.payDay)
+        val cycleSpent: Long = spentInCycle(context, purse, cycle)
 
         return LedgerSnapshot(
             purse = purse,
@@ -50,11 +51,45 @@ object Ledger {
             dailyRate = reckoning.today.dailyRate,
             vault = reckoning.today.vault,
             todaySpent = SpendingCache.spentOn(context, purse, today),
-            cycleSpent = spentInCycle(context, purse, cycle),
+            cycleSpent = cycleSpent,
             monthlyBudget = config.monthlyBudget,
             targetDay = cycle.lastDay,
             daysLeft = cycle.daysLeftFrom(today),
+            vsLastCycle = compareToLastCycle(context, purse, cycle, today, cycleSpent, settings.payDay),
         )
+    }
+
+    /**
+     * 지난 주기 «이맘때»와 이번 주기 지출을 견준다.
+     *
+     * 공정하게 견주려면 같은 «며칠째»끼리 비교해야 한다 — 이번 주기 시작부터 오늘까지의
+     * 날 수만큼 지난 주기도 그 첫 며칠만 더한다. 지난 주기에 기록이 하나도 없으면(새 사용자거나
+     * 그때 안 썼거나) 견줄 대상이 없다고 보고 null 을 돌려준다.
+     */
+    private fun compareToLastCycle(
+        context: Context,
+        purse: Purse,
+        cycle: BudgetCycle,
+        today: LocalDate,
+        cycleSpent: Long,
+        payDay: Int,
+    ): Long? {
+        val previous: BudgetCycle = Payday.cycleOf(cycle.start.minusDays(1), payDay)
+        if (spentInCycle(context, purse, previous) <= 0L) return null
+
+        // 이번 주기에 오늘까지 흐른 날 수 (오늘 포함).
+        val daysElapsed: Int = (today.toEpochDay() - cycle.start.toEpochDay() + 1L).toInt()
+
+        var previousThroughSameDay: Long = 0L
+        var i = 0
+        while (i < daysElapsed) {
+            val day: LocalDate = previous.start.plusDays(i.toLong())
+            if (!previous.contains(day)) break
+            previousThroughSameDay += SpendingCache.spentOn(context, purse, day)
+            i++
+        }
+
+        return cycleSpent - previousThroughSameDay
     }
 
     /** 주기가 걸친 달들을 읽어 그 범위의 지출만 더한다. */
@@ -102,9 +137,12 @@ object Ledger {
             ?: return "${settings.labelOf(purse)} 곳간에 DB가 연결되지 않았습니다"
 
         val cycle: BudgetCycle = Payday.cycleOf(today, settings.payDay)
+        // 지난 주기까지 함께 맞춘다 — 홈의 «지난 주기 이맘때보다» 비교가 그 캐시를 읽는다.
+        val previous: BudgetCycle = Payday.cycleOf(cycle.start.minusDays(1), settings.payDay)
         val client = NotionClient(target)
 
-        var month: YearMonth = YearMonth.from(cycle.start)
+        // 두 주기가 걸친 달들을 한 번씩만 조회한다. 주기가 한 달을 공유해도 중복 조회하지 않는다.
+        var month: YearMonth = YearMonth.from(previous.start)
         val lastMonth: YearMonth = YearMonth.from(cycle.lastDay)
 
         while (!month.isAfter(lastMonth)) {

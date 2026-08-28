@@ -1,6 +1,7 @@
 package com.calc.expense
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
@@ -168,6 +169,41 @@ class StatusTextTest {
         val lines = StatusText.recorded("커피", 4_500L, renamed, "오후 3:21", showPurse = true)
         assertEquals("✓ 커피 4,500 · 재호 용돈 오늘 41,000", lines.summary)
         assertTrue(StatusText.overview(listOf(renamed)).startsWith("재호 용돈 · 오늘 쓸 수 있는 돈"))
+    }
+
+    @Test
+    fun `지난 주기보다 덜 썼으면 덜 썼다고 한다`() {
+        val less = personal.copy(vsLastCycle = -12_000L)
+        assertEquals("지난 주기 이맘때보다 12,000원 덜 썼어요", StatusText.comparison(less))
+    }
+
+    @Test
+    fun `지난 주기보다 더 썼으면 더 썼다고 한다`() {
+        val more = personal.copy(vsLastCycle = 8_000L)
+        assertEquals("지난 주기 이맘때보다 8,000원 더 썼어요", StatusText.comparison(more))
+    }
+
+    @Test
+    fun `똑같이 썼으면 똑같다고 한다`() {
+        assertEquals("지난 주기 이맘때와 똑같이 쓰고 있어요", StatusText.comparison(personal.copy(vsLastCycle = 0L)))
+    }
+
+    @Test
+    fun `비교할 지난 주기가 없으면 줄을 만들지 않는다`() {
+        assertNull(StatusText.comparison(personal.copy(vsLastCycle = null)))
+    }
+
+    @Test
+    fun `비교 문구도 채점하지 않는다`() {
+        val texts = listOf(
+            StatusText.comparison(personal.copy(vsLastCycle = -12_000L))!!,
+            StatusText.comparison(personal.copy(vsLastCycle = 8_000L))!!,
+        )
+        for (text in texts) {
+            for (banned in listOf("!", "잘", "실패", "밀린", "연속", "달성")) {
+                assertTrue("금지 표현 '$banned' 이 들어 있다: $text", !text.contains(banned))
+            }
+        }
     }
 
     @Test

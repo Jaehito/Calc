@@ -17,6 +17,11 @@ data class LedgerSnapshot(
     val targetDay: LocalDate,
     /** 오늘을 포함해 목표일까지 남은 날 수. */
     val daysLeft: Int,
+    /**
+     * 지난 주기 «이맘때»(같은 날짜 수)와 비교한 이번 주기 지출 차이.
+     * 양수면 더 썼고 음수면 덜 썼다. 비교할 지난 주기 기록이 없으면 null.
+     */
+    val vsLastCycle: Long? = null,
 ) {
     /** 오늘 쓸 수 있는 돈. 오늘 안에서는 음수가 될 수 있고 그건 사실이므로 감추지 않는다. */
     val available: Long

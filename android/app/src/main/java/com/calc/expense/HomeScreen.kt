@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -159,6 +161,29 @@ private fun PurseCard(snapshot: LedgerSnapshot, showLabel: Boolean) {
             fontSize = 12.sp,
             style = Figures,
         )
+
+        // 지난 주기 이맘때와의 비교. 견줄 기록이 없으면 줄 자체가 없다.
+        val comparison: String? = StatusText.comparison(snapshot)
+        if (comparison != null) {
+            Spacer(Modifier.height(10.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // 지난 주기보다 덜 썼으면 초록, 더 썼으면 빨강 — 과거의 나와 겨루는 신호.
+                val diff: Long = snapshot.vsLastCycle ?: 0L
+                val dot: Color = when {
+                    diff < 0L -> HomePalette.Accent
+                    diff > 0L -> HomePalette.Over
+                    else -> HomePalette.Muted
+                }
+                Box(
+                    modifier = Modifier
+                        .size(7.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(dot),
+                )
+                Spacer(Modifier.width(7.dp))
+                Text(text = comparison, color = HomePalette.Ink2, fontSize = 12.sp, style = Figures)
+            }
+        }
     }
 }
 
