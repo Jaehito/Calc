@@ -119,6 +119,34 @@ object StatusText {
         return StatusLines(summary = line, detail = line)
     }
 
+    /** 지난 며칠간 한 곳간이 쓴 합계. 주간 돌아보기에 쓴다. */
+    data class WeeklySpend(val label: String, val total: Long)
+
+    /**
+     * 주 1회 «돌아보기» 알림 문구. 지난 [days] 일 동안 곳간별로 얼마 썼는지 담는다.
+     *
+     * 채점하지 않는다 — 얼마 썼다는 사실과 하루 평균만 말한다. 예산 대비 잘잘못은 붙이지 않는다.
+     * 접힌 줄(summary)에는 곳간별 합계를, 펼친 본문(detail)에는 하루 평균까지 둔다.
+     */
+    fun weekly(spends: List<WeeklySpend>, days: Int = 7): StatusLines {
+        if (spends.isEmpty()) {
+            val line = "지난 ${days}일 기록이 없어요"
+            return StatusLines(summary = line, detail = line)
+        }
+
+        val summary: String =
+            if (spends.size > 1) {
+                "지난 ${days}일 " + spends.joinToString(" · ") { "${it.label} ${format(it.total)}" }
+            } else {
+                "지난 ${days}일 ${won(spends[0].total)}"
+            }
+
+        val body: String = spends.joinToString("\n") { s ->
+            "${s.label} ${won(s.total)} · 하루 평균 ${format(s.total / days)}"
+        }
+        return StatusLines(summary = summary, detail = "지난 ${days}일 돌아보기\n\n$body")
+    }
+
     /** 설정 화면에 보여줄 현재 상태. 홈 화면이 생기기 전까지 곳간을 눈으로 확인하는 창구다. */
     fun overview(snapshots: List<LedgerSnapshot>): String {
         if (snapshots.isEmpty()) {

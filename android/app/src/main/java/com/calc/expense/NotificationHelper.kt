@@ -22,10 +22,15 @@ object NotificationHelper {
     const val NOTIF_ID = 1001
     const val KEY_REPLY = "key_expense_reply"
 
+    /** 주 1회 돌아보기는 별도 채널·별도 알림이다. 상시 입력 알림과 섞이지 않는다. */
+    private const val WEEKLY_CHANNEL_ID = "weekly_review"
+    private const val WEEKLY_NOTIF_ID = 1002
+
     private const val IDLE_TEXT = "눌러서 기록하세요 · 예: 커피 4500"
 
     private const val REQUEST_OPEN_INPUT = 1
     private const val REQUEST_DISMISSED = 2
+    private const val REQUEST_OPEN_HOME = 3
 
     fun ensureChannel(context: Context) {
         val channel = NotificationChannel(
@@ -93,6 +98,52 @@ object NotificationHelper {
         } catch (_: SecurityException) {
             // POST_NOTIFICATIONS 권한이 없는 경우. 설정 화면에서 안내한다.
         }
+    }
+
+    /**
+     * 주 1회 돌아보기 알림. 상시 입력 알림과 달리 지울 수 있고 되살리지 않는다 —
+     * 한 주에 한 번 툭 던지는 알림이라 스와이프로 넘기면 그만이다.
+     */
+    fun showWeekly(context: Context, lines: StatusLines) {
+        ensureWeeklyChannel(context)
+
+        val openHome = PendingIntent.getActivity(
+            context,
+            REQUEST_OPEN_HOME,
+            Intent(context, HomeActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        val notification = NotificationCompat.Builder(context, WEEKLY_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_wallet)
+            .setContentTitle("이번 주 돌아보기")
+            .setContentText(lines.summary)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(lines.detail))
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setAutoCancel(true)
+            .setContentIntent(openHome)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .build()
+
+        try {
+            NotificationManagerCompat.from(context).notify(WEEKLY_NOTIF_ID, notification)
+        } catch (_: SecurityException) {
+            // POST_NOTIFICATIONS 권한이 없는 경우.
+        }
+    }
+
+    private fun ensureWeeklyChannel(context: Context) {
+        val channel = NotificationChannel(
+            WEEKLY_CHANNEL_ID,
+            "주간 돌아보기",
+            NotificationManager.IMPORTANCE_DEFAULT,
+        ).apply {
+            description = "주 1회 지난 7일 지출을 돌아보는 알림"
+            setShowBadge(true)
+        }
+        context.getSystemService(NotificationManager::class.java)
+            .createNotificationChannel(channel)
     }
 
     fun hide(context: Context) {

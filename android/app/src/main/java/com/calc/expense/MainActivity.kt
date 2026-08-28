@@ -37,6 +37,7 @@ class MainActivity : AppCompatActivity() {
             // 먼저 꺼야 DismissReceiver 가 되살리지 않는다.
             NotificationState.setOn(this, false)
             NotificationHelper.hide(this)
+            WeeklyReviewScheduler.cancel(this)
             setStatus("알림을 껐습니다. 다시 켜기 전까지 잠금화면에 나오지 않습니다.")
         }
         ui.buttonNotificationSettings.setOnClickListener { openNotificationSettings() }
@@ -226,6 +227,7 @@ class MainActivity : AppCompatActivity() {
     private fun enableNotification() {
         NotificationState.setOn(this, true)
         NotificationHelper.show(this)
+        WeeklyReviewScheduler.schedule(this)
         if (NotificationHelper.isEnabled(this)) {
             val purses = SettingsStore.load(this).linkedPurses
             val howTo =

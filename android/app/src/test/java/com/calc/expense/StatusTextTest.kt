@@ -207,6 +207,36 @@ class StatusTextTest {
     }
 
     @Test
+    fun `주간 돌아보기는 곳간별 합계와 하루 평균을 담는다`() {
+        val lines = StatusText.weekly(
+            listOf(
+                StatusText.WeeklySpend("개인", 87_500L),
+                StatusText.WeeklySpend("공용", 42_000L),
+            ),
+        )
+        assertEquals("지난 7일 개인 87,500 · 공용 42,000", lines.summary)
+        assertEquals(
+            "지난 7일 돌아보기\n\n" +
+                "개인 87,500원 · 하루 평균 12,500\n" +
+                "공용 42,000원 · 하루 평균 6,000",
+            lines.detail,
+        )
+    }
+
+    @Test
+    fun `곳간이 하나면 주간 요약에 이름을 붙이지 않는다`() {
+        val lines = StatusText.weekly(listOf(StatusText.WeeklySpend("개인", 70_000L)))
+        assertEquals("지난 7일 70,000원", lines.summary)
+    }
+
+    @Test
+    fun `주간에 기록이 없으면 없다고 말한다`() {
+        val lines = StatusText.weekly(emptyList())
+        assertEquals("지난 7일 기록이 없어요", lines.summary)
+        assertEquals(lines.summary, lines.detail)
+    }
+
+    @Test
     fun `곳간이 없으면 현황 대신 안내가 나온다`() {
         assertEquals(
             "DB를 연결하고 예산을 정하면 오늘 쓸 수 있는 돈이 여기에 표시됩니다.",

@@ -107,6 +107,29 @@ object Ledger {
         return total
     }
 
+    /**
+     * 지난 [days] 일(오늘 포함) 동안 곳간별로 쓴 합계. 주 1회 돌아보기 알림이 읽는다.
+     *
+     * 로컬 캐시만 읽는다 — 네트워크 없이 «내가 적은 것»을 돌아보는 것이라 그걸로 충분하다.
+     * 연결된 곳간만 담고, 예산이 없어도(기록만 하는 곳간) 포함한다.
+     */
+    fun weeklyTotals(
+        context: Context,
+        today: LocalDate = LocalDate.now(),
+        days: Int = 7,
+    ): List<StatusText.WeeklySpend> {
+        val settings = SettingsStore.load(context)
+        return settings.linkedPurses.map { purse ->
+            var total: Long = 0L
+            var i = 0
+            while (i < days) {
+                total += SpendingCache.spentOn(context, purse, today.minusDays(i.toLong()))
+                i++
+            }
+            StatusText.WeeklySpend(label = settings.labelOf(purse), total = total)
+        }
+    }
+
     /** Notion 쓰기가 성공한 뒤 로컬 사본에 반영한다. 실패한 기록을 더하면 숫자가 거짓말을 한다. */
     fun record(context: Context, purse: Purse, day: LocalDate, amount: Long) {
         SpendingCache.add(context, purse, day, amount)

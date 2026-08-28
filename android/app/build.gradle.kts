@@ -40,6 +40,8 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    // 주 1회 돌아보기 알림 예약. 재부팅에도 예약이 살아남는다.
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
 
     // 홈 화면만 Compose 다. 설정·빠른 입력은 XML 그대로 둔다 —
     // 잘 도는 화면을 다시 만들 이유가 없다.

@@ -60,7 +60,11 @@ class HomeActivity : ComponentActivity() {
      * 앱을 열 때마다 지금 버전으로 갈아 끼운다.
      */
     private fun republishNotification() {
-        if (NotificationState.isOn(this)) NotificationHelper.show(this)
+        if (NotificationState.isOn(this)) {
+            NotificationHelper.show(this)
+            // 주 1회 돌아보기 예약을 확인·갱신한다. 예약이 사라졌어도 앱을 열면 되살아난다.
+            WeeklyReviewScheduler.schedule(this)
+        }
     }
 
     /**
