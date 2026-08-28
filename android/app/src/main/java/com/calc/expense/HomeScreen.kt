@@ -54,6 +54,7 @@ fun HomeScreen(
     snapshots: List<LedgerSnapshot>,
     notice: String?,
     onOpenSettings: () -> Unit,
+    onOpenHistory: (Purse) -> Unit,
     onRecord: () -> Unit,
 ) {
     Column(
@@ -90,7 +91,7 @@ fun HomeScreen(
             EmptyCard()
         } else {
             for (snapshot in snapshots) {
-                PurseCard(snapshot, showLabel = snapshots.size > 1)
+                PurseCard(snapshot, showLabel = snapshots.size > 1, onClick = { onOpenHistory(snapshot.purse) })
                 Spacer(Modifier.height(12.dp))
             }
         }
@@ -113,9 +114,9 @@ fun HomeScreen(
     }
 }
 
-/** 곳간 하나. 큰 숫자 하나와 그 숫자가 어떻게 나왔는지. */
+/** 곳간 하나. 큰 숫자 하나와 그 숫자가 어떻게 나왔는지. 카드를 누르면 그 곳간 내역이 열린다. */
 @Composable
-private fun PurseCard(snapshot: LedgerSnapshot, showLabel: Boolean) {
+private fun PurseCard(snapshot: LedgerSnapshot, showLabel: Boolean, onClick: () -> Unit) {
     val tone: Tone = if (snapshot.isOver) Tone.OVER else Tone.REMAINING
     val caption: String = when {
         snapshot.isOver && showLabel -> "${snapshot.label} · 오늘 초과"
@@ -126,8 +127,28 @@ private fun PurseCard(snapshot: LedgerSnapshot, showLabel: Boolean) {
     // 넘긴 날은 음수 대신 초과액으로 말한다. 마이너스 부호는 읽는 데 한 박자 더 걸린다.
     val amount: Long = if (snapshot.isOver) -snapshot.available else snapshot.available
 
-    CardBox {
-        Text(text = caption, color = HomePalette.Ink2, fontSize = 13.sp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(HomePalette.Card)
+            .clickable(onClick = onClick)
+            .padding(20.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(text = caption, color = HomePalette.Ink2, fontSize = 13.sp, modifier = Modifier.weight(1f))
+            // 카드를 눌러 내역으로 갈 수 있다는 표시.
+            Text(
+                text = "내역 ›",
+                color = HomePalette.Accent,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(HomePalette.Soft)
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+            )
+        }
         Spacer(Modifier.height(2.dp))
         Row(verticalAlignment = Alignment.Bottom) {
             Text(

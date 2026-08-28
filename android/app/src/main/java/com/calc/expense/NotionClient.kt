@@ -31,6 +31,12 @@ class NotionClient(private val target: NotionTarget) {
         data class Err(val message: String) : CategoryOutcome()
     }
 
+    /** 한 달치 행 목록 조회 결과. 내역 화면이 쓴다. */
+    sealed class RowsOutcome {
+        data class Ok(val rows: List<ExpenseRow>) : RowsOutcome()
+        data class Err(val message: String) : RowsOutcome()
+    }
+
     companion object {
         private const val BASE = "https://api.notion.com"
         private const val NOTION_VERSION = "2022-06-28"
@@ -171,6 +177,43 @@ class NotionClient(private val target: NotionTarget) {
             page++
         }
         return CategoryOutcome.Ok(totals)
+    }
+
+    /**
+     * 한 달치 지출을 행 목록으로 가져온다. 내역 화면이 쓴다.
+     *
+     * [queryMonth] 와 같은 필터(날짜 범위 + 곳간)를 쓰되 합계 대신 행을 담는다. 곳간을 나눠
+     * 쓰면 그 곳간 행만, DB 가 따로면 그 DB 전체. 반드시 백그라운드 스레드에서 부른다.
+     */
+    fun queryMonthRows(month: YearMonth): RowsOutcome {
+        val first: LocalDate = month.atDay(1)
+        val last: LocalDate = month.atEndOfMonth()
+
+        val conditions = JSONArray()
+            .put(dateBound(first.toString(), "on_or_after"))
+            .put(dateBound(last.toString(), "on_or_before"))
+        if (target.splitsByPurse) conditions.put(purseBound())
+
+        val filter = JSONObject().put("and", conditions)
+
+        val rows = ArrayList<ExpenseRow>()
+        var cursor: String? = null
+        var page = 0
+
+        while (page < MAX_PAGES) {
+            val body = JSONObject().put("filter", filter).put("page_size", PAGE_SIZE)
+            if (cursor != null) body.put("start_cursor", cursor)
+
+            val r = send("POST", "/v1/databases/${target.databaseId}/query", body)
+            if (r is Raw.Err) return RowsOutcome.Err(r.message)
+
+            val json = (r as Raw.Ok).json
+            NotionRows.readRows(json, target.nameProp, target.priceProp, target.dateProp, target.categoryProp, rows)
+
+            cursor = NotionRows.nextCursor(json) ?: return RowsOutcome.Ok(rows)
+            page++
+        }
+        return RowsOutcome.Ok(rows)
     }
 
     private fun dateBound(iso: String, condition: String): JSONObject =

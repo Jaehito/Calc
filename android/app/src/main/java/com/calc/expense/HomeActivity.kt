@@ -70,6 +70,7 @@ class HomeActivity : ComponentActivity() {
                             snapshots = snapshots,
                             notice = notice,
                             onOpenSettings = { startActivity(Intent(this@HomeActivity, MainActivity::class.java)) },
+                            onOpenHistory = { purse -> openHistory(purse) },
                             onRecord = { startActivity(Intent(this@HomeActivity, QuickInputActivity::class.java)) },
                         )
                     }
@@ -126,6 +127,14 @@ class HomeActivity : ComponentActivity() {
         challengeReg?.cancel()
         io.shutdown()
         super.onDestroy()
+    }
+
+    /** 곳간 카드를 누르면 그 곳간의 내역 화면을 연다. */
+    private fun openHistory(purse: Purse) {
+        startActivity(
+            Intent(this, PurseHistoryActivity::class.java)
+                .putExtra(PurseHistoryActivity.EXTRA_PURSE, purse.key),
+        )
     }
 
     /** 통계 탭으로 옮기며 데이터를 채운다. 기간 비교는 즉시, 카테고리는 노션에서 뒤따라. */

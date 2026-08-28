@@ -50,6 +50,50 @@ object NotionRows {
         }
     }
 
+    /**
+     * 응답 한 페이지의 행들을 [into] 에 [ExpenseRow] 로 담는다(내역 화면용).
+     * 날짜·금액이 없는 행은 건너뛴다 — 합계 누적과 같은 규칙이다.
+     */
+    fun readRows(
+        page: JSONObject,
+        nameProp: String,
+        priceProp: String,
+        dateProp: String,
+        categoryProp: String,
+        into: MutableList<ExpenseRow>,
+    ) {
+        val results = page.optJSONArray("results") ?: return
+
+        for (i in 0 until results.length()) {
+            val obj = results.optJSONObject(i) ?: continue
+            val props = obj.optJSONObject("properties") ?: continue
+
+            val day = readDate(props, dateProp) ?: continue
+            val amount = readNumber(props, priceProp) ?: continue
+            val category: String = if (categoryProp.isBlank()) "" else readSelect(props, categoryProp).orEmpty()
+
+            into.add(
+                ExpenseRow(
+                    id = obj.optString("id", ""),
+                    name = readTitle(props, nameProp),
+                    amount = amount,
+                    date = day,
+                    category = category,
+                ),
+            )
+        }
+    }
+
+    /** title 속성의 plain_text 를 이어 붙인다. 비어 있으면 빈 문자열. */
+    private fun readTitle(props: JSONObject, prop: String): String {
+        val arr = props.optJSONObject(prop)?.optJSONArray("title") ?: return ""
+        val sb = StringBuilder()
+        for (i in 0 until arr.length()) {
+            sb.append(arr.optJSONObject(i)?.optString("plain_text").orEmpty())
+        }
+        return sb.toString()
+    }
+
     /** select 속성의 고른 값 이름. 없으면 null. */
     private fun readSelect(props: JSONObject, prop: String): String? {
         val name = props.optJSONObject(prop)

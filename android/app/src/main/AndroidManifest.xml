@@ -23,6 +23,13 @@
             </intent-filter>
         </activity>
 
+        <!-- 곳간 내역. 홈의 곳간 카드에서만 들어온다. -->
+        <activity
+            android:name=".PurseHistoryActivity"
+            android:exported="false"
+            android:label="내역"
+            android:parentActivityName=".HomeActivity" />
+
         <!-- 설정. 홈의 «설정» 에서만 들어온다. -->
         <activity
             android:name=".MainActivity"
