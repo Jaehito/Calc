@@ -107,9 +107,9 @@ private fun CompareCard(thisLabel: String, thisAmount: Long, prevLabel: String, 
         )
         Spacer(Modifier.height(6.dp))
         val line: String = when {
-            diff < 0L -> "$prevLabel보다 ${StatusText.won(-diff)} 덜 썼어요"
-            diff > 0L -> "$prevLabel보다 ${StatusText.won(diff)} 더 썼어요"
-            else -> "$prevLabel과 똑같이 썼어요"
+            diff < 0L -> "${prevLabel}보다 ${StatusText.won(-diff)} 덜 썼어요"
+            diff > 0L -> "${prevLabel}보다 ${StatusText.won(diff)} 더 썼어요"
+            else -> "${prevLabel}과 똑같이 썼어요"
         }
         val color = when {
             diff < 0L -> HomePalette.Accent
