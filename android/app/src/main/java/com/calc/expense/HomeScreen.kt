@@ -57,55 +57,65 @@ fun HomeScreen(
     onOpenHistory: (Purse) -> Unit,
     onRecord: () -> Unit,
 ) {
+    // 위(카드·내역)는 스크롤하고, 기록하기 버튼은 아래에 고정한다.
+    // 곳간 카드가 둘이면 스크롤이 길어지는데, 버튼이 스크롤 안에 있으면 하단 탭에 가려진다.
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(HomePalette.Ground)
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 24.dp),
+            .background(HomePalette.Ground),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = today.format(DateFormat),
-                color = HomePalette.Ink2,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.weight(1f),
-            )
-            Text(
-                text = "설정",
-                color = HomePalette.Accent,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(999.dp))
-                    .background(HomePalette.Soft)
-                    .clickable(onClick = onOpenSettings)
-                    .padding(horizontal = 14.dp, vertical = 7.dp),
-            )
-        }
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 4.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = today.format(DateFormat),
+                    color = HomePalette.Ink2,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = "설정",
+                    color = HomePalette.Accent,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(HomePalette.Soft)
+                        .clickable(onClick = onOpenSettings)
+                        .padding(horizontal = 14.dp, vertical = 7.dp),
+                )
+            }
 
-        Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(16.dp))
 
-        if (snapshots.isEmpty()) {
-            EmptyCard()
-        } else {
-            for (snapshot in snapshots) {
-                PurseCard(snapshot, showLabel = snapshots.size > 1, onClick = { onOpenHistory(snapshot.purse) })
-                Spacer(Modifier.height(12.dp))
+            if (snapshots.isEmpty()) {
+                EmptyCard()
+            } else {
+                for (snapshot in snapshots) {
+                    PurseCard(snapshot, showLabel = snapshots.size > 1, onClick = { onOpenHistory(snapshot.purse) })
+                    Spacer(Modifier.height(12.dp))
+                }
+            }
+
+            if (notice != null) {
+                Spacer(Modifier.height(4.dp))
+                Text(text = notice, color = HomePalette.Muted, fontSize = 12.sp)
             }
         }
 
-        if (notice != null) {
-            Spacer(Modifier.height(4.dp))
-            Text(text = notice, color = HomePalette.Muted, fontSize = 12.sp)
-        }
-
-        Spacer(Modifier.height(20.dp))
-
+        // 하단 고정 — 늘 보인다.
         Button(
             onClick = onRecord,
-            modifier = Modifier.fillMaxWidth().height(52.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 16.dp)
+                .height(52.dp),
             shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(containerColor = HomePalette.AccentBright),
         ) {
