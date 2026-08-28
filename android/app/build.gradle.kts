@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -63,6 +64,12 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
     debugImplementation("androidx.compose.ui:ui-tooling")
+
+    // 챌린지 탭 — 익명 인증 + Firestore. BOM 이 버전을 함께 맞춘다.
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
+
     testImplementation("junit:junit:4.13.2")
     // 유닛 테스트의 android.jar 은 org.json 이 던지도록 스텁돼 있다.
     // NotionRows / MonthTotals 를 테스트하려면 실제 구현이 필요하다.

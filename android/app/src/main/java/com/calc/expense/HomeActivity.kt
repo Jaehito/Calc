@@ -27,7 +27,7 @@ import java.time.YearMonth
 import java.util.concurrent.Executors
 
 /**
- * 앱을 열면 나오는 화면. 하단 탭으로 홈·통계를 오간다.
+ * 앱을 열면 나오는 화면. 하단 탭으로 홈·통계·챌린지를 오간다.
  *
  * 설정과 빠른 입력은 XML 그대로다 — 잘 도는 화면을 다시 만들 이유가 없다.
  * 여기만 Compose 인 이유는 이 화면들이 새로 만드는 화면이기 때문이다.
@@ -44,6 +44,10 @@ class HomeActivity : ComponentActivity() {
     /** 카테고리 막대가 보는 달. 0 = 이번 달, 1 = 지난 달. */
     private var categoryMonthBack: Int by mutableStateOf(0)
 
+    private val challenge: ChallengeRepository by lazy { FirestoreChallengeRepository(this) }
+    private var challengeUi: ChallengeUi by mutableStateOf(ChallengeUi())
+    private var challengeReg: Cancellable? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -53,6 +57,13 @@ class HomeActivity : ComponentActivity() {
                         1 -> StatsScreen(
                             data = stats ?: StatsRepository.localOnly(this@HomeActivity),
                             onToggleCategoryMonth = { toggleCategoryMonth() },
+                        )
+                        2 -> ChallengeScreen(
+                            ui = challengeUi,
+                            savedName = ChallengeStore.myName(this@HomeActivity),
+                            onCreate = { roomName, myName -> createChallenge(roomName, myName) },
+                            onJoin = { code, myName -> joinChallenge(code, myName) },
+                            onLeave = { leaveChallenge() },
                         )
                         else -> HomeScreen(
                             today = LocalDate.now(),
@@ -84,6 +95,13 @@ class HomeActivity : ComponentActivity() {
                 label = { Text("통계") },
                 colors = navColors(),
             )
+            NavigationBarItem(
+                selected = tab == 2,
+                onClick = { selectChallenge() },
+                icon = { Icon(painterResource(R.drawable.ic_tab_challenge), contentDescription = "챌린지", modifier = Modifier.size(23.dp)) },
+                label = { Text("챌린지") },
+                colors = navColors(),
+            )
         }
     }
 
@@ -101,9 +119,11 @@ class HomeActivity : ComponentActivity() {
         refresh()
         republishNotification()
         resyncInBackground()
+        if (tab == 2) loadChallenge()
     }
 
     override fun onDestroy() {
+        challengeReg?.cancel()
         io.shutdown()
         super.onDestroy()
     }
@@ -112,6 +132,12 @@ class HomeActivity : ComponentActivity() {
     private fun selectStats() {
         tab = 1
         loadStats()
+    }
+
+    /** 챌린지 탭으로 옮기며 참가 상태를 확인·구독한다. */
+    private fun selectChallenge() {
+        tab = 2
+        loadChallenge()
     }
 
     private fun toggleCategoryMonth() {
@@ -146,6 +172,99 @@ class HomeActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    /**
+     * 참가 중이면 이번 주 성적을 올리고 순위를 실시간 구독한다. 참가 전이면 빈 화면을 보인다.
+     *
+     * 순위 계산은 [ChallengeStandings] 가 한다 — 이 화면은 방에서 받은 참가자 목록을 세우기만 한다.
+     */
+    private fun loadChallenge() {
+        val challengeId: String? = challenge.joinedChallengeId
+        if (challengeId == null) {
+            challengeReg?.cancel()
+            challengeReg = null
+            challengeUi = ChallengeUi(joined = false)
+            return
+        }
+
+        val today: LocalDate = LocalDate.now()
+        val weekKey: String = ChallengeWeek.key(today)
+        challengeUi = ChallengeUi(joined = false, loading = true)
+
+        val app = applicationContext
+        challenge.ensureSignedIn { uid ->
+            if (isFinishing || isDestroyed) return@ensureSignedIn
+            if (uid == null) {
+                challengeUi = ChallengeUi(joined = false, error = "로그인에 실패했어요. 네트워크를 확인해 주세요.")
+                return@ensureSignedIn
+            }
+
+            // 내 이번 주 성적을 올린다 — 캐시 읽기는 백그라운드에서.
+            val myName: String = ChallengeStore.myName(app).ifBlank { "나" }
+            io.execute {
+                val (spent: Long, budget: Long) = ChallengeWeek.myWeek(app, today)
+                challenge.pushMyWeek(challengeId, weekKey, myName, spent, budget)
+            }
+
+            challengeReg?.cancel()
+            challengeReg = challenge.observe(challengeId, weekKey) { result ->
+                runOnUiThread {
+                    if (isFinishing || isDestroyed) return@runOnUiThread
+                    result.onSuccess { room ->
+                        challengeUi = ChallengeUi(
+                            joined = true,
+                            name = room.name,
+                            code = room.code,
+                            standings = ChallengeStandings.rank(room.members),
+                            myUid = uid,
+                            weekLabel = ChallengeWeek.label(today),
+                            daysLeftText = daysLeftText(today),
+                            error = null,
+                        )
+                    }
+                    result.onFailure {
+                        challengeUi = ChallengeUi(joined = false, error = it.message ?: "불러오지 못했어요.")
+                    }
+                }
+            }
+        }
+    }
+
+    private fun createChallenge(roomName: String, myName: String) {
+        ChallengeStore.setMyName(this, myName)
+        challengeUi = ChallengeUi(loading = true)
+        challenge.createChallenge(roomName.trim(), myName.trim()) { result ->
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                result.onSuccess { loadChallenge() }
+                result.onFailure { challengeUi = ChallengeUi(joined = false, error = it.message ?: "방을 만들지 못했어요.") }
+            }
+        }
+    }
+
+    private fun joinChallenge(code: String, myName: String) {
+        ChallengeStore.setMyName(this, myName)
+        challengeUi = ChallengeUi(loading = true)
+        challenge.joinChallenge(code, myName.trim()) { result ->
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                result.onSuccess { loadChallenge() }
+                result.onFailure { challengeUi = ChallengeUi(joined = false, error = it.message ?: "참가하지 못했어요.") }
+            }
+        }
+    }
+
+    private fun leaveChallenge() {
+        challenge.leave()
+        challengeReg?.cancel()
+        challengeReg = null
+        challengeUi = ChallengeUi(joined = false)
+    }
+
+    private fun daysLeftText(today: LocalDate): String {
+        val left: Int = ChallengeWeek.daysLeft(today)
+        return if (left <= 0) "오늘 마지막 날" else "${left}일 남음"
     }
 
     /** 로컬 캐시만으로 즉시 그린다. Notion 왕복은 그 뒤에 따라온다. */

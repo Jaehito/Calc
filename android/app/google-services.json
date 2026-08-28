@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "538659144863",
+    "project_id": "expensecalc-ee50c",
+    "storage_bucket": "expensecalc-ee50c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:538659144863:android:2b5e5cc94e59a1c4e44eaa",
+        "android_client_info": {
+          "package_name": "com.calc.expense"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA59cLFKEwtZnzG-umFjMdm07PrGRDu-iA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
