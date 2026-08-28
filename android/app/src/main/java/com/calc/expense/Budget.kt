@@ -39,10 +39,25 @@ object Budget {
     fun baseRate(monthlyBudget: Long, cycle: BudgetCycle): Long =
         if (monthlyBudget <= 0L || cycle.length <= 0) 0L else monthlyBudget / cycle.length
 
+    /**
+     * 시작·예산 변경 시점의 하루치. 남은 예산을 **오늘 포함 남은 날**로 나눈다.
+     *
+     * 주기 중간에 앱을 깔면 monthly/전체길이 는 "첫날부터 아껴 온 것처럼" 하루치를 낮게 잡는다.
+     * 실제로는 남은 날 동안 예산이 통째로 남아 있으므로 남은 날로 나눈다 — 그래야 오늘부터
+     * 정직한 하루치가 된다. 월급날(주기 시작)에는 남은 날 = 전체 길이라 [baseRate] 와 같아진다.
+     *
+     * 과거 지출은 소급하지 않는다(캐시에 없다). 이미 쌓인 곳간이 그동안의 성적을 들고 있으므로
+     * 여기서는 남은 예산을 전액으로 본다.
+     */
+    fun rateFromDay(monthlyBudget: Long, today: LocalDate, cycle: BudgetCycle): Long {
+        val daysLeft: Int = cycle.daysLeftFrom(today)
+        return if (monthlyBudget <= 0L || daysLeft <= 0) 0L else monthlyBudget / daysLeft
+    }
+
     /** 처음 시작하는 상태. 과거 지출을 소급하지 않는다 — 첫날부터 마이너스로 시작하면 안 된다. */
     fun start(monthlyBudget: Long, today: LocalDate, payDay: Int): BudgetState = BudgetState(
         monthlyBudget = monthlyBudget,
-        dailyRate = baseRate(monthlyBudget, Payday.cycleOf(today, payDay)),
+        dailyRate = rateFromDay(monthlyBudget, today, Payday.cycleOf(today, payDay)),
         vault = 0L,
         settledThrough = today.minusDays(1),
     )

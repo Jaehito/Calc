@@ -28,17 +28,33 @@ class BudgetTest {
     }
 
     @Test
-    fun `시작할 때는 곳간이 비어 있고 과거를 소급하지 않는다`() {
-        val s = Budget.start(budget, LocalDate.of(2026, 8, 27), monthly)
+    fun `시작할 때는 곳간이 비어 있고 하루치는 남은 날 기준이다`() {
+        // 8/12 에 시작 → 남은 날은 8/12~8/31 = 20일. 930,000 / 20 = 46,500.
+        // 월예산을 그 달 전체(31)로 나누면 첫날부터 아껴 온 것처럼 하루치가 짜진다.
+        // 실제로는 남은 날 동안 예산이 통째로 남아 있으므로 남은 날로 나눈다.
+        val s = Budget.start(budget, LocalDate.of(2026, 8, 12), monthly)
         assertEquals(0L, s.vault)
+        assertEquals(46_500L, s.dailyRate)
+        assertEquals(LocalDate.of(2026, 8, 11), s.settledThrough)
+    }
+
+    @Test
+    fun `월급날에 시작하면 하루치는 월 예산을 전체 일수로 나눈 값이다`() {
+        // 남은 날 = 전체 길이라 baseRate 와 같아진다
+        val s = Budget.start(budget, LocalDate.of(2026, 8, 1), monthly)
         assertEquals(30_000L, s.dailyRate)
-        assertEquals(LocalDate.of(2026, 8, 26), s.settledThrough)
     }
 
     @Test
     fun `아낀 만큼 곳간에 쌓이고 오늘 쓸 수 있는 돈이 늘어난다`() {
-        // 8/25 에 시작 → 8/25 20,000 / 8/26 15,000 을 쓰고 8/27 을 맞는다
-        val start = Budget.start(budget, LocalDate.of(2026, 8, 25), monthly)
+        // 하루치 30,000 이 정해진 상태에서 8/25 20,000 / 8/26 15,000 을 쓰고 8/27 을 맞는다.
+        // (곳간 누적 규칙 자체를 보는 테스트라 하루치를 고정해 둔다)
+        val start = BudgetState(
+            monthlyBudget = budget,
+            dailyRate = 30_000L,
+            vault = 0L,
+            settledThrough = LocalDate.of(2026, 8, 24),
+        )
         val settled = Budget.settle(
             start,
             LocalDate.of(2026, 8, 27),
@@ -60,7 +76,12 @@ class BudgetTest {
 
     @Test
     fun `초과분은 곳간이 먼저 흡수한다`() {
-        val start = Budget.start(budget, LocalDate.of(2026, 8, 25), monthly)
+        val start = BudgetState(
+            monthlyBudget = budget,
+            dailyRate = 30_000L,
+            vault = 0L,
+            settledThrough = LocalDate.of(2026, 8, 24),
+        )
         val settled = Budget.settle(
             start,
             LocalDate.of(2026, 8, 27),
@@ -136,7 +157,12 @@ class BudgetTest {
 
     @Test
     fun `며칠 앱을 안 열어도 한 번에 정산된다`() {
-        val start = Budget.start(budget, LocalDate.of(2026, 8, 20), monthly)
+        val start = BudgetState(
+            monthlyBudget = budget,
+            dailyRate = 30_000L,
+            vault = 0L,
+            settledThrough = LocalDate.of(2026, 8, 19),
+        )
         val settled = Budget.settle(
             start,
             LocalDate.of(2026, 8, 25),
@@ -187,6 +213,36 @@ class BudgetTest {
 
         assertEquals(0L, settled.vault)
         assertEquals(31_000L, settled.dailyRate) // 9월 하루치로 온전히 리셋
+    }
+
+    @Test
+    fun `중간에 시작해도 아낀 만큼 곳간이 매일 쌓인다`() {
+        // 8/22 시작(남은 10일) → 하루치 93,000. 이 위에 곳간이 매일 쌓이는지 본다.
+        val start = Budget.start(budget, LocalDate.of(2026, 8, 22), monthly)
+        assertEquals(93_000L, start.dailyRate)
+
+        // 8/22 에 3,000 만 쓰고 8/23 을 맞으면 아낀 90,000 이 곳간에 들어간다
+        val next = Budget.settle(
+            start, LocalDate.of(2026, 8, 23), monthly,
+            spent(LocalDate.of(2026, 8, 22) to 3_000L),
+        )
+        assertEquals(90_000L, next.vault)
+        assertEquals(93_000L, next.dailyRate)
+        // 오늘(8/23) 아직 안 썼으면 하루치 + 곳간이 다 보인다 — 절약이 매일 눈에 보인다
+        assertEquals(183_000L, Budget.available(next, 0L))
+    }
+
+    @Test
+    fun `중간에 시작해 부풀었던 하루치는 월급날에 전체 기준으로 리셋된다`() {
+        // 8/29 시작(남은 3일) → 하루치 310,000 으로 크게 잡히지만
+        val start = Budget.start(budget, LocalDate.of(2026, 8, 29), monthly)
+        assertEquals(310_000L, start.dailyRate)
+
+        // 9/1 월급날을 넘기면 9월 전체(30일) 기준 31,000 으로 돌아온다
+        val reset = Budget.settle(start, LocalDate.of(2026, 9, 1), monthly, spent())
+        assertEquals(31_000L, reset.dailyRate)
+        // 곳간도 새 하루치의 5일치로 상한이 걸린다
+        assertEquals(31_000L * Budget.VAULT_CAP_DAYS, reset.vault.coerceAtMost(31_000L * Budget.VAULT_CAP_DAYS))
     }
 
     @Test

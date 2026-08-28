@@ -22,11 +22,12 @@ class BudgetReckonTest {
 
     @Test
     fun `저장된 앵커가 없으면 오늘부터 시작한다`() {
-        val r = Budget.reckon(null, budget, LocalDate.of(2026, 8, 27), monthly, spent())
+        // 8/12 시작 → 남은 20일 기준 하루치 930,000 / 20 = 46,500
+        val r = Budget.reckon(null, budget, LocalDate.of(2026, 8, 12), monthly, spent())
 
         assertEquals(0L, r.anchor.vault)
-        assertEquals(LocalDate.of(2026, 8, 26), r.anchor.settledThrough)
-        assertEquals(30_000L, r.today.dailyRate)
+        assertEquals(LocalDate.of(2026, 8, 11), r.anchor.settledThrough)
+        assertEquals(46_500L, r.today.dailyRate)
         assertEquals(0L, r.today.vault)
     }
 
