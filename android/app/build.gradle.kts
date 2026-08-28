@@ -8,6 +8,17 @@ android {
     namespace = "com.calc.expense"
     compileSdk = 35
 
+    // 고정 debug 키스토어. CI 러너마다 새 키를 만들면 서명이 바뀌어 «다른 앱»이 되고,
+    // 안드로이드가 재설치를 요구해 설정이 매번 초기화된다. 커밋된 키로 서명해 유지한다.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     defaultConfig {
         applicationId = "com.calc.expense"
         minSdk = 26

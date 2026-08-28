@@ -46,6 +46,34 @@ class MainActivity : AppCompatActivity() {
         }
         ui.buttonReminderToggle.setOnClickListener { toggleReminder() }
         ui.buttonReminderAccess.setOnClickListener { openNotificationAccessSettings() }
+        ui.buttonExportSettings.setOnClickListener { exportSettings() }
+        ui.buttonImportSettings.setOnClickListener { importSettings() }
+    }
+
+    /** 지금 설정을 코드로 만들어 클립보드에 올린다. 폼에 아직 저장 안 한 값까지 그대로 담는다. */
+    private fun exportSettings() {
+        val code: String = SettingsCodec.encode(currentForm())
+        val clipboard = getSystemService(android.content.ClipboardManager::class.java)
+        clipboard.setPrimaryClip(android.content.ClipData.newPlainText("expense-settings", code))
+        setStatus("설정 코드를 클립보드에 복사했습니다. 메모 등에 붙여 보관하세요. 코드에는 토큰이 들어 있으니 남에게 주지 마세요.")
+    }
+
+    /** 클립보드의 코드를 읽어 설정을 복원한다. 코드가 아니면 그대로 두고 알린다. */
+    private fun importSettings() {
+        val clipboard = getSystemService(android.content.ClipboardManager::class.java)
+        val clip: CharSequence? = clipboard.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.text
+        if (clip.isNullOrBlank()) {
+            setStatus("클립보드가 비어 있습니다. 먼저 설정 코드를 복사해 주세요.", isError = true)
+            return
+        }
+        val restored: Settings? = SettingsCodec.decode(clip.toString())
+        if (restored == null) {
+            setStatus("클립보드 내용이 설정 코드가 아닙니다. «내보내기»로 만든 코드를 복사해 주세요.", isError = true)
+            return
+        }
+        SettingsStore.save(this, restored)
+        loadIntoForm()
+        setStatus("설정을 불러왔습니다. 위 값을 확인하고 «저장하고 연결 확인»을 눌러 주세요.")
     }
 
     override fun onResume() {

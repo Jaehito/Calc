@@ -298,6 +298,38 @@
             android:layout_marginTop="20dp"
             android:text="저장하고 연결 확인" />
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonExportSettings"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="설정 내보내기" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonImportSettings"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:text="설정 불러오기" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="«내보내기»는 지금 설정을 코드로 만들어 클립보드에 복사합니다. 그 코드를 메모에 붙여 두면, 새 기기·새 설치에서 «불러오기»로 한 번에 복원됩니다. 코드에는 토큰이 들어 있으니 남에게 주지 마세요."
+            android:textColor="#666666"
+            android:textSize="12sp" />
+
         <TextView
             android:id="@+id/textStorageNotice"
             android:layout_width="match_parent"
