@@ -54,6 +54,20 @@
             android:name=".ReplyReceiver"
             android:exported="false" />
 
+        <!--
+            결제 알림을 읽어 «적었어?» 리마인더를 예약하는 서비스.
+            사용자가 설정에서 «알림 접근»을 직접 허용해야만 동작한다. 금액은 저장하지 않는다.
+        -->
+        <service
+            android:name=".PaymentNotificationListener"
+            android:exported="false"
+            android:label="지출 기록 리마인더"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
         <receiver
             android:name=".BootReceiver"
             android:exported="true">

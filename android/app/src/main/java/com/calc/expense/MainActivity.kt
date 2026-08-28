@@ -44,6 +44,8 @@ class MainActivity : AppCompatActivity() {
         ui.buttonOpenInput.setOnClickListener {
             startActivity(Intent(this, QuickInputActivity::class.java))
         }
+        ui.buttonReminderToggle.setOnClickListener { toggleReminder() }
+        ui.buttonReminderAccess.setOnClickListener { openNotificationAccessSettings() }
     }
 
     override fun onResume() {
@@ -51,7 +53,63 @@ class MainActivity : AppCompatActivity() {
         refreshStorageNotice()
         republishNotification()
         refreshLedger()
+        refreshReminderButton()
         resyncInBackground()
+    }
+
+    /** «알림 접근» 권한이 이 앱에 허용돼 있는지. 리스너 서비스는 이게 있어야 동작한다. */
+    private fun hasNotificationAccess(): Boolean =
+        androidx.core.app.NotificationManagerCompat.getEnabledListenerPackages(this)
+            .contains(packageName)
+
+    private fun refreshReminderButton() {
+        ui.buttonReminderToggle.text =
+            if (ReminderState.isEnabled(this)) "결제 리마인더 끄기" else "결제 리마인더 켜기"
+    }
+
+    /**
+     * 결제 리마인더를 켜고 끈다.
+     *
+     * 켤 때 «알림 접근» 권한이 없으면 먼저 그 설정으로 보낸다 — 권한 없이는 결제 알림을
+     * 읽을 수 없다. 상시 알림 자체가 꺼져 있으면 그것부터 켜야 한다고 알린다.
+     */
+    private fun toggleReminder() {
+        if (ReminderState.isEnabled(this)) {
+            ReminderState.setEnabled(this, false)
+            ReminderScheduler.cancel(this)
+            refreshReminderButton()
+            setStatus("결제 리마인더를 껐습니다.")
+            return
+        }
+
+        if (!NotificationState.isOn(this)) {
+            setStatus("먼저 위에서 «알림 켜기» 를 눌러 주세요. 리마인더도 그 알림을 씁니다.", isError = true)
+            return
+        }
+        if (!hasNotificationAccess()) {
+            setStatus(
+                "결제 알림을 읽으려면 «알림 접근» 권한이 필요합니다. 아래 버튼으로 설정을 열어 " +
+                    "«지출 기록 리마인더» 를 켠 뒤, 다시 «결제 리마인더 켜기» 를 눌러 주세요."
+            )
+            openNotificationAccessSettings()
+            return
+        }
+
+        ReminderState.setEnabled(this, true)
+        refreshReminderButton()
+        setStatus(
+            "결제 리마인더를 켰습니다.\n\n결제 알림이 온 뒤 10분 안에 기록이 없으면 한 번 알려줍니다. " +
+                "금액은 읽지 않고, 밤 10시~아침 8시는 무음, 하루 3번까지만."
+        )
+    }
+
+    private fun openNotificationAccessSettings() {
+        val intent = Intent(AndroidSettings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+        try {
+            startActivity(intent)
+        } catch (_: Exception) {
+            setStatus("이 기기에서 알림 접근 설정을 열 수 없습니다.", isError = true)
+        }
     }
 
     /**

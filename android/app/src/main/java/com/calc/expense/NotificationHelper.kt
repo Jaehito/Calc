@@ -26,11 +26,16 @@ object NotificationHelper {
     private const val WEEKLY_CHANNEL_ID = "weekly_review"
     private const val WEEKLY_NOTIF_ID = 1002
 
+    /** 결제 뒤 «적었어?» 리마인더. 또 다른 별도 채널·별도 알림. */
+    private const val REMINDER_CHANNEL_ID = "payment_reminder"
+    private const val REMINDER_NOTIF_ID = 1003
+
     private const val IDLE_TEXT = "눌러서 기록하세요 · 예: 커피 4500"
 
     private const val REQUEST_OPEN_INPUT = 1
     private const val REQUEST_DISMISSED = 2
     private const val REQUEST_OPEN_HOME = 3
+    private const val REQUEST_OPEN_INPUT_REMINDER = 4
 
     fun ensureChannel(context: Context) {
         val channel = NotificationChannel(
@@ -140,6 +145,53 @@ object NotificationHelper {
             NotificationManager.IMPORTANCE_DEFAULT,
         ).apply {
             description = "주 1회 지난 7일 지출을 돌아보는 알림"
+            setShowBadge(true)
+        }
+        context.getSystemService(NotificationManager::class.java)
+            .createNotificationChannel(channel)
+    }
+
+    /**
+     * 결제 뒤 기록이 없을 때 한 번 띄우는 «적었어?» 리마인더.
+     *
+     * 금액도 개수도 말하지 않는다 — «방금 쓴 거 있으면 적어 둬요» 정도의 가벼운 찌름이다.
+     * 누르면 바로 입력 화면이 열린다. 스와이프로 넘기면 그만이고 되살리지 않는다.
+     */
+    fun showReminder(context: Context) {
+        ensureReminderChannel(context)
+
+        val openInput = PendingIntent.getActivity(
+            context,
+            REQUEST_OPEN_INPUT_REMINDER,
+            Intent(context, QuickInputActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        val notification = NotificationCompat.Builder(context, REMINDER_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_wallet)
+            .setContentTitle("방금 쓴 거 있어요?")
+            .setContentText("있으면 눌러서 적어 두세요")
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setAutoCancel(true)
+            .setContentIntent(openInput)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .build()
+
+        try {
+            NotificationManagerCompat.from(context).notify(REMINDER_NOTIF_ID, notification)
+        } catch (_: SecurityException) {
+            // POST_NOTIFICATIONS 권한이 없는 경우.
+        }
+    }
+
+    private fun ensureReminderChannel(context: Context) {
+        val channel = NotificationChannel(
+            REMINDER_CHANNEL_ID,
+            "기록 리마인더",
+            NotificationManager.IMPORTANCE_DEFAULT,
+        ).apply {
+            description = "결제 알림 뒤 기록이 없으면 한 번 알려줌 (금액은 읽지 않음)"
             setShowBadge(true)
         }
         context.getSystemService(NotificationManager::class.java)

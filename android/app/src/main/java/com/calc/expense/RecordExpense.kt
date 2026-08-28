@@ -59,6 +59,8 @@ object RecordExpense {
             is NotionClient.Outcome.Ok -> {
                 // Notion 쓰기가 성공한 뒤에만 로컬 사본에 더한다. 실패한 기록을 세면 숫자가 거짓말을 한다.
                 Ledger.record(context, purse, today, parsed.amount)
+                // 기록이 있었으니 결제 리마인더는 이 뒤로 보내지 않는다.
+                ReminderState.markRecorded(context, System.currentTimeMillis())
                 // 여기서 Notion 을 한 번 더 왕복하지 않는다 — 브로드캐스트 수명 안에 못 끝낸다.
                 // 로컬 사본만으로 계산하고, Notion 과의 대조는 앱을 열 때 한다.
                 RecordResult(

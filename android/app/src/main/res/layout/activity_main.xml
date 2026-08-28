@@ -355,6 +355,37 @@
             android:text="시스템 알림 설정 열기" />
 
         <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="24dp"
+            android:paddingBottom="8dp"
+            android:text="결제 리마인더"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="결제 알림이 온 뒤 10분 안에 기록이 없으면 «적었어요?» 를 한 번 알려줍니다. 금액은 읽지 않고, 밤 10시~아침 8시는 무음, 하루 3번까지만. 이 기능은 «알림 접근» 권한이 필요합니다."
+            android:textColor="#666666"
+            android:textSize="12sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonReminderToggle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="결제 리마인더 켜기" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonReminderAccess"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="알림 접근 권한 설정 열기" />
+
+        <TextView
             android:id="@+id/textStatus"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
