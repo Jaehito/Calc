@@ -74,12 +74,13 @@ fun HomeScreen(
             Text(
                 text = "설정",
                 color = HomePalette.Accent,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(HomePalette.Soft)
                     .clickable(onClick = onOpenSettings)
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                    .padding(horizontal = 14.dp, vertical = 7.dp),
             )
         }
 
@@ -105,7 +106,7 @@ fun HomeScreen(
             onClick = onRecord,
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = HomePalette.Accent),
+            colors = ButtonDefaults.buttonColors(containerColor = HomePalette.AccentBright),
         ) {
             Text(text = "기록하기", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         }
@@ -130,7 +131,7 @@ private fun PurseCard(snapshot: LedgerSnapshot, showLabel: Boolean) {
         Spacer(Modifier.height(2.dp))
         Row(verticalAlignment = Alignment.Bottom) {
             Text(
-                text = StatusText.won(amount),
+                text = StatusText.figure(amount),
                 color = HomePalette.of(tone),
                 fontSize = 40.sp,
                 fontWeight = FontWeight.Bold,
@@ -140,15 +141,16 @@ private fun PurseCard(snapshot: LedgerSnapshot, showLabel: Boolean) {
                 text = " 원",
                 color = HomePalette.Ink2,
                 fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(bottom = 6.dp),
             )
         }
 
         Spacer(Modifier.height(16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FactCell("하루치", StatusText.won(snapshot.dailyRate), HomePalette.Ink, Modifier.weight(1f))
-            FactCell("곳간", "+" + StatusText.won(snapshot.vault), HomePalette.Accent, Modifier.weight(1f))
-            FactCell("오늘 씀", "−" + StatusText.won(snapshot.todaySpent), HomePalette.Ink, Modifier.weight(1f))
+            FactCell("하루치", StatusText.figure(snapshot.dailyRate), HomePalette.Ink, HomePalette.AccentBright, Modifier.weight(1f))
+            FactCell("곳간", "+" + StatusText.figure(snapshot.vault), HomePalette.Accent, HomePalette.Gold, Modifier.weight(1f))
+            FactCell("오늘 씀", "−" + StatusText.figure(snapshot.todaySpent), HomePalette.Ink, HomePalette.Over, Modifier.weight(1f))
         }
 
         Spacer(Modifier.height(16.dp))
@@ -222,7 +224,7 @@ private fun VaultBar(snapshot: LedgerSnapshot) {
                 .fillMaxWidth(filled)
                 .fillMaxHeight()
                 .clip(RoundedCornerShape(5.dp))
-                .background(HomePalette.Accent),
+                .background(HomePalette.AccentBright),
         )
     }
 }
@@ -261,20 +263,29 @@ private fun CardBox(content: @Composable () -> Unit) {
 
 /** 큰 숫자의 근거 한 칸. 바탕색을 깔아 카드 안에서 한 덩어리로 읽히게 한다. */
 @Composable
-private fun FactCell(label: String, value: String, valueColor: Color, modifier: Modifier) {
+private fun FactCell(label: String, value: String, valueColor: Color, dot: Color, modifier: Modifier) {
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(HomePalette.Ground)
-            .padding(horizontal = 10.dp, vertical = 10.dp),
+            .clip(RoundedCornerShape(14.dp))
+            .background(HomePalette.Chip)
+            .padding(horizontal = 11.dp, vertical = 11.dp),
     ) {
-        Text(text = label, color = HomePalette.Muted, fontSize = 11.sp)
-        Spacer(Modifier.height(3.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(7.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(dot),
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(text = label, color = HomePalette.Muted, fontSize = 11.sp)
+        }
+        Spacer(Modifier.height(4.dp))
         Text(
             text = value,
             color = valueColor,
             fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Bold,
             style = Figures,
         )
     }

@@ -207,6 +207,12 @@ class StatusTextTest {
     }
 
     @Test
+    fun `figure 는 원을 붙이지 않는다`() {
+        assertEquals("1,355", StatusText.figure(1_355L))
+        assertEquals("1,355원", StatusText.won(1_355L))
+    }
+
+    @Test
     fun `주간 돌아보기는 곳간별 합계와 하루 평균을 담는다`() {
         val lines = StatusText.weekly(
             listOf(

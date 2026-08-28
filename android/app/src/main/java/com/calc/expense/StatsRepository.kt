@@ -14,6 +14,8 @@ data class StatsData(
     val categoryMonthLabel: String,
     val categories: List<CategorySlice>,
     val categoryTotal: Long,
+    /** 지난 14일 일별 합계(오래된→최신). 앞 7일·뒤 7일로 주간 추이 막대를 그린다. */
+    val daily14: List<Long>,
     val loadingCategories: Boolean,
     val error: String?,
 )
@@ -32,6 +34,14 @@ object StatsRepository {
         val thisMonth: YearMonth = YearMonth.from(today)
         val lastMonth: YearMonth = thisMonth.minusMonths(1)
 
+        val daily: MutableList<Long> = ArrayList(14)
+        var d: Int = 13
+        while (d >= 0) {
+            val day: LocalDate = today.minusDays(d.toLong())
+            daily.add(spentBetween(context, day, day))
+            d--
+        }
+
         return StatsData(
             recent7 = spentBetween(context, today.minusDays(6), today),
             prev7 = spentBetween(context, prev7End.minusDays(6), prev7End),
@@ -40,6 +50,7 @@ object StatsRepository {
             categoryMonthLabel = "이번 달",
             categories = emptyList(),
             categoryTotal = 0L,
+            daily14 = daily,
             loadingCategories = true,
             error = null,
         )

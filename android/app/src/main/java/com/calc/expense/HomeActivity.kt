@@ -7,6 +7,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -17,6 +19,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.LocalDate
 import java.time.YearMonth
@@ -69,14 +73,14 @@ class HomeActivity : ComponentActivity() {
             NavigationBarItem(
                 selected = tab == 0,
                 onClick = { tab = 0 },
-                icon = { Text("🏠", fontSize = 18.sp) },
+                icon = { Icon(painterResource(R.drawable.ic_tab_home), contentDescription = "홈", modifier = Modifier.size(23.dp)) },
                 label = { Text("홈") },
                 colors = navColors(),
             )
             NavigationBarItem(
                 selected = tab == 1,
                 onClick = { selectStats() },
-                icon = { Text("📊", fontSize = 18.sp) },
+                icon = { Icon(painterResource(R.drawable.ic_tab_stats), contentDescription = "통계", modifier = Modifier.size(23.dp)) },
                 label = { Text("통계") },
                 colors = navColors(),
             )
@@ -85,7 +89,7 @@ class HomeActivity : ComponentActivity() {
 
     @androidx.compose.runtime.Composable
     private fun navColors() = NavigationBarItemDefaults.colors(
-        selectedIconColor = HomePalette.Accent,
+        selectedIconColor = HomePalette.AccentBright,
         selectedTextColor = HomePalette.Accent,
         indicatorColor = HomePalette.Soft,
         unselectedIconColor = HomePalette.Muted,

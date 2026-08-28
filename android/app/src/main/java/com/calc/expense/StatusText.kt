@@ -26,6 +26,9 @@ object StatusText {
 
     fun won(amount: Long): String = format(amount) + "원"
 
+    /** 원을 붙이지 않은 쉼표 숫자. 히어로 숫자처럼 «원» 단위를 따로 붙이는 곳에서 쓴다. */
+    fun figure(amount: Long): String = format(amount)
+
     /**
      * 목표일(다음 월급날 전날)까지의 여유. 오늘 하루가 아니라 주기 전체를 보는 줄이다.
      * 오늘 쓸 수 있는 돈이 "지금 괜찮나"라면 이건 "이 페이스로 가도 되나"에 답한다.
