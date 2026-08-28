@@ -12,6 +12,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import com.calc.expense.databinding.ActivityQuickInputBinding
+import java.time.LocalDate
 import java.time.LocalTime
 import java.util.concurrent.Executors
 
@@ -41,6 +42,21 @@ class QuickInputActivity : AppCompatActivity() {
     /** 이 화면을 연 뒤로 기록한 건수. 결과 줄에 «2건째» 를 붙일지 정한다. */
     private var recorded: Int = 0
 
+    /**
+     * 이 화면에서 방금 적은 항목. ✕ 로 지울 수 있게 Notion 페이지 id 를 들고 있는다.
+     * 창을 닫으면 사라진다 — 지난 기록은 로컬에 항목 단위로 저장하지 않기 때문이다.
+     */
+    private data class Entry(
+        val name: String,
+        val amount: Long,
+        val pageId: String,
+        val purse: Purse,
+        val day: LocalDate,
+        val row: View,
+    )
+
+    private val entries = mutableListOf<Entry>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         showOverLockScreen()
@@ -53,9 +69,8 @@ class QuickInputActivity : AppCompatActivity() {
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
         keepSheetAboveSystemBars()
 
-        // 카드 바깥을 누르면 닫는다.
+        // 카드 바깥(어두운 곳)을 누르면 닫는다. 따로 «완료» 버튼을 두지 않는다.
         ui.sheetRoot.setOnClickListener { finish() }
-        ui.buttonDone.setOnClickListener { finish() }
 
         setUpPurses()
         refreshNumbers()
@@ -190,12 +205,13 @@ class QuickInputActivity : AppCompatActivity() {
         showResult("기록 중…", Tone.NEUTRAL)
 
         val app = applicationContext
-        val purseKey: String = selected.key
+        val purse: Purse = selected
+        val day: LocalDate = LocalDate.now()
         val now: String = LocalTime.now().format(ReplyReceiver.TIME_FORMAT)
 
         io.execute {
             val result: RecordResult = try {
-                RecordExpense.submit(app, text, purseKey, now)
+                RecordExpense.submit(app, text, purse.key, now, day)
             } catch (e: Exception) {
                 RecordResult(
                     ok = false,
@@ -217,10 +233,10 @@ class QuickInputActivity : AppCompatActivity() {
                     // 입력창만 비우고 화면은 그대로 둔다. 다음 건을 바로 이어 적을 수 있게.
                     recorded++
                     ui.inputExpense.setText("")
-                    ui.buttonDone.visibility = View.VISIBLE
                     val after: LedgerSnapshot? = refreshNumbers()
 
                     val e: Expense? = result.expense
+                    if (e != null) addEntryRow(Expense(e.name, e.amount), result.pageId, purse, day)
                     showResult(
                         if (e == null) "기록됨" else StatusText.entered(e.name, e.amount, recorded),
                         Tone.of(ok = true, snapshot = after),
@@ -233,8 +249,51 @@ class QuickInputActivity : AppCompatActivity() {
         }
     }
 
+    /** 방금 적은 항목을 목록 맨 위에 한 줄 추가한다. ✕ 를 누르면 [removeEntry] 로 지운다. */
+    private fun addEntryRow(expense: Expense, pageId: String, purse: Purse, day: LocalDate) {
+        val row: View = layoutInflater.inflate(R.layout.item_entry_row, ui.listEntries, false)
+        val label: android.widget.TextView = row.findViewById(R.id.textEntry)
+        label.text = "${expense.name}  ${StatusText.won(expense.amount)}"
+
+        val entry = Entry(expense.name, expense.amount, pageId, purse, day, row)
+        entries.add(entry)
+        ui.listEntries.addView(row, 0)
+
+        row.findViewById<View>(R.id.buttonRemove).setOnClickListener { removeEntry(entry) }
+    }
+
+    /** ✕ 를 누르면 Notion 에서 그 줄을 지우고 로컬 숫자도 되돌린다. */
+    private fun removeEntry(entry: Entry) {
+        val remove: View = entry.row.findViewById(R.id.buttonRemove)
+        remove.isEnabled = false
+
+        val app = applicationContext
+        io.execute {
+            val result: DeleteResult = try {
+                RecordExpense.delete(app, entry.pageId, entry.purse.key, entry.day, entry.amount)
+            } catch (e: Exception) {
+                DeleteResult(ok = false, message = "오류: ${e.message ?: e.javaClass.simpleName}")
+            }
+
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+
+                if (result.ok) {
+                    entries.remove(entry)
+                    ui.listEntries.removeView(entry.row)
+                    NotificationHelper.show(app)
+                    refreshNumbers()
+                    showResult("✕ ${entry.name} ${StatusText.won(entry.amount)} 지웠어요", Tone.NEUTRAL)
+                } else {
+                    remove.isEnabled = true
+                    showResult(result.message, Tone.of(ok = false, snapshot = null))
+                }
+            }
+        }
+    }
+
     private fun showResult(message: String, tone: Tone) {
-        ui.rowResult.visibility = View.VISIBLE
+        ui.textResult.visibility = View.VISIBLE
         ui.textResult.text = message
         ui.textResult.setTextColor(colorOf(tone))
     }

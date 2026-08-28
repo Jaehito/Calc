@@ -77,6 +77,11 @@ object Ledger {
         SpendingCache.add(context, purse, day, amount)
     }
 
+    /** 아카이브가 성공한 뒤 로컬 사본에서 뺀다. Notion 삭제가 성공한 뒤에만 부른다. */
+    fun unrecord(context: Context, purse: Purse, day: LocalDate, amount: Long) {
+        SpendingCache.add(context, purse, day, -amount)
+    }
+
     /**
      * Notion 을 기준으로 이번 주기가 걸친 달들의 캐시를 다시 맞춘다.
      * 성공하면 null, 실패하면 오류 문구.

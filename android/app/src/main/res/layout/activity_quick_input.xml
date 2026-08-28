@@ -90,31 +90,21 @@
                 android:text="공용" />
         </com.google.android.material.button.MaterialButtonToggleGroup>
 
-        <!-- 결과와 «완료» 를 한 줄에 둔다. 기록할 때마다 카드 높이가 변하지 않게. -->
-        <LinearLayout
-            android:id="@+id/rowResult"
+        <!-- 방금 한 동작의 짧은 알림 (기록 중 · 실패 · 삭제됨). 한 줄로 갱신해 높이가 출렁이지 않게. -->
+        <TextView
+            android:id="@+id/textResult"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:visibility="gone">
+            android:textSize="13sp"
+            android:visibility="gone" />
 
-            <TextView
-                android:id="@+id/textResult"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textSize="13sp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/buttonDone"
-                style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:minWidth="0dp"
-                android:text="완료"
-                android:visibility="gone" />
-        </LinearLayout>
+        <!-- 이번에 적은 항목들. 각 줄 오른쪽 ✕ 로 방금 적은 걸 바로 지운다. -->
+        <LinearLayout
+            android:id="@+id/listEntries"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:orientation="vertical" />
     </LinearLayout>
 </FrameLayout>

@@ -65,7 +65,23 @@ class NotionClient(private val target: NotionTarget) {
             .put("properties", properties)
 
         return when (val r = send("POST", "/v1/pages", body)) {
-            is Raw.Ok -> Outcome.Ok(r.json.optString("url", ""))
+            // 만들어진 페이지 id. 나중에 이 줄만 지울 수 있도록 기록하는 쪽에 넘긴다.
+            is Raw.Ok -> Outcome.Ok(r.json.optString("id", ""))
+            is Raw.Err -> Outcome.Err(r.message)
+        }
+    }
+
+    /**
+     * 방금 만든 줄 하나를 지운다(아카이브).
+     *
+     * Notion 은 페이지도 블록이라 «블록 삭제»(DELETE /v1/blocks/{id}) 로 아카이브된다.
+     * HttpURLConnection 이 PATCH 를 지원하지 않아 PATCH archived:true 대신 이 경로를 쓴다.
+     * [pageId] 는 [addExpense] 가 돌려준 값이다.
+     */
+    fun archivePage(pageId: String): Outcome {
+        if (pageId.isBlank()) return Outcome.Err("삭제할 항목을 찾을 수 없습니다")
+        return when (val r = send("DELETE", "/v1/blocks/$pageId", null)) {
+            is Raw.Ok -> Outcome.Ok(pageId)
             is Raw.Err -> Outcome.Err(r.message)
         }
     }

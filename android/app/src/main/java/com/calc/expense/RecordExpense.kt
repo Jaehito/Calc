@@ -13,7 +13,12 @@ data class RecordResult(
     val ok: Boolean,
     val lines: StatusLines,
     val expense: Expense? = null,
+    /** 성공했을 때 만들어진 Notion 페이지 id. 이 줄만 지울 때 쓴다. 실패면 빈 문자열. */
+    val pageId: String = "",
 )
+
+/** 항목 하나를 지운 결과. 성공하면 [ok] 가 true 이고, 실패하면 [message] 에 이유가 있다. */
+data class DeleteResult(val ok: Boolean, val message: String = "")
 
 /**
  * 지출 한 건을 기록하는 유일한 경로.
@@ -59,6 +64,7 @@ object RecordExpense {
                 RecordResult(
                     ok = true,
                     expense = parsed,
+                    pageId = r.detail,
                     lines = StatusText.recorded(
                         name = parsed.name,
                         amount = parsed.amount,
@@ -67,6 +73,34 @@ object RecordExpense {
                         showPurse = linked.size > 1,
                     ),
                 )
+            }
+        }
+    }
+
+    /**
+     * 방금 적은 항목 하나를 지운다. Notion 에서 아카이브하고 로컬 사본에서도 뺀다.
+     *
+     * 순서가 중요하다 — Notion 삭제가 성공한 뒤에만 로컬에서 뺀다. 반대로 하면 삭제가
+     * 실패했는데 숫자만 되돌아가 캐시와 Notion 이 어긋난다. 백그라운드 스레드에서 부른다.
+     */
+    fun delete(
+        context: Context,
+        pageId: String,
+        purseKey: String,
+        day: LocalDate,
+        amount: Long,
+    ): DeleteResult {
+        val settings = SettingsStore.load(context)
+        val purse: Purse = settings.linkedPurses.firstOrNull { it.key == purseKey }
+            ?: return DeleteResult(ok = false, message = "곳간을 찾을 수 없습니다")
+        val target: NotionTarget = settings.target(purse)
+            ?: return DeleteResult(ok = false, message = "DB가 연결되지 않았습니다")
+
+        return when (val r = NotionClient(target).archivePage(pageId)) {
+            is NotionClient.Outcome.Err -> DeleteResult(ok = false, message = r.message)
+            is NotionClient.Outcome.Ok -> {
+                Ledger.unrecord(context, purse, day, amount)
+                DeleteResult(ok = true)
             }
         }
     }
