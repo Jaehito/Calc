@@ -2,6 +2,7 @@ package com.calc.expense
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,14 +15,24 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.format.DateTimeFormatter
@@ -51,14 +62,21 @@ data class HistoryUi(
  *
  * 노션(또는 나중에 다른 DB)에서 읽은 행을 날짜별로 보여준다 — 두 폰이 같은 공용 DB 를 보면
  * 같은 목록이 뜬다. 채점하지 않는다: 무엇을 얼마에 썼는지 사실만 늘어놓는다.
+ *
+ * 항목을 누르면 수정·삭제 다이얼로그가 뜬다([categories] 는 그 안의 카테고리 칩 목록).
  */
 @Composable
 fun HistoryScreen(
     ui: HistoryUi,
+    categories: List<String>,
     onBack: () -> Unit,
     onToggleMonth: () -> Unit,
     onRefresh: () -> Unit,
+    onEditRow: (row: ExpenseRow, name: String, amount: Long, category: String) -> Unit,
+    onDeleteRow: (row: ExpenseRow) -> Unit,
 ) {
+    var editingRow: ExpenseRow? by remember { mutableStateOf(null) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -146,15 +164,34 @@ fun HistoryScreen(
             ui.loading -> Note("불러오는 중…")
             ui.error != null -> Note(ui.error, HomePalette.Over)
             ui.groups.isEmpty() -> Note("이 달에는 기록이 없어요.")
-            else -> for (group in ui.groups) DaySection(group)
+            else -> for (group in ui.groups) {
+                DaySection(group, onRowClick = { row -> editingRow = row })
+            }
         }
 
         Spacer(Modifier.height(24.dp))
     }
+
+    val row: ExpenseRow? = editingRow
+    if (row != null) {
+        EditRowDialog(
+            row = row,
+            categories = categories,
+            onSave = { name, amount, category ->
+                onEditRow(row, name, amount, category)
+                editingRow = null
+            },
+            onDelete = {
+                onDeleteRow(row)
+                editingRow = null
+            },
+            onDismiss = { editingRow = null },
+        )
+    }
 }
 
 @Composable
-private fun DaySection(group: DayGroup) {
+private fun DaySection(group: DayGroup, onRowClick: (ExpenseRow) -> Unit) {
     Spacer(Modifier.height(14.dp))
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp)) {
         Text(text = group.date.format(DayFormat), color = HomePalette.Muted, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
@@ -167,7 +204,7 @@ private fun DaySection(group: DayGroup) {
             .background(HomePalette.Card),
     ) {
         group.rows.forEachIndexed { index, row ->
-            ExpenseItem(row)
+            ExpenseItem(row, onClick = { onRowClick(row) })
             if (index < group.rows.lastIndex) {
                 Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(HomePalette.Line))
             }
@@ -175,11 +212,15 @@ private fun DaySection(group: DayGroup) {
     }
 }
 
+/** 지출 한 줄. 누르면 수정·삭제 다이얼로그가 뜬다. */
 @Composable
-private fun ExpenseItem(row: ExpenseRow) {
+private fun ExpenseItem(row: ExpenseRow, onClick: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp, vertical = 13.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 15.dp, vertical = 13.dp),
     ) {
         Text(text = row.name.ifBlank { "(이름 없음)" }, color = HomePalette.Ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
         if (row.category.isNotBlank()) {
@@ -199,8 +240,96 @@ private fun ExpenseItem(row: ExpenseRow) {
     }
 }
 
+/**
+ * 항목 하나 수정·삭제. «저장» 은 새 값이 있어야 눌린다(이름 필수·금액 0보다 커야).
+ *
+ * 삭제는 되묻지 않는다 — 빠른 입력 화면의 ✕ 와 같은 방식이라 배울 게 없다.
+ */
 @Composable
-private fun Note(text: String, color: androidx.compose.ui.graphics.Color = HomePalette.Ink2) {
+private fun EditRowDialog(
+    row: ExpenseRow,
+    categories: List<String>,
+    onSave: (name: String, amount: Long, category: String) -> Unit,
+    onDelete: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var name: String by remember { mutableStateOf(row.name) }
+    var amountText: String by remember { mutableStateOf(row.amount.toString()) }
+    var category: String by remember { mutableStateOf(row.category) }
+
+    val amount: Long? = ExpenseParser.parseAmount(amountText)
+    val canSave: Boolean = name.isNotBlank() && amount != null && amount > 0L
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("내역 수정", fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("이름") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = amountText,
+                    onValueChange = { amountText = it },
+                    label = { Text("금액") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(12.dp))
+                Text(text = "카테고리", color = HomePalette.Muted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(6.dp))
+                Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                    for ((index, catName) in categories.withIndex()) {
+                        val on: Boolean = category == catName
+                        Text(
+                            text = catName,
+                            color = if (on) HomePalette.Accent else HomePalette.Ink2,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(999.dp))
+                                .background(if (on) HomePalette.Soft else HomePalette.Chip)
+                                .clickable { category = if (on) "" else catName }
+                                .padding(horizontal = 12.dp, vertical = 7.dp),
+                        )
+                        if (index < categories.lastIndex) Spacer(Modifier.width(7.dp))
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    text = "삭제",
+                    color = HomePalette.Over,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(999.dp))
+                        .clickable(onClick = onDelete)
+                        .padding(vertical = 4.dp),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onSave(name.trim(), amount ?: 0L, category) },
+                enabled = canSave,
+            ) {
+                Text("저장", color = if (canSave) HomePalette.Accent else HomePalette.Muted, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("취소", color = HomePalette.Ink2) }
+        },
+    )
+}
+
+@Composable
+private fun Note(text: String, color: Color = HomePalette.Ink2) {
     Spacer(Modifier.height(10.dp))
     Column(
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(HomePalette.Card).padding(20.dp),

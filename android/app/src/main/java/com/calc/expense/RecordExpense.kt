@@ -20,6 +20,9 @@ data class RecordResult(
 /** 항목 하나를 지운 결과. 성공하면 [ok] 가 true 이고, 실패하면 [message] 에 이유가 있다. */
 data class DeleteResult(val ok: Boolean, val message: String = "")
 
+/** 항목 하나를 고친 결과. 성공하면 [ok] 가 true 이고, 실패하면 [message] 에 이유가 있다. */
+data class EditResult(val ok: Boolean, val message: String = "")
+
 /**
  * 지출 한 건을 기록하는 유일한 경로.
  *
@@ -104,6 +107,53 @@ object RecordExpense {
             is NotionClient.Outcome.Ok -> {
                 Ledger.unrecord(context, purse, day, amount)
                 DeleteResult(ok = true)
+            }
+        }
+    }
+
+    /**
+     * 옛 기록 한 줄을 고친다. 내역 화면(과거 기록)에서 이름·금액·카테고리를 바꿀 때 쓴다.
+     *
+     * Notion 은 HttpURLConnection 으로 PATCH 를 보낼 수 없어 속성을 부분 수정할 방법이
+     * 없다 — 그래서 **새 값을 먼저 만들고, 성공하면 옛 줄을 아카이브**한다. 순서가 중요하다:
+     *
+     * - 새 줄 만들기가 실패하면 옛 줄이 그대로 남아 데이터가 사라지지 않는다.
+     * - 새 줄은 만들어졌는데 옛 줄 아카이브가 실패하면, 두 줄이 다 노션에 실재하는 것이므로
+     *   로컬 캐시도 그 사실을 그대로 따른다(옛 줄을 캐시에서 빼지 않는다) — 캐시가 항상
+     *   «지금 노션에 실제로 있는 것»과 같은 숫자를 말하게 하기 위해서다.
+     *
+     * 백그라운드 스레드에서 부른다.
+     */
+    fun edit(
+        context: Context,
+        purse: Purse,
+        day: LocalDate,
+        oldPageId: String,
+        oldAmount: Long,
+        newExpense: Expense,
+    ): EditResult {
+        val settings = SettingsStore.load(context)
+        val target: NotionTarget = settings.target(purse)
+            ?: return EditResult(ok = false, message = "DB가 연결되지 않았습니다")
+        val client = NotionClient(target)
+
+        return when (val created = client.addExpense(newExpense, day.toString())) {
+            is NotionClient.Outcome.Err -> EditResult(ok = false, message = created.message)
+            is NotionClient.Outcome.Ok -> {
+                // 새 줄이 노션에 실제로 생겼으니 캐시에도 바로 반영한다.
+                Ledger.record(context, purse, day, newExpense.amount)
+
+                when (val archived = client.archivePage(oldPageId)) {
+                    is NotionClient.Outcome.Err -> EditResult(
+                        ok = false,
+                        message = "새 값은 저장됐지만 옛 줄을 지우지 못했습니다: ${archived.message}\n" +
+                            "노션에서 옛 줄을 직접 지워 주세요.",
+                    )
+                    is NotionClient.Outcome.Ok -> {
+                        Ledger.unrecord(context, purse, day, oldAmount)
+                        EditResult(ok = true)
+                    }
+                }
             }
         }
     }
