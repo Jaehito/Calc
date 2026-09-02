@@ -147,6 +147,29 @@
             android:textColor="#666666"
             android:textSize="12sp" />
 
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:hint="카테고리 칩 목록 (쉼표로 구분)">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputCategories"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:maxLines="2" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="기록할 때 뜨는 카테고리 칩입니다. 쉼표로 구분해 순서대로 나옵니다. 비워 저장하면 기본 목록으로 돌아갑니다."
+            android:textColor="#666666"
+            android:textSize="12sp" />
+
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"

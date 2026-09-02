@@ -63,6 +63,13 @@ class NotionClient(private val target: NotionTarget) {
             )
             put(target.priceProp, JSONObject().put("number", expense.amount))
             put(target.dateProp, JSONObject().put("date", JSONObject().put("start", isoDate)))
+            // 카테고리는 골랐을 때만, 그리고 DB 에 카테고리 속성이 있을 때만 싣는다.
+            if (target.categoryProp.isNotBlank() && expense.category.isNotBlank()) {
+                put(
+                    target.categoryProp,
+                    JSONObject().put("select", JSONObject().put("name", expense.category)),
+                )
+            }
             // 한 DB 를 두 곳간이 나눠 쓸 때만 붙는다. 이 값이 없으면 조회에서 걸러지지 않는다.
             if (target.splitsByPurse) {
                 put(

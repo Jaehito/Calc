@@ -1,7 +1,11 @@
 package com.calc.expense
 
-/** 잠금화면에서 입력받은 한 줄을 지출 항목으로 해석한다. */
-data class Expense(val name: String, val amount: Long)
+/**
+ * 잠금화면에서 입력받은 한 줄을 지출 항목으로 해석한다.
+ *
+ * [category] 는 파싱이 아니라 칩 선택으로 채운다(선택 사항). 비어 있으면 카테고리 없이 기록한다.
+ */
+data class Expense(val name: String, val amount: Long, val category: String = "")
 
 sealed class ParseResult {
     data class Ok(val expense: Expense) : ParseResult()

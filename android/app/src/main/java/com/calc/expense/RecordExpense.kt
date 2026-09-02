@@ -36,11 +36,12 @@ object RecordExpense {
         purseKey: String?,
         now: String,
         today: LocalDate = LocalDate.now(),
+        category: String = "",
     ): RecordResult {
         val parsed = when (val r = ExpenseParser.parse(text)) {
             is ParseResult.Err ->
                 return fail("${r.message} · 입력: \"${text.trim()}\"", now)
-            is ParseResult.Ok -> r.expense
+            is ParseResult.Ok -> r.expense.copy(category = category.trim())
         }
 
         val settings = SettingsStore.load(context)

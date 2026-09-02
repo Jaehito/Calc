@@ -166,6 +166,7 @@ class MainActivity : AppCompatActivity() {
         ui.inputDateProp.setText(s.dateProp)
         ui.inputPurseProp.setText(s.purseProp)
         ui.inputCategoryProp.setText(s.categoryProp)
+        ui.inputCategories.setText(Categories.format(CategoryStore.load(this)))
         ui.inputPayDay.setText(s.payDay.toString())
 
         ui.inputPersonalName.setText(s.personal.name)
@@ -244,6 +245,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun saveAndVerify() {
+        // 카테고리 칩 목록은 노션 연결과 무관하므로 완성도 검사 전에 먼저 저장한다.
+        CategoryStore.save(this, Categories.parse(ui.inputCategories.text?.toString().orEmpty()))
+
         val form = currentForm()
         if (!form.isComplete) {
             setStatus(

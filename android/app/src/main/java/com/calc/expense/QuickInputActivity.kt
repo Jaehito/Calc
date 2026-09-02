@@ -39,6 +39,9 @@ class QuickInputActivity : AppCompatActivity() {
     private var selected: Purse = Purse.PERSONAL
     private var submitting: Boolean = false
 
+    /** 지금 고른 카테고리. 안 고르면 빈 문자열. 다음 입력까지 유지된다. */
+    private var selectedCategory: String = ""
+
     /** 이 화면을 연 뒤로 기록한 건수. 결과 줄에 «2건째» 를 붙일지 정한다. */
     private var recorded: Int = 0
 
@@ -73,6 +76,7 @@ class QuickInputActivity : AppCompatActivity() {
         ui.sheetRoot.setOnClickListener { finish() }
 
         setUpPurses()
+        setUpCategories()
         refreshNumbers()
 
         ui.inputExpense.requestFocus()
@@ -164,6 +168,30 @@ class QuickInputActivity : AppCompatActivity() {
     }
 
     /**
+     * 카테고리 칩을 목록대로 만든다. 하나만 고를 수 있고, 다시 누르면 해제된다(카테고리 없음).
+     * 목록은 앱이 갖는다(설정에서 편집) — 잠금화면에서 네트워크 없이 바로 그린다.
+     */
+    private fun setUpCategories() {
+        val categories: List<String> = CategoryStore.load(this)
+        ui.groupCategory.removeAllViews()
+        for (name in categories) {
+            val chip: com.google.android.material.chip.Chip =
+                layoutInflater.inflate(R.layout.item_category_chip, ui.groupCategory, false)
+                    as com.google.android.material.chip.Chip
+            chip.text = name
+            ui.groupCategory.addView(chip)
+        }
+        ui.groupCategory.setOnCheckedStateChangeListener { group, checkedIds ->
+            selectedCategory = if (checkedIds.isEmpty()) {
+                ""
+            } else {
+                group.findViewById<com.google.android.material.chip.Chip>(checkedIds.first())
+                    ?.text?.toString().orEmpty()
+            }
+        }
+    }
+
+    /**
      * 고른 곳간의 숫자를 입력창 위에 띄우고 그 스냅샷을 돌려준다.
      * 적으면서 판단할 수 있게 하는 것이 이 화면의 존재 이유다.
      *
@@ -211,7 +239,7 @@ class QuickInputActivity : AppCompatActivity() {
 
         io.execute {
             val result: RecordResult = try {
-                RecordExpense.submit(app, text, purse.key, now, day)
+                RecordExpense.submit(app, text, purse.key, now, day, selectedCategory)
             } catch (e: Exception) {
                 RecordResult(
                     ok = false,
@@ -236,7 +264,7 @@ class QuickInputActivity : AppCompatActivity() {
                     val after: LedgerSnapshot? = refreshNumbers()
 
                     val e: Expense? = result.expense
-                    if (e != null) addEntryRow(Expense(e.name, e.amount), result.pageId, purse, day)
+                    if (e != null) addEntryRow(e, result.pageId, purse, day)
                     showResult(
                         if (e == null) "기록됨" else StatusText.entered(e.name, e.amount, recorded),
                         Tone.of(ok = true, snapshot = after),
@@ -253,7 +281,11 @@ class QuickInputActivity : AppCompatActivity() {
     private fun addEntryRow(expense: Expense, pageId: String, purse: Purse, day: LocalDate) {
         val row: View = layoutInflater.inflate(R.layout.item_entry_row, ui.listEntries, false)
         val label: android.widget.TextView = row.findViewById(R.id.textEntry)
-        label.text = "${expense.name}  ${StatusText.won(expense.amount)}"
+        label.text = if (expense.category.isBlank()) {
+            "${expense.name}  ${StatusText.won(expense.amount)}"
+        } else {
+            "${expense.name} · ${expense.category}  ${StatusText.won(expense.amount)}"
+        }
 
         val entry = Entry(expense.name, expense.amount, pageId, purse, day, row)
         entries.add(entry)
