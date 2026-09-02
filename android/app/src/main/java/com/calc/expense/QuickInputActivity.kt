@@ -2,6 +2,8 @@ package com.calc.expense
 
 import android.os.Build
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
@@ -12,6 +14,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import com.calc.expense.databinding.ActivityQuickInputBinding
+import com.google.android.material.chip.Chip
 import java.time.LocalDate
 import java.time.LocalTime
 import java.util.concurrent.Executors
@@ -32,6 +35,11 @@ import java.util.concurrent.Executors
  */
 class QuickInputActivity : AppCompatActivity() {
 
+    private companion object {
+        /** «없음» 칩의 표시 이름. 실제 카테고리 값(노션에 쓰는 값)은 빈 문자열이다. */
+        const val CATEGORY_NONE = "없음"
+    }
+
     private lateinit var ui: ActivityQuickInputBinding
     private val io = Executors.newSingleThreadExecutor()
 
@@ -41,6 +49,15 @@ class QuickInputActivity : AppCompatActivity() {
 
     /** 지금 고른 카테고리. 안 고르면 빈 문자열. 다음 입력까지 유지된다. */
     private var selectedCategory: String = ""
+
+    /** 칩 표시 목록(«없음» 포함, 맨 앞). [CategoryClassifier] 는 이 안에서만 고른다. */
+    private var categoryLabels: List<String> = emptyList()
+
+    /** 사용자가 칩을 직접 눌렀는지. 누르고 나면 그 뒤로는 자동 분류가 끼어들지 않는다. */
+    private var manualCategoryOverride: Boolean = false
+
+    /** 코드로 칩 체크를 바꾸는 동안, 그 변화가 «사용자가 눌렀다» 로 오인되지 않게 막는다. */
+    private var suppressCategoryListener: Boolean = false
 
     /** 이 화면을 연 뒤로 기록한 건수. 결과 줄에 «2건째» 를 붙일지 정한다. */
     private var recorded: Int = 0
@@ -168,26 +185,68 @@ class QuickInputActivity : AppCompatActivity() {
     }
 
     /**
-     * 카테고리 칩을 목록대로 만든다. 하나만 고를 수 있고, 다시 누르면 해제된다(카테고리 없음).
-     * 목록은 앱이 갖는다(설정에서 편집) — 잠금화면에서 네트워크 없이 바로 그린다.
+     * 카테고리 칩을 만든다. «없음» 이 맨 앞이고 기본 선택이다. 목록은 앱이 갖는다
+     * (설정에서 편집) — 잠금화면에서 네트워크 없이 바로 그린다.
+     *
+     * 이름을 입력하면 [CategoryClassifier] 가 낱말을 보고 짐작해 칩을 자동으로 켠다
+     * (네트워크·LLM 없음). 사용자가 칩을 직접 누르면 [manualCategoryOverride] 가 서서
+     * 그 뒤로는 자동이 끼어들지 않는다 — 스스로 고른 걸 되돌리면 안 되기 때문이다.
+     *
+     * 각 칩에 [View.generateViewId] 로 id 를 준다. id 가 없으면(NO_ID) `findViewById` 가
+     * 항상 null 을 돌려줘 어느 칩이 눌렸는지 알 수 없다.
      */
     private fun setUpCategories() {
-        val categories: List<String> = CategoryStore.load(this)
+        categoryLabels = listOf(CATEGORY_NONE) + CategoryStore.load(this)
         ui.groupCategory.removeAllViews()
-        for (name in categories) {
-            val chip: com.google.android.material.chip.Chip =
-                layoutInflater.inflate(R.layout.item_category_chip, ui.groupCategory, false)
-                    as com.google.android.material.chip.Chip
-            chip.text = name
+
+        for (label in categoryLabels) {
+            val chip: Chip =
+                layoutInflater.inflate(R.layout.item_category_chip, ui.groupCategory, false) as Chip
+            chip.id = View.generateViewId()
+            chip.text = label
+            chip.isChecked = label == CATEGORY_NONE
             ui.groupCategory.addView(chip)
         }
-        ui.groupCategory.setOnCheckedStateChangeListener { group, checkedIds ->
-            selectedCategory = if (checkedIds.isEmpty()) {
-                ""
-            } else {
-                group.findViewById<com.google.android.material.chip.Chip>(checkedIds.first())
-                    ?.text?.toString().orEmpty()
+
+        ui.groupCategory.setOnCheckedStateChangeListener { _, checkedIds ->
+            if (suppressCategoryListener) return@setOnCheckedStateChangeListener
+            manualCategoryOverride = true
+            selectedCategory = categoryValueOf(checkedIds.firstOrNull())
+        }
+
+        ui.inputExpense.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                if (manualCategoryOverride) return
+                applyAutoCategory(s?.toString().orEmpty())
             }
+        })
+    }
+
+    /** 체크된 칩 id 를 실제 카테고리 값으로. «없음» 이면 빈 문자열(카테고리 없음)이다. */
+    private fun categoryValueOf(checkedId: Int?): String {
+        if (checkedId == null) return ""
+        val label: String = ui.groupCategory.findViewById<Chip>(checkedId)?.text?.toString().orEmpty()
+        return if (label == CATEGORY_NONE) "" else label
+    }
+
+    /** [text] 에서 카테고리를 짐작해 칩을 켠다. 사용자가 아직 손대지 않았을 때만 불린다. */
+    private fun applyAutoCategory(text: String) {
+        val guess: String? = CategoryClassifier.classify(text, categoryLabels)
+        selectChip(guess ?: CATEGORY_NONE)
+        selectedCategory = guess.orEmpty()
+    }
+
+    /** [label] 이름의 칩을 켠다. 이 호출로는 [manualCategoryOverride] 가 서지 않는다. */
+    private fun selectChip(label: String) {
+        for (i in 0 until ui.groupCategory.childCount) {
+            val chip: Chip = ui.groupCategory.getChildAt(i) as? Chip ?: continue
+            if (chip.text.toString() != label) continue
+            suppressCategoryListener = true
+            ui.groupCategory.check(chip.id)
+            suppressCategoryListener = false
+            return
         }
     }
 

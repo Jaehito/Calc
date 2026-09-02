@@ -73,20 +73,20 @@
             android:textColor="@color/app_muted"
             android:textSize="11sp" />
 
-        <HorizontalScrollView
+        <!--
+            여러 줄로 펼친다(singleLine=false) — 시트 아래 여백이 넉넉해 가로 스크롤보다
+            한눈에 다 보이는 편이 고르기 쉽다. «없음» 칩이 항상 맨 앞(코드에서 addView 순서).
+        -->
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/groupCategory"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:scrollbars="none">
-
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/groupCategory"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:singleLine="true"
-                app:singleSelection="true"
-                app:selectionRequired="false" />
-        </HorizontalScrollView>
+            app:chipSpacingHorizontal="7dp"
+            app:chipSpacingVertical="7dp"
+            app:singleLine="false"
+            app:singleSelection="true"
+            app:selectionRequired="true" />
 
         <com.google.android.material.button.MaterialButtonToggleGroup
             android:id="@+id/groupPurse"

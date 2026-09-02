@@ -9,8 +9,13 @@ package com.calc.expense
  */
 object Categories {
 
-    /** 처음 주는 기본 목록. 자주 쓰는 순으로. */
-    val DEFAULT: List<String> = listOf("식비", "카페", "교통", "마트", "생활", "건강", "문화", "기타")
+    /**
+     * 처음 주는 기본 목록. 자주 쓰는 순으로.
+     *
+     * [CategoryClassifier] 의 키워드 규칙은 이 열 개 이름을 그대로 가리킨다 — 사용자가 설정에서
+     * 이름을 바꾸면 그 칩은 더 이상 자동 분류 대상이 아니게 된다(수동으로만 고를 수 있다).
+     */
+    val DEFAULT: List<String> = listOf("식비", "카페", "마트", "교통", "생활", "건강", "문화", "패션", "주거", "기타")
 
     /** 칩 하나의 이름 길이 상한. 칩이 한 줄에서 가로로 스크롤되므로 너무 길면 읽기 나쁘다. */
     const val MAX_NAME_LENGTH = 12
