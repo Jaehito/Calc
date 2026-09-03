@@ -63,6 +63,8 @@ object RecordExpense {
             is NotionClient.Outcome.Ok -> {
                 // Notion 쓰기가 성공한 뒤에만 로컬 사본에 더한다. 실패한 기록을 세면 숫자가 거짓말을 한다.
                 Ledger.record(context, purse, today, parsed.amount)
+                // Firestore 이중 쓰기 — 실패해도 위 노션 기록엔 영향 없다(안전망일 뿐).
+                FirestoreExpenseStore.add(context, purse, r.detail, parsed, today)
                 // 기록이 있었으니 결제 리마인더는 이 뒤로 보내지 않는다.
                 ReminderState.markRecorded(context, System.currentTimeMillis())
                 // 여기서 Notion 을 한 번 더 왕복하지 않는다 — 브로드캐스트 수명 안에 못 끝낸다.
@@ -106,6 +108,7 @@ object RecordExpense {
             is NotionClient.Outcome.Err -> DeleteResult(ok = false, message = r.message)
             is NotionClient.Outcome.Ok -> {
                 Ledger.unrecord(context, purse, day, amount)
+                FirestoreExpenseStore.archive(context, purse, pageId)
                 DeleteResult(ok = true)
             }
         }
@@ -142,6 +145,7 @@ object RecordExpense {
             is NotionClient.Outcome.Ok -> {
                 // 새 줄이 노션에 실제로 생겼으니 캐시에도 바로 반영한다.
                 Ledger.record(context, purse, day, newExpense.amount)
+                FirestoreExpenseStore.add(context, purse, created.detail, newExpense, day)
 
                 when (val archived = client.archivePage(oldPageId)) {
                     is NotionClient.Outcome.Err -> EditResult(
@@ -151,6 +155,7 @@ object RecordExpense {
                     )
                     is NotionClient.Outcome.Ok -> {
                         Ledger.unrecord(context, purse, day, oldAmount)
+                        FirestoreExpenseStore.archive(context, purse, oldPageId)
                         EditResult(ok = true)
                     }
                 }

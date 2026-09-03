@@ -63,6 +63,12 @@ data class SettingsUi(
     val notificationOn: Boolean = false,
     val reminderOn: Boolean = false,
     val accountEmail: String? = null,
+    val householdPaired: Boolean = false,
+    val householdCode: String? = null,
+    val householdJoinInput: String = "",
+    val householdBusy: Boolean = false,
+    val householdMessage: String? = null,
+    val householdMessageIsError: Boolean = false,
 )
 
 /**
@@ -87,6 +93,10 @@ fun SettingsScreen(
     onExport: () -> Unit,
     onImport: () -> Unit,
     onSignOut: () -> Unit,
+    onHouseholdJoinInputChange: (String) -> Unit,
+    onCreateHousehold: () -> Unit,
+    onJoinHousehold: () -> Unit,
+    onLeaveHousehold: () -> Unit,
 ) {
     val form: SettingsFormUi = ui.form
 
@@ -222,6 +232,49 @@ fun SettingsScreen(
             MintField(form.sharedDatabaseId, { onFormChange(form.copy(sharedDatabaseId = it)) }, "DB ID 또는 DB URL 통째로")
             Spacer(Modifier.height(10.dp))
             MintField(form.sharedBudgetText, { onFormChange(form.copy(sharedBudgetText = it)) }, "월 예산 (예: 930000 또는 93만)")
+        }
+        Spacer(Modifier.height(12.dp))
+
+        CardBox {
+            SectionTitle("공용 곳간 동기화 (베타)")
+            HelperText("공용 곳간 지출을 배우자와 함께 보려면 가정 코드로 한 번만 묶으세요. 노션 기록에는 영향이 없습니다.")
+            Spacer(Modifier.height(10.dp))
+            if (ui.householdPaired) {
+                Text(
+                    text = "가정으로 연결됐어요",
+                    color = HomePalette.Accent,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedPillButton("연결 해제", onLeaveHousehold, modifier = Modifier.fillMaxWidth())
+            } else {
+                PillButton(text = "코드 만들기", onClick = onCreateHousehold, enabled = !ui.householdBusy)
+                Spacer(Modifier.height(10.dp))
+                MintField(
+                    value = ui.householdJoinInput,
+                    onValueChange = onHouseholdJoinInputChange,
+                    label = "배우자가 준 코드 입력",
+                )
+                Spacer(Modifier.height(8.dp))
+                PillButton(
+                    text = "코드로 연결",
+                    onClick = onJoinHousehold,
+                    enabled = !ui.householdBusy && ui.householdJoinInput.isNotBlank(),
+                )
+            }
+            if (ui.householdCode != null) {
+                Spacer(Modifier.height(10.dp))
+                WarningBanner("이 코드를 배우자에게 알려주세요: ${ui.householdCode}")
+            }
+            if (ui.householdMessage != null) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = ui.householdMessage,
+                    color = if (ui.householdMessageIsError) HomePalette.Over else HomePalette.Accent,
+                    fontSize = 12.sp,
+                )
+            }
         }
 
         Spacer(Modifier.height(16.dp))

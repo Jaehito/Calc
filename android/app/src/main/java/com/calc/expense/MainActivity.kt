@@ -38,6 +38,12 @@ class MainActivity : ComponentActivity() {
     private var showStorageNotice: Boolean by mutableStateOf(false)
     private var notificationOn: Boolean by mutableStateOf(false)
     private var reminderOn: Boolean by mutableStateOf(false)
+    private var householdPaired: Boolean by mutableStateOf(false)
+    private var householdCode: String? by mutableStateOf(null)
+    private var householdJoinInput: String by mutableStateOf("")
+    private var householdBusy: Boolean by mutableStateOf(false)
+    private var householdMessage: String? by mutableStateOf(null)
+    private var householdMessageIsError: Boolean by mutableStateOf(false)
 
     private val requestNotificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -61,6 +67,12 @@ class MainActivity : ComponentActivity() {
                     notificationOn = notificationOn,
                     reminderOn = reminderOn,
                     accountEmail = FirebaseAuth.getInstance().currentUser?.email,
+                    householdPaired = householdPaired,
+                    householdCode = householdCode,
+                    householdJoinInput = householdJoinInput,
+                    householdBusy = householdBusy,
+                    householdMessage = householdMessage,
+                    householdMessageIsError = householdMessageIsError,
                 ),
                 onBack = { finish() },
                 onFormChange = { form = it },
@@ -79,6 +91,10 @@ class MainActivity : ComponentActivity() {
                 onExport = { exportSettings() },
                 onImport = { importSettings() },
                 onSignOut = { signOut() },
+                onHouseholdJoinInputChange = { householdJoinInput = it },
+                onCreateHousehold = { createHousehold() },
+                onJoinHousehold = { joinHousehold() },
+                onLeaveHousehold = { leaveHousehold() },
             )
         }
     }
@@ -101,6 +117,83 @@ class MainActivity : ComponentActivity() {
         refreshReminderButton()
         notificationOn = NotificationState.isOn(this)
         resyncInBackground()
+        refreshHousehold()
+    }
+
+    /**
+     * 가정 연결 상태를 읽는다. 로컬 캐시([HouseholdStore])가 있으면 그걸로 끝 — 매번
+     * Firestore 를 왕복하지 않는다. 캐시가 비어 있을 때만(재설치 등) 서버에서 한 번 채운다.
+     */
+    private fun refreshHousehold() {
+        val uid: String = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val cached: String? = HouseholdStore.householdId(this)
+        if (cached != null) {
+            householdPaired = true
+            return
+        }
+        HouseholdRepository.currentHouseholdId(uid) { id ->
+            if (isFinishing || isDestroyed) return@currentHouseholdId
+            if (id != null) {
+                HouseholdStore.setHouseholdId(this, id)
+                householdPaired = true
+            }
+        }
+    }
+
+    /** 새 가정을 만들고 배우자에게 알려줄 코드를 화면에 띄운다. */
+    private fun createHousehold() {
+        val uid: String = FirebaseAuth.getInstance().currentUser?.uid
+            ?: return setHouseholdMessage("로그인 정보를 확인할 수 없습니다", isError = true)
+        householdBusy = true
+        HouseholdRepository.create(uid) { result ->
+            householdBusy = false
+            result
+                .onSuccess { household ->
+                    HouseholdStore.setHouseholdId(this, household.householdId)
+                    householdPaired = true
+                    householdCode = household.code
+                    setHouseholdMessage("가정을 만들었어요. 아래 코드를 배우자에게 알려주세요.")
+                }
+                .onFailure { setHouseholdMessage("가정을 만들지 못했어요: ${it.message}", isError = true) }
+        }
+    }
+
+    /** 배우자가 만든 코드로 가정에 들어간다. */
+    private fun joinHousehold() {
+        val uid: String = FirebaseAuth.getInstance().currentUser?.uid
+            ?: return setHouseholdMessage("로그인 정보를 확인할 수 없습니다", isError = true)
+        householdBusy = true
+        HouseholdRepository.join(uid, householdJoinInput) { result ->
+            householdBusy = false
+            result
+                .onSuccess { householdId ->
+                    HouseholdStore.setHouseholdId(this, householdId)
+                    householdPaired = true
+                    householdJoinInput = ""
+                    setHouseholdMessage("가정에 연결됐어요.")
+                }
+                .onFailure { setHouseholdMessage(it.message ?: "연결에 실패했어요", isError = true) }
+        }
+    }
+
+    /** 가정 연결을 해제한다. 잘못 묶었을 때 되돌리는 용도 — 배우자 쪽 연결은 그대로 남는다. */
+    private fun leaveHousehold() {
+        val uid: String = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        HouseholdRepository.leave(uid) { result ->
+            result
+                .onSuccess {
+                    HouseholdStore.setHouseholdId(this, null)
+                    householdPaired = false
+                    householdCode = null
+                    setHouseholdMessage("연결을 해제했어요.")
+                }
+                .onFailure { setHouseholdMessage("해제하지 못했어요: ${it.message}", isError = true) }
+        }
+    }
+
+    private fun setHouseholdMessage(message: String, isError: Boolean = false) {
+        householdMessage = message
+        householdMessageIsError = isError
     }
 
     override fun onDestroy() {
