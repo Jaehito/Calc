@@ -6,6 +6,34 @@
 배포는 규칙 파일 전체를 통째로 덮어써서, 콘솔에 이미 있는 challenges/** 규칙이
 사라진다. 콘솔에서 직접 복사해 붙여넣는 방식으로만 쓴다.
 
+**중요 — 붙여넣을 위치**: 아래 두 match 블록은 `match /challenges/{challengeId} { ... }`
+블록 "안"이 아니라 그 블록의 닫는 `}` 뒤, 즉 `documents` 바로 아래 형제로 붙인다.
+안에 넣으면 실제 경로(/users/{uid}, /households/{id})가 아니라 아무도 안 쓰는
+/challenges/{id}/users/{uid} 같은 경로에 규칙이 걸려 전혀 효과가 없다. 전체 모양은
+이래야 한다:
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /challenges/{challengeId} {
+      allow read, write: if request.auth != null;
+      match /{document=**} {
+        allow read, write: if request.auth != null;
+      }
+    }
+
+    match /users/{uid} {
+      ...
+    }
+
+    match /households/{householdId} {
+      ...
+    }
+  }
+}
+```
+
 match /users/{uid} {
   allow read, write: if request.auth != null && request.auth.uid == uid;
 
