@@ -223,6 +223,40 @@ class NotionClient(private val target: NotionTarget) {
         return RowsOutcome.Ok(rows)
     }
 
+    /**
+     * 날짜 제한 없이 이 DB(곳간)의 지출 전체를 행 목록으로 가져온다. 3단계 백필이 쓴다.
+     *
+     * [queryMonthRows] 와 달리 달로 자르지 않는다 — 백필은 처음부터 지금까지 한 번에
+     * 다 가져오면 되므로 달마다 왕복할 이유가 없다. 반드시 백그라운드 스레드에서 부른다.
+     */
+    fun queryAllRows(): RowsOutcome {
+        val filter: JSONObject? = if (target.splitsByPurse) {
+            JSONObject().put("and", JSONArray().put(purseBound()))
+        } else {
+            null
+        }
+
+        val rows = ArrayList<ExpenseRow>()
+        var cursor: String? = null
+        var page = 0
+
+        while (page < MAX_PAGES) {
+            val body = JSONObject().put("page_size", PAGE_SIZE)
+            if (filter != null) body.put("filter", filter)
+            if (cursor != null) body.put("start_cursor", cursor)
+
+            val r = send("POST", "/v1/databases/${target.databaseId}/query", body)
+            if (r is Raw.Err) return RowsOutcome.Err(r.message)
+
+            val json = (r as Raw.Ok).json
+            NotionRows.readRows(json, target.nameProp, target.priceProp, target.dateProp, target.categoryProp, rows)
+
+            cursor = NotionRows.nextCursor(json) ?: return RowsOutcome.Ok(rows)
+            page++
+        }
+        return RowsOutcome.Ok(rows)
+    }
+
     private fun dateBound(iso: String, condition: String): JSONObject =
         JSONObject()
             .put("property", target.dateProp)

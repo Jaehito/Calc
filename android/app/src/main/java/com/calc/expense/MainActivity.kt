@@ -3,6 +3,7 @@ package com.calc.expense
 import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -44,6 +45,9 @@ class MainActivity : ComponentActivity() {
     private var householdBusy: Boolean by mutableStateOf(false)
     private var householdMessage: String? by mutableStateOf(null)
     private var householdMessageIsError: Boolean by mutableStateOf(false)
+    private var backfillBusy: Boolean by mutableStateOf(false)
+    private var backfillMessage: String? by mutableStateOf(null)
+    private var backfillMessageIsError: Boolean by mutableStateOf(false)
 
     private val requestNotificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -73,6 +77,9 @@ class MainActivity : ComponentActivity() {
                     householdBusy = householdBusy,
                     householdMessage = householdMessage,
                     householdMessageIsError = householdMessageIsError,
+                    backfillBusy = backfillBusy,
+                    backfillMessage = backfillMessage,
+                    backfillMessageIsError = backfillMessageIsError,
                 ),
                 onBack = { finish() },
                 onFormChange = { form = it },
@@ -95,7 +102,28 @@ class MainActivity : ComponentActivity() {
                 onCreateHousehold = { createHousehold() },
                 onJoinHousehold = { joinHousehold() },
                 onLeaveHousehold = { leaveHousehold() },
+                onBackfill = { runBackfill() },
             )
+        }
+    }
+
+    /** 노션 지출 전체를 Firestore로 1회 복사한다(3단계). 네트워크를 타므로 백그라운드에서. */
+    private fun runBackfill() {
+        backfillBusy = true
+        backfillMessage = null
+        val appContext: Context = applicationContext
+        io.execute {
+            val result: FirestoreBackfill.Result = FirestoreBackfill.run(appContext)
+            runOnUiThread {
+                backfillBusy = false
+                if (result.ok) {
+                    backfillMessage = "${result.attempted}건 복사를 시도했어요. 잠시 뒤 Firestore 콘솔에서 개수를 확인해 보세요."
+                    backfillMessageIsError = false
+                } else {
+                    backfillMessage = result.message.ifBlank { "백필에 실패했어요" }
+                    backfillMessageIsError = true
+                }
+            }
         }
     }
 

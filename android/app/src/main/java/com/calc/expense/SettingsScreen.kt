@@ -69,6 +69,9 @@ data class SettingsUi(
     val householdBusy: Boolean = false,
     val householdMessage: String? = null,
     val householdMessageIsError: Boolean = false,
+    val backfillBusy: Boolean = false,
+    val backfillMessage: String? = null,
+    val backfillMessageIsError: Boolean = false,
 )
 
 /**
@@ -97,6 +100,7 @@ fun SettingsScreen(
     onCreateHousehold: () -> Unit,
     onJoinHousehold: () -> Unit,
     onLeaveHousehold: () -> Unit,
+    onBackfill: () -> Unit,
 ) {
     val form: SettingsFormUi = ui.form
 
@@ -272,6 +276,26 @@ fun SettingsScreen(
                 Text(
                     text = ui.householdMessage,
                     color = if (ui.householdMessageIsError) HomePalette.Over else HomePalette.Accent,
+                    fontSize = 12.sp,
+                )
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+
+        CardBox {
+            SectionTitle("노션 데이터 백필 (베타)")
+            HelperText("지금까지 노션에 적힌 지출을 Firestore로 한 번 복사합니다. 여러 번 눌러도 안전합니다(같은 항목은 덮어쓸 뿐 중복되지 않음). 노션 기록은 그대로 남고 지워지지 않습니다.")
+            Spacer(Modifier.height(10.dp))
+            PillButton(
+                text = if (ui.backfillBusy) "복사 중…" else "노션 → Firestore 백필 실행",
+                onClick = onBackfill,
+                enabled = !ui.backfillBusy,
+            )
+            if (ui.backfillMessage != null) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = ui.backfillMessage,
+                    color = if (ui.backfillMessageIsError) HomePalette.Over else HomePalette.Accent,
                     fontSize = 12.sp,
                 )
             }
