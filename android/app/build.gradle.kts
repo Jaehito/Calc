@@ -65,10 +65,17 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
     debugImplementation("androidx.compose.ui:ui-tooling")
 
-    // 챌린지 탭 — 익명 인증 + Firestore. BOM 이 버전을 함께 맞춘다.
+    // 챌린지 탭 + 로그인 — Firebase Auth(구글) + Firestore. BOM 이 버전을 함께 맞춘다.
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
+
+    // 구글 로그인 — Credential Manager (구 GoogleSignInClient 대체).
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.9.0")
 
     testImplementation("junit:junit:4.13.2")
     // 유닛 테스트의 android.jar 은 org.json 이 던지도록 스텁돼 있다.

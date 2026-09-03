@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.google.firebase.auth.FirebaseAuth
 import java.util.concurrent.Executors
 
 /**
@@ -59,6 +60,7 @@ class MainActivity : ComponentActivity() {
                     showStorageNotice = showStorageNotice,
                     notificationOn = notificationOn,
                     reminderOn = reminderOn,
+                    accountEmail = FirebaseAuth.getInstance().currentUser?.email,
                 ),
                 onBack = { finish() },
                 onFormChange = { form = it },
@@ -76,8 +78,19 @@ class MainActivity : ComponentActivity() {
                 onOpenReminderAccessSettings = { openNotificationAccessSettings() },
                 onExport = { exportSettings() },
                 onImport = { importSettings() },
+                onSignOut = { signOut() },
             )
         }
+    }
+
+    /** 로그아웃하고 [LoginActivity] 로 돌아간다. 로컬 곳간·설정은 지우지 않는다 — 계정만 바뀐다. */
+    private fun signOut() {
+        FirebaseAuth.getInstance().signOut()
+        startActivity(
+            Intent(this, LoginActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK),
+        )
+        finish()
     }
 
     override fun onResume() {

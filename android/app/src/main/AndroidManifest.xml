@@ -12,9 +12,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ExpenseLogger">
 
-        <!-- 앱을 열면 나오는 화면. 곳간 숫자만 보여준다 (Compose). -->
+        <!-- 진짜 진입점. 구글 로그인이 없으면 여기서 막고, 있으면 곧장 홈으로 넘긴다 (Compose). -->
         <activity
-            android:name=".HomeActivity"
+            android:name=".LoginActivity"
             android:exported="true"
             android:label="@string/app_name">
             <intent-filter>
@@ -22,6 +22,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- 곳간 숫자를 보여주는 메인 화면. 로그인 뒤에만 들어온다 (Compose). -->
+        <activity
+            android:name=".HomeActivity"
+            android:exported="false"
+            android:label="@string/app_name" />
 
         <!-- 곳간 내역. 홈의 곳간 카드에서만 들어온다. -->
         <activity

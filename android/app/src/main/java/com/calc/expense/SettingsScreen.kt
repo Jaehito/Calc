@@ -62,6 +62,7 @@ data class SettingsUi(
     val showStorageNotice: Boolean = false,
     val notificationOn: Boolean = false,
     val reminderOn: Boolean = false,
+    val accountEmail: String? = null,
 )
 
 /**
@@ -85,6 +86,7 @@ fun SettingsScreen(
     onOpenReminderAccessSettings: () -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
+    onSignOut: () -> Unit,
 ) {
     val form: SettingsFormUi = ui.form
 
@@ -110,6 +112,17 @@ fun SettingsScreen(
         }
 
         Spacer(Modifier.height(14.dp))
+
+        if (ui.accountEmail != null) {
+            CardBox {
+                SectionTitle("계정")
+                Spacer(Modifier.height(8.dp))
+                Text(text = ui.accountEmail, color = HomePalette.Ink2, fontSize = 13.sp)
+                Spacer(Modifier.height(10.dp))
+                OutlinedPillButton("로그아웃", onSignOut, modifier = Modifier.fillMaxWidth())
+            }
+            Spacer(Modifier.height(12.dp))
+        }
 
         CardBox {
             SectionTitle("내 곳간")
