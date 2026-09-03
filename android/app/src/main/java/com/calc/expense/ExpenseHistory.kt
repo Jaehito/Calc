@@ -19,6 +19,14 @@ object ExpenseHistory {
     }
 
     fun load(context: Context, purse: Purse, month: YearMonth): Result {
+        if (FirestoreReadMode.isEnabled(context)) {
+            val rows: List<ExpenseRow>? = FirestoreExpenseReader.monthRows(context, purse, month)
+            if (rows != null) {
+                return Result.Ok(ExpenseHistoryGrouping.groupByDay(rows), ExpenseHistoryGrouping.total(rows))
+            }
+            // Firestore 읽기 실패 — 아래에서 노션으로 폴백한다.
+        }
+
         val settings: Settings = SettingsStore.load(context)
         val target: NotionTarget = settings.target(purse)
             ?: return Result.Err("${settings.labelOf(purse)} 곳간에 DB가 연결되지 않았습니다")

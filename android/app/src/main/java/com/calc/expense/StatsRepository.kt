@@ -79,6 +79,13 @@ object StatsRepository {
      */
     fun fetchCategories(context: Context, month: YearMonth): Pair<Map<String, Long>, String?> {
         val settings = SettingsStore.load(context)
+
+        if (FirestoreReadMode.isEnabled(context)) {
+            val fromFirestore: Map<String, Long>? = fetchCategoriesFromFirestore(context, settings, month)
+            if (fromFirestore != null) return fromFirestore to null
+            // 곳간 중 하나라도 Firestore 읽기가 실패하면 전부 노션으로 — 출처가 섞이면 숫자가 어긋난다.
+        }
+
         val merged = LinkedHashMap<String, Long>()
         val seenDatabases = HashSet<String>()
 
@@ -94,5 +101,22 @@ object StatsRepository {
             }
         }
         return merged to null
+    }
+
+    /** [fetchCategories] 의 Firestore 경로. 곳간 하나라도 실패하면 null(폴백 신호). */
+    private fun fetchCategoriesFromFirestore(
+        context: Context,
+        settings: Settings,
+        month: YearMonth,
+    ): Map<String, Long>? {
+        val merged = LinkedHashMap<String, Long>()
+        for (purse in settings.linkedPurses) {
+            val rows: List<ExpenseRow> = FirestoreExpenseReader.monthRows(context, purse, month) ?: return null
+            for (row in rows) {
+                if (row.category.isBlank()) continue
+                merged[row.category] = (merged[row.category] ?: 0L) + row.amount
+            }
+        }
+        return merged
     }
 }

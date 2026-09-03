@@ -156,23 +156,36 @@ object Ledger {
         today: LocalDate = LocalDate.now(),
     ): String? {
         val settings = SettingsStore.load(context)
-        val target: NotionTarget = settings.target(purse)
-            ?: return "${settings.labelOf(purse)} 곳간에 DB가 연결되지 않았습니다"
 
         val cycle: BudgetCycle = Payday.cycleOf(today, settings.payDay)
         // 지난 주기까지 함께 맞춘다 — 홈의 «지난 주기 이맘때보다» 비교가 그 캐시를 읽는다.
         val previous: BudgetCycle = Payday.cycleOf(cycle.start.minusDays(1), settings.payDay)
-        val client = NotionClient(target)
+
+        // 노션 target 은 Firestore 읽기가 실패했을 때만 필요하다 — 미리 없다고 실패시키지 않는다
+        // (3단계 이후 노션 연결 없이 Firestore만 쓰는 구성도 가능해야 하므로).
+        val target: NotionTarget? = settings.target(purse)
+        val client: NotionClient? = target?.let { NotionClient(it) }
+        val useFirestore: Boolean = FirestoreReadMode.isEnabled(context)
 
         // 두 주기가 걸친 달들을 한 번씩만 조회한다. 주기가 한 달을 공유해도 중복 조회하지 않는다.
         var month: YearMonth = YearMonth.from(previous.start)
         val lastMonth: YearMonth = YearMonth.from(cycle.lastDay)
 
         while (!month.isAfter(lastMonth)) {
-            when (val r = client.queryMonth(month)) {
-                is NotionClient.MonthOutcome.Ok ->
-                    SpendingCache.replaceMonth(context, purse, month, r.totals)
-                is NotionClient.MonthOutcome.Err -> return r.message
+            val firestoreRows: List<ExpenseRow>? =
+                if (useFirestore) FirestoreExpenseReader.monthRows(context, purse, month) else null
+
+            if (firestoreRows != null) {
+                val totals = LinkedHashMap<LocalDate, Long>()
+                for (row in firestoreRows) totals[row.date] = (totals[row.date] ?: 0L) + row.amount
+                SpendingCache.replaceMonth(context, purse, month, totals)
+            } else {
+                if (client == null) return "${settings.labelOf(purse)} 곳간에 DB가 연결되지 않았습니다"
+                when (val r = client.queryMonth(month)) {
+                    is NotionClient.MonthOutcome.Ok ->
+                        SpendingCache.replaceMonth(context, purse, month, r.totals)
+                    is NotionClient.MonthOutcome.Err -> return r.message
+                }
             }
             month = month.plusMonths(1)
         }

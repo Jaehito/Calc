@@ -47,7 +47,8 @@ object FirestoreExpenseStore {
             .addOnFailureListener { Log.w(TAG, "archive 실패(노션엔 이미 지워짐, 무시)", it) }
     }
 
-    private fun collectionFor(context: Context, purse: Purse): CollectionReference? = when (purse) {
+    /** [FirestoreExpenseReader] 도 같은 경로 규칙을 쓴다 — 여기서만 정의한다. */
+    internal fun collectionFor(context: Context, purse: Purse): CollectionReference? = when (purse) {
         Purse.PERSONAL -> {
             val uid: String = FirebaseAuth.getInstance().currentUser?.uid ?: return null
             db.collection("users").document(uid).collection("expenses")

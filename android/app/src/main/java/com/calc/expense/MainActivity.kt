@@ -48,6 +48,7 @@ class MainActivity : ComponentActivity() {
     private var backfillBusy: Boolean by mutableStateOf(false)
     private var backfillMessage: String? by mutableStateOf(null)
     private var backfillMessageIsError: Boolean by mutableStateOf(false)
+    private var firestoreReadEnabled: Boolean by mutableStateOf(false)
 
     private val requestNotificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -80,6 +81,7 @@ class MainActivity : ComponentActivity() {
                     backfillBusy = backfillBusy,
                     backfillMessage = backfillMessage,
                     backfillMessageIsError = backfillMessageIsError,
+                    firestoreReadEnabled = firestoreReadEnabled,
                 ),
                 onBack = { finish() },
                 onFormChange = { form = it },
@@ -103,8 +105,15 @@ class MainActivity : ComponentActivity() {
                 onJoinHousehold = { joinHousehold() },
                 onLeaveHousehold = { leaveHousehold() },
                 onBackfill = { runBackfill() },
+                onToggleFirestoreRead = { toggleFirestoreRead() },
             )
         }
+    }
+
+    private fun toggleFirestoreRead() {
+        val next: Boolean = !firestoreReadEnabled
+        FirestoreReadMode.setEnabled(this, next)
+        firestoreReadEnabled = next
     }
 
     /** 노션 지출 전체를 Firestore로 1회 복사한다(3단계). 네트워크를 타므로 백그라운드에서. */
@@ -144,6 +153,7 @@ class MainActivity : ComponentActivity() {
         refreshLedger()
         refreshReminderButton()
         notificationOn = NotificationState.isOn(this)
+        firestoreReadEnabled = FirestoreReadMode.isEnabled(this)
         resyncInBackground()
         refreshHousehold()
     }

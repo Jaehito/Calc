@@ -72,6 +72,7 @@ data class SettingsUi(
     val backfillBusy: Boolean = false,
     val backfillMessage: String? = null,
     val backfillMessageIsError: Boolean = false,
+    val firestoreReadEnabled: Boolean = false,
 )
 
 /**
@@ -101,6 +102,7 @@ fun SettingsScreen(
     onJoinHousehold: () -> Unit,
     onLeaveHousehold: () -> Unit,
     onBackfill: () -> Unit,
+    onToggleFirestoreRead: () -> Unit,
 ) {
     val form: SettingsFormUi = ui.form
 
@@ -299,6 +301,17 @@ fun SettingsScreen(
                     fontSize = 12.sp,
                 )
             }
+        }
+        Spacer(Modifier.height(12.dp))
+
+        CardBox {
+            SectionTitle("읽기 전환 (실험적)")
+            HelperText("켜면 홈 화면 숫자·통계·내역을 노션 대신 Firestore에서 읽습니다. 실패하면 그때그때 자동으로 노션으로 돌아가지만, Firestore에 데이터가 비어 있는데 읽기 자체는 성공하는 경우(백필 전, 또는 아직 규칙이 안 걸린 경우)는 걸러내지 못합니다 — 그러면 지출이 실제보다 적게(0에 가깝게) 보일 수 있습니다. 위 백필을 먼저 실행하고, Firestore 콘솔에서 데이터가 보이는 걸 확인한 뒤에 켜세요.")
+            Spacer(Modifier.height(10.dp))
+            PillButton(
+                text = if (ui.firestoreReadEnabled) "Firestore 읽기: 켜짐" else "Firestore 읽기: 꺼짐",
+                onClick = onToggleFirestoreRead,
+            )
         }
 
         Spacer(Modifier.height(16.dp))
