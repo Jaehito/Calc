@@ -71,7 +71,12 @@ class HomeActivity : ComponentActivity() {
                             notice = notice,
                             onOpenSettings = { startActivity(Intent(this@HomeActivity, MainActivity::class.java)) },
                             onOpenHistory = { purse -> openHistory(purse) },
-                            onRecord = { startActivity(Intent(this@HomeActivity, QuickInputActivity::class.java)) },
+                            onRecord = {
+                                startActivity(
+                                    Intent(this@HomeActivity, QuickInputActivity::class.java)
+                                        .putExtra(QuickInputActivity.EXTRA_FORCE_INPUT, true),
+                                )
+                            },
                         )
                     }
                 }

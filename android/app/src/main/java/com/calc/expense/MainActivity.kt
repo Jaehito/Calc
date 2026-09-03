@@ -1,22 +1,42 @@
 package com.calc.expense
 
 import android.Manifest
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings as AndroidSettings
-import android.view.View
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import com.calc.expense.databinding.ActivityMainBinding
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import java.util.concurrent.Executors
 
-class MainActivity : AppCompatActivity() {
+/**
+ * 설정 화면. 홈·통계·챌린지·내역과 같은 Compose 화면군으로 맞춰(뱅크샐러드 톤) [SettingsScreen] 을 그린다.
+ *
+ * 폼 상태는 [SettingsFormUi] 한 덩어리로 들고, 네트워크·SharedPreferences 를 만지는 부수효과는
+ * 전부 이 Activity 의 메서드로 남는다 — Compose 쪽은 순수하게 그리기만 한다.
+ */
+class MainActivity : ComponentActivity() {
 
-    private lateinit var ui: ActivityMainBinding
     private val io = Executors.newSingleThreadExecutor()
+
+    private var form: SettingsFormUi by mutableStateOf(SettingsFormUi())
+    private var ledgerText: String by mutableStateOf("")
+    private var statusMessage: String? by mutableStateOf(null)
+    private var statusIsError: Boolean by mutableStateOf(false)
+    private var saving: Boolean by mutableStateOf(false)
+    private var showStorageNotice: Boolean by mutableStateOf(false)
+    private var notificationOn: Boolean by mutableStateOf(false)
+    private var reminderOn: Boolean by mutableStateOf(false)
 
     private val requestNotificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -26,41 +46,66 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        ui = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(ui.root)
-
         loadIntoForm()
 
-        ui.buttonSaveTest.setOnClickListener { saveAndVerify() }
-        ui.buttonEnable.setOnClickListener { requestNotificationThenEnable() }
-        ui.buttonDisable.setOnClickListener {
-            // 먼저 꺼야 DismissReceiver 가 되살리지 않는다.
-            NotificationState.setOn(this, false)
-            NotificationHelper.hide(this)
-            WeeklyReviewScheduler.cancel(this)
-            setStatus("알림을 껐습니다. 다시 켜기 전까지 잠금화면에 나오지 않습니다.")
+        setContent {
+            SettingsScreen(
+                ui = SettingsUi(
+                    form = form,
+                    ledgerText = ledgerText,
+                    statusMessage = statusMessage,
+                    statusIsError = statusIsError,
+                    saving = saving,
+                    showStorageNotice = showStorageNotice,
+                    notificationOn = notificationOn,
+                    reminderOn = reminderOn,
+                ),
+                onBack = { finish() },
+                onFormChange = { form = it },
+                onSaveAndVerify = { saveAndVerify() },
+                onEnableNotification = { requestNotificationThenEnable() },
+                onDisableNotification = { disableNotification() },
+                onOpenNotificationSettings = { openNotificationSettings() },
+                onOpenInput = {
+                    startActivity(
+                        Intent(this@MainActivity, QuickInputActivity::class.java)
+                            .putExtra(QuickInputActivity.EXTRA_FORCE_INPUT, true),
+                    )
+                },
+                onToggleReminder = { toggleReminder() },
+                onOpenReminderAccessSettings = { openNotificationAccessSettings() },
+                onExport = { exportSettings() },
+                onImport = { importSettings() },
+            )
         }
-        ui.buttonNotificationSettings.setOnClickListener { openNotificationSettings() }
-        ui.buttonOpenInput.setOnClickListener {
-            startActivity(Intent(this, QuickInputActivity::class.java))
-        }
-        ui.buttonReminderToggle.setOnClickListener { toggleReminder() }
-        ui.buttonReminderAccess.setOnClickListener { openNotificationAccessSettings() }
-        ui.buttonExportSettings.setOnClickListener { exportSettings() }
-        ui.buttonImportSettings.setOnClickListener { importSettings() }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        refreshStorageNotice()
+        republishNotification()
+        refreshLedger()
+        refreshReminderButton()
+        notificationOn = NotificationState.isOn(this)
+        resyncInBackground()
+    }
+
+    override fun onDestroy() {
+        io.shutdown()
+        super.onDestroy()
     }
 
     /** 지금 설정을 코드로 만들어 클립보드에 올린다. 폼에 아직 저장 안 한 값까지 그대로 담는다. */
     private fun exportSettings() {
         val code: String = SettingsCodec.encode(currentForm())
-        val clipboard = getSystemService(android.content.ClipboardManager::class.java)
-        clipboard.setPrimaryClip(android.content.ClipData.newPlainText("expense-settings", code))
+        val clipboard = getSystemService(ClipboardManager::class.java)
+        clipboard.setPrimaryClip(ClipData.newPlainText("expense-settings", code))
         setStatus("설정 코드를 클립보드에 복사했습니다. 메모 등에 붙여 보관하세요. 코드에는 토큰이 들어 있으니 남에게 주지 마세요.")
     }
 
     /** 클립보드의 코드를 읽어 설정을 복원한다. 코드가 아니면 그대로 두고 알린다. */
     private fun importSettings() {
-        val clipboard = getSystemService(android.content.ClipboardManager::class.java)
+        val clipboard = getSystemService(ClipboardManager::class.java)
         val clip: CharSequence? = clipboard.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.text
         if (clip.isNullOrBlank()) {
             setStatus("클립보드가 비어 있습니다. 먼저 설정 코드를 복사해 주세요.", isError = true)
@@ -76,23 +121,12 @@ class MainActivity : AppCompatActivity() {
         setStatus("설정을 불러왔습니다. 위 값을 확인하고 «저장하고 연결 확인»을 눌러 주세요.")
     }
 
-    override fun onResume() {
-        super.onResume()
-        refreshStorageNotice()
-        republishNotification()
-        refreshLedger()
-        refreshReminderButton()
-        resyncInBackground()
-    }
-
     /** «알림 접근» 권한이 이 앱에 허용돼 있는지. 리스너 서비스는 이게 있어야 동작한다. */
     private fun hasNotificationAccess(): Boolean =
-        androidx.core.app.NotificationManagerCompat.getEnabledListenerPackages(this)
-            .contains(packageName)
+        NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName)
 
     private fun refreshReminderButton() {
-        ui.buttonReminderToggle.text =
-            if (ReminderState.isEnabled(this)) "결제 리마인더 끄기" else "결제 리마인더 켜기"
+        reminderOn = ReminderState.isEnabled(this)
     }
 
     /**
@@ -153,62 +187,55 @@ class MainActivity : AppCompatActivity() {
         NotificationHelper.show(this)
     }
 
-    override fun onDestroy() {
-        io.shutdown()
-        super.onDestroy()
-    }
-
     private fun loadIntoForm() {
-        val s = SettingsStore.load(this)
-        ui.inputToken.setText(s.token)
-        ui.inputNameProp.setText(s.nameProp)
-        ui.inputPriceProp.setText(s.priceProp)
-        ui.inputDateProp.setText(s.dateProp)
-        ui.inputPurseProp.setText(s.purseProp)
-        ui.inputCategoryProp.setText(s.categoryProp)
-        ui.inputCategories.setText(Categories.format(CategoryStore.load(this)))
-        ui.inputPayDay.setText(s.payDay.toString())
-
-        ui.inputPersonalName.setText(s.personal.name)
-        ui.inputPersonalDatabaseId.setText(s.personal.databaseId)
-        ui.inputPersonalBudget.setText(budgetText(s.personal.monthlyBudget))
-        ui.inputSharedName.setText(s.shared.name)
-        ui.inputSharedDatabaseId.setText(s.shared.databaseId)
-        ui.inputSharedBudget.setText(budgetText(s.shared.monthlyBudget))
+        val s: Settings = SettingsStore.load(this)
+        form = SettingsFormUi(
+            token = s.token,
+            nameProp = s.nameProp,
+            priceProp = s.priceProp,
+            dateProp = s.dateProp,
+            purseProp = s.purseProp,
+            categoryProp = s.categoryProp,
+            categoriesText = Categories.format(CategoryStore.load(this)),
+            payDayText = s.payDay.toString(),
+            personalName = s.personal.name,
+            personalDatabaseId = s.personal.databaseId,
+            personalBudgetText = budgetText(s.personal.monthlyBudget),
+            sharedName = s.shared.name,
+            sharedDatabaseId = s.shared.databaseId,
+            sharedBudgetText = budgetText(s.shared.monthlyBudget),
+        )
     }
 
     private fun budgetText(amount: Long): String = if (amount > 0L) amount.toString() else ""
 
-    private fun currentForm() = Settings(
-        token = ui.inputToken.text?.toString().orEmpty().trim(),
-        nameProp = ui.inputNameProp.text?.toString().orEmpty().trim(),
-        priceProp = ui.inputPriceProp.text?.toString().orEmpty().trim(),
-        dateProp = ui.inputDateProp.text?.toString().orEmpty().trim(),
-        purseProp = ui.inputPurseProp.text?.toString().orEmpty().trim(),
-        categoryProp = ui.inputCategoryProp.text?.toString().orEmpty().trim(),
-        payDay = Payday.normalize(
-            ui.inputPayDay.text?.toString()?.trim()?.toIntOrNull() ?: Payday.DEFAULT
-        ),
+    private fun currentForm(): Settings = Settings(
+        token = form.token.trim(),
+        nameProp = form.nameProp.trim(),
+        priceProp = form.priceProp.trim(),
+        dateProp = form.dateProp.trim(),
+        purseProp = form.purseProp.trim(),
+        categoryProp = form.categoryProp.trim(),
+        payDay = Payday.normalize(form.payDayText.trim().toIntOrNull() ?: Payday.DEFAULT),
         personal = PurseSettings(
-            databaseId = ui.inputPersonalDatabaseId.text?.toString().orEmpty().trim(),
-            monthlyBudget = readBudget(ui.inputPersonalBudget.text?.toString()),
-            name = ui.inputPersonalName.text?.toString().orEmpty().trim(),
+            databaseId = form.personalDatabaseId.trim(),
+            monthlyBudget = readBudget(form.personalBudgetText),
+            name = form.personalName.trim(),
         ),
         shared = PurseSettings(
-            databaseId = ui.inputSharedDatabaseId.text?.toString().orEmpty().trim(),
-            monthlyBudget = readBudget(ui.inputSharedBudget.text?.toString()),
-            name = ui.inputSharedName.text?.toString().orEmpty().trim(),
+            databaseId = form.sharedDatabaseId.trim(),
+            monthlyBudget = readBudget(form.sharedBudgetText),
+            name = form.sharedName.trim(),
         ),
     )
 
     /** "930000" 도 "93만" 도 받는다. 잠금화면 입력과 같은 규칙이라 따로 배울 게 없다. */
-    private fun readBudget(raw: String?): Long =
-        ExpenseParser.parseAmount(raw.orEmpty().trim()) ?: 0L
+    private fun readBudget(raw: String): Long = ExpenseParser.parseAmount(raw.trim()) ?: 0L
 
-    /** 곳간 현황을 다시 그린다. 홈 화면이 생기기 전까지 숫자를 눈으로 확인하는 창구다. */
+    /** 곳간 현황을 다시 그린다. */
     private fun refreshLedger() {
-        val snapshots = Purse.entries.mapNotNull { Ledger.snapshot(this, it) }
-        ui.textLedger.text = StatusText.overview(snapshots)
+        val snapshots: List<LedgerSnapshot> = Purse.entries.mapNotNull { Ledger.snapshot(this, it) }
+        ledgerText = StatusText.overview(snapshots)
     }
 
     /**
@@ -216,7 +243,7 @@ class MainActivity : AppCompatActivity() {
      * 잠금화면 기록은 로컬 사본만 보고 계산하므로, 다른 기기에서 고친 것은 여기서 들어온다.
      */
     private fun resyncInBackground() {
-        val settings = SettingsStore.load(this)
+        val settings: Settings = SettingsStore.load(this)
         val purses: List<Purse> = Purse.entries.filter { settings.of(it).isActive }
         if (settings.token.isBlank() || purses.isEmpty()) return
 
@@ -240,16 +267,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshStorageNotice() {
-        ui.textStorageNotice.visibility =
-            if (SettingsStore.usingEncryption) View.GONE else View.VISIBLE
+        showStorageNotice = !SettingsStore.usingEncryption
     }
 
     private fun saveAndVerify() {
         // 카테고리 칩 목록은 노션 연결과 무관하므로 완성도 검사 전에 먼저 저장한다.
-        CategoryStore.save(this, Categories.parse(ui.inputCategories.text?.toString().orEmpty()))
+        CategoryStore.save(this, Categories.parse(form.categoriesText))
 
-        val form = currentForm()
-        if (!form.isComplete) {
+        val formSettings: Settings = currentForm()
+        if (!formSettings.isComplete) {
             setStatus(
                 "토큰과 속성 이름을 채우고, 두 곳간 중 최소 한 곳에 DB를 연결하세요.",
                 isError = true,
@@ -257,13 +283,13 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        SettingsStore.save(this, form)
-        loadIntoForm()   // 정규화된 DB ID를 화면에 반영
+        SettingsStore.save(this, formSettings)
+        loadIntoForm() // 정규화된 DB ID를 화면에 반영
         refreshStorageNotice()
 
-        val saved = SettingsStore.load(this)
+        val saved: Settings = SettingsStore.load(this)
         setStatus("확인 중…")
-        ui.buttonSaveTest.isEnabled = false
+        saving = true
 
         io.execute {
             val results: List<Pair<Boolean, String>> = saved.linkedPurses.map { purse ->
@@ -278,7 +304,7 @@ class MainActivity : AppCompatActivity() {
 
             runOnUiThread {
                 if (isFinishing || isDestroyed) return@runOnUiThread
-                ui.buttonSaveTest.isEnabled = true
+                saving = false
 
                 val allOk: Boolean = results.all { it.first }
                 val report: String = results.joinToString("\n\n") { it.second }
@@ -305,7 +331,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val granted = ContextCompat.checkSelfPermission(
+            val granted: Boolean = ContextCompat.checkSelfPermission(
                 this, Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
             if (!granted) {
@@ -320,9 +346,11 @@ class MainActivity : AppCompatActivity() {
         NotificationState.setOn(this, true)
         NotificationHelper.show(this)
         WeeklyReviewScheduler.schedule(this)
+        notificationOn = true
+
         if (NotificationHelper.isEnabled(this)) {
-            val purses = SettingsStore.load(this).linkedPurses
-            val howTo =
+            val purses: List<Purse> = SettingsStore.load(this).linkedPurses
+            val howTo: String =
                 "알림 카드를 누르면 입력 화면이 바로 뜹니다. «커피 4500» 처럼 적으세요.\n" +
                     "엔터를 칠 때마다 한 건씩 들어가고 위의 숫자가 줄어듭니다.\n" +
                     if (purses.size > 1) "곳간은 입력 화면 위에서 고릅니다." else ""
@@ -336,6 +364,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun disableNotification() {
+        // 먼저 꺼야 DismissReceiver 가 되살리지 않는다.
+        NotificationState.setOn(this, false)
+        NotificationHelper.hide(this)
+        WeeklyReviewScheduler.cancel(this)
+        notificationOn = false
+        setStatus("알림을 껐습니다. 다시 켜기 전까지 잠금화면에 나오지 않습니다.")
+    }
+
     private fun openNotificationSettings() {
         val intent = Intent(AndroidSettings.ACTION_APP_NOTIFICATION_SETTINGS)
             .putExtra(AndroidSettings.EXTRA_APP_PACKAGE, packageName)
@@ -344,18 +381,13 @@ class MainActivity : AppCompatActivity() {
         } catch (_: Exception) {
             startActivity(
                 Intent(AndroidSettings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                    .setData(android.net.Uri.fromParts("package", packageName, null))
+                    .setData(Uri.fromParts("package", packageName, null))
             )
         }
     }
 
     private fun setStatus(message: String, isError: Boolean = false) {
-        ui.textStatus.text = message
-        ui.textStatus.setTextColor(
-            ContextCompat.getColor(
-                this,
-                if (isError) R.color.status_error else R.color.status_normal
-            )
-        )
+        statusMessage = message
+        statusIsError = isError
     }
 }

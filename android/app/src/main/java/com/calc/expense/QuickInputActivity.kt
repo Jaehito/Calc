@@ -1,5 +1,7 @@
 package com.calc.expense
 
+import android.app.KeyguardManager
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.text.Editable
@@ -35,9 +37,16 @@ import java.util.concurrent.Executors
  */
 class QuickInputActivity : AppCompatActivity() {
 
-    private companion object {
+    companion object {
+        /**
+         * 이 값을 true 로 실어 보내면 잠금 풀린 상태여도 홈으로 돌리지 않고 이 화면을 그대로 연다.
+         * 결제 리마인더(«방금 쓴 거 있어요?»)처럼 "이 결제를 지금 바로 적자"가 목적인 진입점이
+         * 쓴다 — 그 알림은 잠금 여부와 무관하게 늘 입력 화면으로 가야 제 역할을 한다.
+         */
+        const val EXTRA_FORCE_INPUT = "force_input"
+
         /** «없음» 칩의 표시 이름. 실제 카테고리 값(노션에 쓰는 값)은 빈 문자열이다. */
-        const val CATEGORY_NONE = "없음"
+        private const val CATEGORY_NONE = "없음"
     }
 
     private lateinit var ui: ActivityQuickInputBinding
@@ -79,6 +88,16 @@ class QuickInputActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // 잠금이 풀린 상태에서 상시 카드를 눌렀다면 빠른 입력 대신 앱 메인화면을 연다.
+        // 잠긴 상태에서만 이 시트가 뜬다 — 그게 이 화면이 존재하는 이유(잠금 해제 없이 적기)다.
+        // 결제 리마인더처럼 항상 입력으로 가야 하는 진입점은 EXTRA_FORCE_INPUT 으로 이걸 건너뛴다.
+        if (!intent.getBooleanExtra(EXTRA_FORCE_INPUT, false) && !isDeviceLocked()) {
+            startActivity(Intent(this, HomeActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            finish()
+            return
+        }
+
         showOverLockScreen()
 
         ui = ActivityQuickInputBinding.inflate(layoutInflater)
@@ -143,6 +162,10 @@ class QuickInputActivity : AppCompatActivity() {
         }
         ViewCompat.requestApplyInsets(ui.sheet)
     }
+
+    /** 지금 폰이 잠겨 있는지. 카드를 누른 순간의 상태를 봐야 하므로 인텐트를 만들 때가 아니라 여기서 확인한다. */
+    private fun isDeviceLocked(): Boolean =
+        getSystemService(KeyguardManager::class.java)?.isKeyguardLocked == true
 
     /** 잠금 해제 없이 뜨도록 요청한다. 제조사 정책이 막으면 인증을 먼저 요구할 수 있다. */
     private fun showOverLockScreen() {

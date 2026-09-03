@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="status_normal">#1B5E20</color>
-    <color name="status_error">#B3262E</color>
     <color name="ic_launcher_background">#2E5E4E</color>
 
     <!-- 앱 팔레트. 런처 아이콘의 딥그린에서 파생했다. -->

@@ -18,6 +18,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -262,7 +264,9 @@ private fun EditRowDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("내역 수정", fontWeight = FontWeight.Bold) },
+        containerColor = HomePalette.Card,
+        shape = RoundedCornerShape(24.dp),
+        title = { Text("내역 수정", color = HomePalette.Ink, fontWeight = FontWeight.Bold, fontSize = 18.sp) },
         text = {
             Column {
                 OutlinedTextField(
@@ -270,6 +274,8 @@ private fun EditRowDialog(
                     onValueChange = { name = it },
                     label = { Text("이름") },
                     singleLine = true,
+                    shape = RoundedCornerShape(14.dp),
+                    colors = mintFieldColors(),
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(10.dp))
@@ -279,11 +285,13 @@ private fun EditRowDialog(
                     label = { Text("금액") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = mintFieldColors(),
                     modifier = Modifier.fillMaxWidth(),
                 )
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(14.dp))
                 Text(text = "카테고리", color = HomePalette.Muted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(7.dp))
                 Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
                     for ((index, catName) in categories.withIndex()) {
                         val on: Boolean = category == catName
@@ -301,25 +309,31 @@ private fun EditRowDialog(
                         if (index < categories.lastIndex) Spacer(Modifier.width(7.dp))
                     }
                 }
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(18.dp))
                 Text(
                     text = "삭제",
                     color = HomePalette.Over,
                     fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Bold,
                     modifier = Modifier
                         .clip(RoundedCornerShape(999.dp))
+                        .background(HomePalette.Over.copy(alpha = 0.09f))
                         .clickable(onClick = onDelete)
-                        .padding(vertical = 4.dp),
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
                 )
             }
         },
         confirmButton = {
-            TextButton(
+            Button(
                 onClick = { onSave(name.trim(), amount ?: 0L, category) },
                 enabled = canSave,
+                shape = RoundedCornerShape(999.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = HomePalette.AccentBright,
+                    disabledContainerColor = HomePalette.Chip,
+                ),
             ) {
-                Text("저장", color = if (canSave) HomePalette.Accent else HomePalette.Muted, fontWeight = FontWeight.Bold)
+                Text("저장", color = if (canSave) Color.White else HomePalette.Muted, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
