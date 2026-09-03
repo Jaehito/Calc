@@ -1,0 +1,35 @@
+2단계(Firestore 이중 쓰기)를 위해 Firebase 콘솔 → Firestore Database → 규칙 탭에
+아래 내용을 "추가"한다. 기존 challenges/** 규칙은 그대로 둔다 — 이 파일은 덧붙이는
+스니펫이지, 전체 규칙 파일이 아니다.
+
+주의: 이 텍스트로 `firebase deploy --only firestore:rules` 를 돌리면 안 된다 — CLI
+배포는 규칙 파일 전체를 통째로 덮어써서, 콘솔에 이미 있는 challenges/** 규칙이
+사라진다. 콘솔에서 직접 복사해 붙여넣는 방식으로만 쓴다.
+
+match /users/{uid} {
+  allow read, write: if request.auth != null && request.auth.uid == uid;
+
+  match /expenses/{expenseId} {
+    allow read, write: if request.auth != null && request.auth.uid == uid;
+  }
+}
+
+match /households/{householdId} {
+  allow read, create: if request.auth != null;
+
+  match /expenses/{expenseId} {
+    allow read, write: if request.auth != null
+      && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.householdId == householdId;
+  }
+}
+
+규칙 의미:
+- users/{uid}: 자기 uid 문서만 읽고 쓸 수 있다 (개인 곳간 지출 + householdId 필드).
+- households/{id}: 로그인한 누구나 읽고 만들 수 있다 (코드로 방을 찾는 조회에 필요 —
+  코드가 6자리 랜덤이라 브루트포스 걱정은 없다).
+- households/{id}/expenses: 내 users/{uid}.householdId 가 그 가정과 일치할 때만
+  읽고 쓸 수 있다.
+
+적용 후 확인 방법은 커밋 0e01c5f 의 대화 기록 참고 — 요약: 설정 화면 "공용 곳간
+동기화(베타)" 카드에서 코드 만들기/연결이 되는지, 지출 기록 후 Firestore 콘솔에
+users/{uid}/expenses 또는 households/{id}/expenses 문서가 생기는지 확인한다.
