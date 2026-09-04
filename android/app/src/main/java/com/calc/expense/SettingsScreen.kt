@@ -2,6 +2,7 @@ package com.calc.expense
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -308,10 +310,27 @@ fun SettingsScreen(
             SectionTitle("읽기 전환 (실험적)")
             HelperText("켜면 홈 화면 숫자·통계·내역을 노션 대신 Firestore에서 읽습니다. 실패하면 그때그때 자동으로 노션으로 돌아가지만, Firestore에 데이터가 비어 있는데 읽기 자체는 성공하는 경우(백필 전, 또는 아직 규칙이 안 걸린 경우)는 걸러내지 못합니다 — 그러면 지출이 실제보다 적게(0에 가깝게) 보일 수 있습니다. 위 백필을 먼저 실행하고, Firestore 콘솔에서 데이터가 보이는 걸 확인한 뒤에 켜세요.")
             Spacer(Modifier.height(10.dp))
-            PillButton(
-                text = if (ui.firestoreReadEnabled) "Firestore 읽기: 켜짐" else "Firestore 읽기: 꺼짐",
-                onClick = onToggleFirestoreRead,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(9.dp)
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(if (ui.firestoreReadEnabled) HomePalette.AccentBright else HomePalette.Muted),
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = if (ui.firestoreReadEnabled) "켜짐 — Firestore에서 읽는 중" else "꺼짐 — 노션에서 읽는 중(기본)",
+                    color = if (ui.firestoreReadEnabled) HomePalette.Accent else HomePalette.Ink2,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+            Spacer(Modifier.height(10.dp))
+            if (ui.firestoreReadEnabled) {
+                OutlinedPillButton("끄고 노션으로 돌아가기", onToggleFirestoreRead, modifier = Modifier.fillMaxWidth())
+            } else {
+                PillButton(text = "Firestore 읽기 켜기", onClick = onToggleFirestoreRead)
+            }
         }
 
         Spacer(Modifier.height(16.dp))
