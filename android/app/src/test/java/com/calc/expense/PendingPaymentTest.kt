@@ -97,6 +97,39 @@ class PendingPaymentTest {
     }
 
     @Test
+    fun `손으로 적은 기록과 같은 금액이 시간 안에 있으면 치울 후보를 찾는다`() {
+        val items: List<PendingPayment> = listOf(item("a", amount = 4_500L, postedAt = now - 5 * 60_000L))
+
+        assertEquals("a", PendingPayments.matchRecorded(items, 4_500L, now))
+    }
+
+    @Test
+    fun `시간 폭을 벗어나면 치우지 않는다`() {
+        val far: Long = now - (PendingPayments.MATCH_WINDOW_MINUTES + 5) * 60_000L
+        val items: List<PendingPayment> = listOf(item("a", amount = 4_500L, postedAt = far))
+
+        assertEquals(null, PendingPayments.matchRecorded(items, 4_500L, now))
+    }
+
+    @Test
+    fun `금액이 다르면 치우지 않는다`() {
+        val items: List<PendingPayment> = listOf(item("a", amount = 4_500L, postedAt = now))
+
+        assertEquals(null, PendingPayments.matchRecorded(items, 5_000L, now))
+    }
+
+    @Test
+    fun `같은 금액이 둘이면 시간이 가장 가까운 하나만 고른다`() {
+        // 같은 금액을 하루에 두 번 썼을 때 둘 다 사라지면 한 건을 잃는다.
+        val items: List<PendingPayment> = listOf(
+            item("far", amount = 4_500L, postedAt = now - 20 * 60_000L),
+            item("near", amount = 4_500L, postedAt = now - 2 * 60_000L),
+        )
+
+        assertEquals("near", PendingPayments.matchRecorded(items, 4_500L, now))
+    }
+
+    @Test
     fun `JSON 왕복에도 값이 그대로다`() {
         val items: List<PendingPayment> = listOf(item("a", amount = 12_000L), item("b", amount = 7_700L))
 

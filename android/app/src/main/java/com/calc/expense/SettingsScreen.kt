@@ -75,6 +75,9 @@ data class SettingsUi(
     val backfillMessage: String? = null,
     val backfillMessageIsError: Boolean = false,
     val firestoreReadEnabled: Boolean = false,
+    /** 수집함에 담지 않는 발신자·앱. 해제할 수 있게 화면에 그대로 보여준다. */
+    val blockedSenders: List<String> = emptyList(),
+    val blockedPackages: List<String> = emptyList(),
 )
 
 /**
@@ -105,6 +108,8 @@ fun SettingsScreen(
     onLeaveHousehold: () -> Unit,
     onBackfill: () -> Unit,
     onToggleFirestoreRead: () -> Unit,
+    onUnblockSender: (String) -> Unit,
+    onUnblockPackage: (String) -> Unit,
 ) {
     val form: SettingsFormUi = ui.form
 
@@ -390,8 +395,60 @@ fun SettingsScreen(
             Spacer(Modifier.height(8.dp))
             TextLink("알림 접근 권한 설정 열기", onOpenReminderAccessSettings)
         }
+        Spacer(Modifier.height(12.dp))
+
+        CardBox {
+            SectionTitle("수집함에서 안 보는 출처")
+            HelperText("결제 알림을 모아 «기록 안 한 결제»로 물어볼 때, 여기 있는 발신자·앱은 건너뜁니다. 수집함 팝업에서 «이 발신자 안 보기»·«이 앱 안 보기»를 누르면 추가됩니다.")
+
+            if (ui.blockedSenders.isEmpty() && ui.blockedPackages.isEmpty()) {
+                Spacer(Modifier.height(10.dp))
+                Text(text = "아직 막아 둔 출처가 없습니다", color = HomePalette.Muted, fontSize = 12.sp)
+            }
+
+            if (ui.blockedSenders.isNotEmpty()) {
+                Spacer(Modifier.height(12.dp))
+                SubTitle("발신자")
+                for (sender in ui.blockedSenders) {
+                    BlockedRow(label = sender) { onUnblockSender(sender) }
+                }
+            }
+
+            if (ui.blockedPackages.isNotEmpty()) {
+                Spacer(Modifier.height(12.dp))
+                SubTitle("앱")
+                for (packageName in ui.blockedPackages) {
+                    BlockedRow(label = packageName) { onUnblockPackage(packageName) }
+                }
+            }
+        }
 
         Spacer(Modifier.height(24.dp))
+    }
+}
+
+/** 막아 둔 출처 한 줄. 이름과 «해제». */
+@Composable
+private fun BlockedRow(label: String, onUnblock: () -> Unit) {
+    Spacer(Modifier.height(8.dp))
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = label,
+            color = HomePalette.Ink2,
+            fontSize = 13.sp,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = "해제",
+            color = HomePalette.Accent,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier
+                .clip(RoundedCornerShape(999.dp))
+                .background(HomePalette.Soft)
+                .clickable(onClick = onUnblock)
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+        )
     }
 }
 

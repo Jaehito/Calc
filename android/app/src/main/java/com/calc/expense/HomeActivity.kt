@@ -23,6 +23,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.YearMonth
 import java.util.concurrent.Executors
 
@@ -47,6 +48,18 @@ class HomeActivity : ComponentActivity() {
     private val challenge: ChallengeRepository by lazy { FirestoreChallengeRepository(this) }
     private var challengeUi: ChallengeUi by mutableStateOf(ChallengeUi())
     private var challengeReg: Cancellable? = null
+
+    /** 기록 안 한 결제 수집함. 비어 있지 않으면 앱을 열 때 한 번 물어본다. */
+    private var inbox: PendingInboxUi by mutableStateOf(PendingInboxUi())
+    private var inboxVisible: Boolean by mutableStateOf(false)
+
+    /**
+     * 이번에 앱을 연 뒤 수집함을 이미 띄웠는지.
+     *
+     * onResume 마다 띄우면 설정·내역에 갔다 돌아올 때도 다시 열려 «나중에»가 무의미해진다.
+     * 화면을 새로 만들 때(앱을 새로 열 때) 한 번만 띄운다.
+     */
+    private var inboxAsked: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,6 +90,19 @@ class HomeActivity : ComponentActivity() {
                                         .putExtra(QuickInputActivity.EXTRA_FORCE_INPUT, true),
                                 )
                             },
+                        )
+                    }
+
+                    if (inboxVisible && inbox.items.isNotEmpty()) {
+                        PendingInboxDialog(
+                            ui = inbox,
+                            onRecord = { item, purse, name, amount, category ->
+                                recordPending(item, purse, name, amount, category)
+                            },
+                            onIgnore = { item -> ignorePending(item) },
+                            onBlockSender = { item -> blockSender(item) },
+                            onBlockApp = { item -> blockApp(item) },
+                            onDismiss = { inboxVisible = false },
                         )
                     }
                 }
@@ -123,9 +149,89 @@ class HomeActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         refresh()
+        refreshInbox(show = !inboxAsked)
         republishNotification()
         resyncInBackground()
         if (tab == 2) loadChallenge()
+    }
+
+    /**
+     * 수집함을 다시 읽는다.
+     *
+     * @param show 비어 있지 않으면 팝업을 띄울지. 앱을 새로 연 첫 onResume 에서만 true —
+     *   사용자가 «나중에»로 닫은 뒤 항목을 처리하거나 다른 화면에 갔다 올 때마다 다시 열리면 안 된다.
+     */
+    private fun refreshInbox(show: Boolean = false) {
+        val settings: Settings = SettingsStore.load(this)
+        val purses: List<Purse> = settings.linkedPurses
+        val items: List<PendingPayment> = PendingPaymentStore.load(this)
+
+        inbox = inbox.copy(
+            items = items,
+            purses = purses,
+            purseLabels = purses.associateWith { settings.labelOf(it) },
+            categories = CategoryStore.load(this),
+            busyId = null,
+        )
+        if (items.isEmpty()) {
+            inboxVisible = false
+        } else if (show) {
+            inboxVisible = true
+            inboxAsked = true
+        }
+    }
+
+    /** 수집함 한 건을 기록한다. 성공해야 수집함에서 뺀다 — 실패하면 다시 시도할 수 있어야 한다. */
+    private fun recordPending(
+        item: PendingPayment,
+        purse: Purse,
+        name: String,
+        amount: Long,
+        category: String,
+    ) {
+        if (amount <= 0L || name.isBlank()) return
+        inbox = inbox.copy(busyId = item.id, message = null, messageIsError = false)
+
+        val app = applicationContext
+        val now: String = LocalTime.now().format(ReplyReceiver.TIME_FORMAT)
+        val expense = Expense(name = name, amount = amount, category = category)
+
+        io.execute {
+            val result: RecordResult = try {
+                RecordExpense.record(app, expense, purse.key, now)
+            } catch (e: Exception) {
+                RecordResult(ok = false, lines = StatusText.failed("오류: ${e.message ?: e.javaClass.simpleName}", now))
+            }
+            if (result.ok) PendingPaymentStore.remove(app, item.id)
+
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                refreshInbox()
+                refresh()
+                if (!result.ok) {
+                    inbox = inbox.copy(message = result.lines.summary, messageIsError = true)
+                }
+            }
+        }
+    }
+
+    private fun ignorePending(item: PendingPayment) {
+        PendingPaymentStore.remove(this, item.id)
+        refreshInbox()
+    }
+
+    /** 이 발신자에서 온 것은 앞으로 수집하지 않는다. 이미 쌓인 것도 함께 치운다. */
+    private fun blockSender(item: PendingPayment) {
+        PaymentBlocklist.blockSender(this, item.sender)
+        PendingPaymentStore.removeFrom(this, sender = item.sender)
+        refreshInbox()
+    }
+
+    /** 이 앱에서 온 것은 앞으로 수집하지 않는다. 이미 쌓인 것도 함께 치운다. */
+    private fun blockApp(item: PendingPayment) {
+        PaymentBlocklist.blockPackage(this, item.packageName)
+        PendingPaymentStore.removeFrom(this, packageName = item.packageName)
+        refreshInbox()
     }
 
     override fun onDestroy() {

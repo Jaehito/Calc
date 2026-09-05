@@ -60,6 +60,28 @@ object PendingPayments {
             (sender != null && item.sender == sender)
     }
 
+    /** 손으로 적은 기록과 같은 결제로 볼 시간 폭. 문자는 결제 몇 분 뒤에 오기도 한다. */
+    const val MATCH_WINDOW_MINUTES = 30L
+
+    private const val MINUTE_MS = 60L * 1000L
+
+    /**
+     * 방금 손으로 적은 기록([amount], [at])과 같은 결제로 보이는 후보의 id. 없으면 null.
+     *
+     * 잠금화면에서 이미 적은 뒤 카드 문자가 도착하면 수집함이 같은 걸 또 묻게 된다. 그래서
+     * 금액이 같고 [MATCH_WINDOW_MINUTES] 분 안에 있는 후보를 하나 치운다.
+     *
+     * **하나만** 고른다(시간이 가장 가까운 것) — 같은 금액을 하루에 두 번 썼다면 둘 다 사라지면
+     * 안 된다. 한 건을 적으면 한 건만 치우는 것이 안전한 쪽이다.
+     */
+    fun matchRecorded(items: List<PendingPayment>, amount: Long, at: Long): String? {
+        val window: Long = MATCH_WINDOW_MINUTES * MINUTE_MS
+        return items
+            .filter { it.amount == amount && kotlin.math.abs(it.postedAt - at) <= window }
+            .minByOrNull { kotlin.math.abs(it.postedAt - at) }
+            ?.id
+    }
+
     /** 오래된 것을 버리고 최신순으로 세운 뒤 상한까지만 남긴다. */
     fun prune(items: List<PendingPayment>, now: Long): List<PendingPayment> {
         val oldest: Long = now - KEEP_DAYS * DAY_MS

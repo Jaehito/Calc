@@ -49,6 +49,8 @@ class MainActivity : ComponentActivity() {
     private var backfillMessage: String? by mutableStateOf(null)
     private var backfillMessageIsError: Boolean by mutableStateOf(false)
     private var firestoreReadEnabled: Boolean by mutableStateOf(false)
+    private var blockedSenders: List<String> by mutableStateOf(emptyList())
+    private var blockedPackages: List<String> by mutableStateOf(emptyList())
 
     private val requestNotificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -82,6 +84,8 @@ class MainActivity : ComponentActivity() {
                     backfillMessage = backfillMessage,
                     backfillMessageIsError = backfillMessageIsError,
                     firestoreReadEnabled = firestoreReadEnabled,
+                    blockedSenders = blockedSenders,
+                    blockedPackages = blockedPackages,
                 ),
                 onBack = { finish() },
                 onFormChange = { form = it },
@@ -106,8 +110,21 @@ class MainActivity : ComponentActivity() {
                 onLeaveHousehold = { leaveHousehold() },
                 onBackfill = { runBackfill() },
                 onToggleFirestoreRead = { toggleFirestoreRead() },
+                onUnblockSender = { sender ->
+                    PaymentBlocklist.unblockSender(this, sender)
+                    refreshBlocklist()
+                },
+                onUnblockPackage = { packageName ->
+                    PaymentBlocklist.unblockPackage(this, packageName)
+                    refreshBlocklist()
+                },
             )
         }
+    }
+
+    private fun refreshBlocklist() {
+        blockedSenders = PaymentBlocklist.blockedSenders(this).sorted()
+        blockedPackages = PaymentBlocklist.blockedPackages(this).sorted()
     }
 
     private fun toggleFirestoreRead() {
@@ -154,6 +171,7 @@ class MainActivity : ComponentActivity() {
         refreshReminderButton()
         notificationOn = NotificationState.isOn(this)
         firestoreReadEnabled = FirestoreReadMode.isEnabled(this)
+        refreshBlocklist()
         resyncInBackground()
         refreshHousehold()
     }

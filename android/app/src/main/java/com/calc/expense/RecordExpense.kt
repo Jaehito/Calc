@@ -46,7 +46,23 @@ object RecordExpense {
                 return fail("${r.message} · 입력: \"${text.trim()}\"", now)
             is ParseResult.Ok -> r.expense.copy(category = category.trim())
         }
+        return record(context, parsed, purseKey, now, today)
+    }
 
+    /**
+     * 이미 이름·금액·카테고리가 정해진 지출 한 건을 기록한다.
+     *
+     * [submit] 은 «커피 4500» 같은 한 줄을 파싱해 여기로 넘긴다. 수집함([PendingPayment])처럼
+     * 값이 이미 나뉘어 있는 경로는 문자열로 되돌렸다가 다시 파싱하지 않고 곧장 이리로 온다 —
+     * 노션·Firestore·캐시·리마인더·수집함 정리의 순서는 여기 한 곳에만 있다.
+     */
+    fun record(
+        context: Context,
+        parsed: Expense,
+        purseKey: String?,
+        now: String,
+        today: LocalDate = LocalDate.now(),
+    ): RecordResult {
         val settings = SettingsStore.load(context)
         val linked: List<Purse> = settings.linkedPurses
         if (settings.token.isBlank() || linked.isEmpty()) {
@@ -66,7 +82,10 @@ object RecordExpense {
                 // Firestore 이중 쓰기 — 실패해도 위 노션 기록엔 영향 없다(안전망일 뿐).
                 FirestoreExpenseStore.add(context, purse, r.detail, parsed, today)
                 // 기록이 있었으니 결제 리마인더는 이 뒤로 보내지 않는다.
-                ReminderState.markRecorded(context, System.currentTimeMillis())
+                val at: Long = System.currentTimeMillis()
+                ReminderState.markRecorded(context, at)
+                // 방금 적은 것과 같은 결제로 보이는 수집함 후보를 치운다 — 같은 걸 두 번 묻지 않는다.
+                PendingPaymentStore.removeRecorded(context, parsed.amount, at)
                 // 여기서 Notion 을 한 번 더 왕복하지 않는다 — 브로드캐스트 수명 안에 못 끝낸다.
                 // 로컬 사본만으로 계산하고, Notion 과의 대조는 앱을 열 때 한다.
                 RecordResult(

@@ -29,6 +29,16 @@ object PendingPaymentStore {
         save(context, PendingPayments.remove(load(context), id))
     }
 
+    /**
+     * 방금 손으로 적은 기록과 같은 결제로 보이는 후보를 조용히 치운다([PendingPayments.matchRecorded]).
+     * 잠금화면에서 적은 뒤 카드 문자가 와도 수집함이 같은 걸 다시 묻지 않게 한다.
+     */
+    fun removeRecorded(context: Context, amount: Long, at: Long = System.currentTimeMillis()) {
+        val items: List<PendingPayment> = load(context, at)
+        val id: String = PendingPayments.matchRecorded(items, amount, at) ?: return
+        save(context, PendingPayments.remove(items, id))
+    }
+
     /** 차단할 때 이미 쌓여 있던 그 출처의 후보도 함께 치운다. */
     fun removeFrom(context: Context, packageName: String? = null, sender: String? = null) {
         save(context, PendingPayments.removeFrom(load(context), packageName, sender))
