@@ -19,12 +19,16 @@ import androidx.core.app.NotificationManagerCompat
 object NotificationHelper {
 
     /**
-     * v2 — 잠금화면에서 다른 앱 알림들보다 위로 가도록 중요도를 올리며 채널을 새로 팠다.
-     * 안드로이드는 이미 만들어진 채널의 중요도를 앱이 나중에 못 바꾼다(사용자만 바꿀 수 있다) —
-     * id 를 바꿔야 기존 설치에도 실제로 적용된다. [ensureChannel] 이 옛 v1 채널은 지운다.
+     * v3 — 잠금화면에서 다른 앱의 새 알림보다도 위로 가도록 중요도를 IMPORTANCE_HIGH 로 올렸다.
+     * v2(DEFAULT)까지는 같은 중요도끼리 «최신 알림이 위»라, 다른 앱이 새 알림을 띄우면 상시
+     * 카드가 아래로 밀렸다(마지막 기록 시각이 옛날이라). HIGH 는 상단(알림) 영역으로 올려
+     * 이 밀림을 줄인다. 안드로이드는 이미 만든 채널의 중요도를 앱이 못 바꾸므로(사용자만 가능)
+     * id 를 바꿔야 기존 설치에도 적용된다 — [ensureChannel] 이 옛 v1·v2 채널을 지운다.
+     * 그래도 제조사(삼성 등) 정책에 따라 «항상 맨 위»가 100% 보장되진 않는다.
      */
-    const val CHANNEL_ID = "expense_input_v2"
+    const val CHANNEL_ID = "expense_input_v3"
     private const val LEGACY_CHANNEL_ID = "expense_input"
+    private const val LEGACY_CHANNEL_ID_V2 = "expense_input_v2"
     const val NOTIF_ID = 1001
     const val KEY_REPLY = "key_expense_reply"
 
@@ -44,18 +48,21 @@ object NotificationHelper {
     private const val REQUEST_OPEN_INPUT_REMINDER = 4
 
     /**
-     * IMPORTANCE_DEFAULT 로 잠금화면 정렬에서 다른 앱의 낮은 중요도 알림보다 위로 가게 한다.
-     * 그래도 무음은 그대로다(sound/vibration 없음) — DEFAULT 는 헤드업 배너를 띄우지 않는다.
-     * 잠금화면에서 "항상 맨 위"를 앱이 100% 강제할 수는 없다 — 기기·제조사 정책에 따라 갈린다.
+     * IMPORTANCE_HIGH 로 잠금화면 상단(알림) 영역에 올린다 — 다른 앱의 새 알림에도 덜 밀린다.
+     * 대신 소리·진동은 채널에서 꺼 둔다(setSound null·enableVibration false) — HIGH 라도 소리는
+     * 나지 않는다. 다만 «알림» 영역 소속이라 처음 뜰 때 헤드업 배너가 한 번 뜰 수 있고, 이후
+     * 갱신은 [show] 의 setOnlyAlertOnce 로 반복 배너를 막는다. 무음 유지를 위해 이전엔 붙였던
+     * setSilent 는 뺐다 — 그게 알림을 «무음 알림» 하단 묶음으로 내려 상단 정렬을 되레 깨뜨린다.
      */
     fun ensureChannel(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.deleteNotificationChannel(LEGACY_CHANNEL_ID)
+        manager.deleteNotificationChannel(LEGACY_CHANNEL_ID_V2)
 
         val channel = NotificationChannel(
             CHANNEL_ID,
             "지출 빠른 입력",
-            NotificationManager.IMPORTANCE_DEFAULT,
+            NotificationManager.IMPORTANCE_HIGH,
         ).apply {
             description = "잠금화면에서 지출을 바로 기록하는 상시 알림"
             setShowBadge(false)
@@ -104,9 +111,11 @@ object NotificationHelper {
             .setStyle(NotificationCompat.BigTextStyle().bigText(lines?.detail ?: IDLE_TEXT))
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(true)
+            // 처음 한 번만 알린다(배너). 이후 기록·앱 열기로 갱신될 때는 다시 튀지 않는다.
             .setOnlyAlertOnce(true)
-            .setSilent(true)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            // setSilent 는 일부러 안 쓴다 — 무음 알림 묶음으로 내려가 상단 정렬을 깨기 때문.
+            // 소리·진동은 채널(IMPORTANCE_HIGH + setSound null)에서 이미 꺼 둔다.
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(openInput)
             .setDeleteIntent(onDismissed)
             .build()
