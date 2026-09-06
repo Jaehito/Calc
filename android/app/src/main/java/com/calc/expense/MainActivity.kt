@@ -508,6 +508,7 @@ class MainActivity : ComponentActivity() {
         NotificationState.setOn(this, true)
         NotificationHelper.show(this)
         WeeklyReviewScheduler.schedule(this)
+        GradeScheduler.schedule(this)
         notificationOn = true
 
         if (NotificationHelper.isEnabled(this)) {
@@ -531,6 +532,7 @@ class MainActivity : ComponentActivity() {
         NotificationState.setOn(this, false)
         NotificationHelper.hide(this)
         WeeklyReviewScheduler.cancel(this)
+        GradeScheduler.cancel(this)
         notificationOn = false
         setStatus("알림을 껐습니다. 다시 켜기 전까지 잠금화면에 나오지 않습니다.")
     }

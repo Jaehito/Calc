@@ -53,6 +53,9 @@ class HomeActivity : ComponentActivity() {
     private var inbox: PendingInboxUi by mutableStateOf(PendingInboxUi())
     private var inboxVisible: Boolean by mutableStateOf(false)
 
+    /** 막 끝난 주기 결산. 월급날이 지난 걸 처음 확인한 순간에만 채워진다. */
+    private var cycleGrade: SpendingGrade.Graded? by mutableStateOf(null)
+
     /**
      * 이번에 앱을 연 뒤 수집함을 이미 띄웠는지.
      *
@@ -91,6 +94,10 @@ class HomeActivity : ComponentActivity() {
                                 )
                             },
                         )
+                    }
+
+                    cycleGrade?.let { grade ->
+                        CycleGradeDialog(grade = grade, onDismiss = { cycleGrade = null })
                     }
 
                     if (inboxVisible && inbox.items.isNotEmpty()) {
@@ -152,7 +159,35 @@ class HomeActivity : ComponentActivity() {
         refreshInbox(show = !inboxAsked)
         republishNotification()
         resyncInBackground()
+        checkCycleGrade()
         if (tab == 2) loadChallenge()
+    }
+
+    /**
+     * 주기가 바뀐 걸 처음 확인하는 순간, 막 끝난 주기를 한 번만 결산해 보여준다.
+     *
+     * [CycleGradeStore] 에 마지막으로 본 주기 시작일을 기억해 둔다 — 그 값과 지금 주기
+     * 시작일이 다르면 최소 한 번은 주기가 바뀐 것이다. 처음 쓰는 사람(저장된 값이 없음)에게는
+     * 비교할 지난 주기가 없으므로 그냥 지금 주기를 기억만 하고 넘어간다.
+     */
+    private fun checkCycleGrade() {
+        val settings: Settings = SettingsStore.load(this)
+        if (!settings.isComplete) return
+
+        val today: LocalDate = LocalDate.now()
+        val currentCycle: BudgetCycle = Payday.cycleOf(today, settings.payDay)
+        val lastSeen: LocalDate? = CycleGradeStore.lastSeenStart(this)
+
+        if (lastSeen == null || lastSeen == currentCycle.start) {
+            CycleGradeStore.setLastSeenStart(this, currentCycle.start)
+            return
+        }
+
+        val endedCycle: BudgetCycle = Payday.cycleOf(currentCycle.start.minusDays(1), settings.payDay)
+        CycleGradeStore.setLastSeenStart(this, currentCycle.start)
+
+        val result: SpendingGrade = GradeRepository.cycle(this, endedCycle)
+        if (result is SpendingGrade.Graded) cycleGrade = result
     }
 
     /**
@@ -401,8 +436,9 @@ class HomeActivity : ComponentActivity() {
     private fun republishNotification() {
         if (NotificationState.isOn(this)) {
             NotificationHelper.show(this)
-            // 주 1회 돌아보기 예약을 확인·갱신한다. 예약이 사라졌어도 앱을 열면 되살아난다.
+            // 주 1회 돌아보기·매일 저녁 9시 등급 예약을 확인·갱신한다. 예약이 사라졌어도 앱을 열면 되살아난다.
             WeeklyReviewScheduler.schedule(this)
+            GradeScheduler.schedule(this)
         }
     }
 

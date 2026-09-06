@@ -92,8 +92,8 @@ object Ledger {
         return cycleSpent - previousThroughSameDay
     }
 
-    /** 주기가 걸친 달들을 읽어 그 범위의 지출만 더한다. */
-    private fun spentInCycle(context: Context, purse: Purse, cycle: BudgetCycle): Long {
+    /** 주기가 걸친 달들을 읽어 그 범위의 지출만 더한다. [GradeRepository] 도 주기 채점에 재사용한다. */
+    fun spentInCycle(context: Context, purse: Purse, cycle: BudgetCycle): Long {
         var total: Long = 0L
         var month: YearMonth = YearMonth.from(cycle.start)
         val lastMonth: YearMonth = YearMonth.from(cycle.lastDay)

@@ -3,6 +3,7 @@ package com.calc.expense
 import android.content.Context
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import java.time.LocalDate
 
 /**
  * 예약된 시각에 깨어나 주간 돌아보기 알림을 띄우고, 다음 주를 다시 예약한다.
@@ -19,7 +20,17 @@ class WeeklyReviewWorker(
         val app: Context = applicationContext
         try {
             if (NotificationState.isOn(app) && SettingsStore.load(app).isComplete) {
-                val lines: StatusLines = StatusText.weekly(Ledger.weeklyTotals(app))
+                val base: StatusLines = StatusText.weekly(Ledger.weeklyTotals(app))
+                // 지난 7일 등급을 한 줄 덧붙인다. 채점 대상이 아니면(곳간 없음) 조용히 생략한다.
+                val gradeLine: String? = GradeText.trailing(GradeRepository.trailing(app, LocalDate.now(), 7))
+                val lines: StatusLines = if (gradeLine == null) {
+                    base
+                } else {
+                    StatusLines(
+                        summary = "${base.summary} · $gradeLine",
+                        detail = "${base.detail}\n\n$gradeLine",
+                    )
+                }
                 NotificationHelper.showWeekly(app, lines)
             }
         } finally {

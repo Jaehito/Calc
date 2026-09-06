@@ -40,12 +40,17 @@ object NotificationHelper {
     private const val REMINDER_CHANNEL_ID = "payment_reminder"
     private const val REMINDER_NOTIF_ID = 1003
 
+    /** 저녁 9시 «오늘 등급». 또 다른 별도 채널·별도 알림 — 상시 카드와 섞이면 등급이 묻힌다. */
+    private const val GRADE_CHANNEL_ID = "daily_grade"
+    private const val GRADE_NOTIF_ID = 1004
+
     private const val IDLE_TEXT = "눌러서 기록하세요 · 예: 커피 4500"
 
     private const val REQUEST_OPEN_INPUT = 1
     private const val REQUEST_DISMISSED = 2
     private const val REQUEST_OPEN_HOME = 3
     private const val REQUEST_OPEN_INPUT_REMINDER = 4
+    private const val REQUEST_OPEN_HOME_GRADE = 5
 
     /**
      * IMPORTANCE_HIGH 로 잠금화면 상단(알림) 영역에 올린다 — 다른 앱의 새 알림에도 덜 밀린다.
@@ -158,6 +163,52 @@ object NotificationHelper {
         } catch (_: SecurityException) {
             // POST_NOTIFICATIONS 권한이 없는 경우.
         }
+    }
+
+    /**
+     * 저녁 9시 «오늘 등급» 알림. 주간 돌아보기처럼 지울 수 있고 되살리지 않는다 —
+     * 하루에 한 번 툭 던지는 알림이라 스와이프로 넘기면 그만이다.
+     */
+    fun showGrade(context: Context, lines: StatusLines) {
+        ensureGradeChannel(context)
+
+        val openHome = PendingIntent.getActivity(
+            context,
+            REQUEST_OPEN_HOME_GRADE,
+            Intent(context, HomeActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        val notification = NotificationCompat.Builder(context, GRADE_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_wallet)
+            .setContentTitle("오늘 등급")
+            .setContentText(lines.summary)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(lines.detail))
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setAutoCancel(true)
+            .setContentIntent(openHome)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .build()
+
+        try {
+            NotificationManagerCompat.from(context).notify(GRADE_NOTIF_ID, notification)
+        } catch (_: SecurityException) {
+            // POST_NOTIFICATIONS 권한이 없는 경우.
+        }
+    }
+
+    private fun ensureGradeChannel(context: Context) {
+        val channel = NotificationChannel(
+            GRADE_CHANNEL_ID,
+            "오늘 등급",
+            NotificationManager.IMPORTANCE_DEFAULT,
+        ).apply {
+            description = "매일 저녁 9시, 오늘 지출을 예산 대비 등급으로 알려줌"
+            setShowBadge(true)
+        }
+        context.getSystemService(NotificationManager::class.java)
+            .createNotificationChannel(channel)
     }
 
     private fun ensureWeeklyChannel(context: Context) {

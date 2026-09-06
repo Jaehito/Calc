@@ -16,6 +16,7 @@ class BootReceiver : BroadcastReceiver() {
         if (NotificationState.isOn(app) && SettingsStore.load(app).isComplete) {
             NotificationHelper.show(app)
             WeeklyReviewScheduler.schedule(app)
+            GradeScheduler.schedule(app)
         }
     }
 }
