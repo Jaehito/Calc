@@ -129,7 +129,10 @@ fun PendingInboxDialog(
     )
 }
 
-/** 후보 한 건. 접힌 상태에서는 금액·이름만, «수정»을 누르면 고칠 칸이 펼쳐진다. */
+/**
+ * 후보 한 건. 금액·이름·곳간·카테고리가 **접힌 채로 다 보이고 그 자리에서 바뀐다.**
+ * «이름·금액»을 눌렀을 때만 글자를 고치는 칸과 «안 보기»가 펼쳐진다.
+ */
 @Composable
 private fun PendingRow(
     item: PendingPayment,
@@ -179,6 +182,38 @@ private fun PendingRow(
             fontSize = 11.sp,
         )
 
+        // 곳간·카테고리는 **접힌 채로도 보이고 바로 눌린다.** 예전에는 «수정»을 눌러야
+        // 나왔는데, 확인하려고 펼치고 다시 접는 동작이 건마다 반복됐다. 수집함은 훑고
+        // 넘기는 화면이라 한 번에 보여야 한다.
+        if (ui.purses.size > 1) {
+            Spacer(Modifier.height(10.dp))
+            Row {
+                for ((index, candidate) in ui.purses.withIndex()) {
+                    Pill(
+                        text = ui.purseLabels[candidate] ?: candidate.defaultLabel,
+                        on = purse == candidate,
+                        onClick = { purse = candidate },
+                    )
+                    if (index < ui.purses.lastIndex) Spacer(Modifier.width(7.dp))
+                }
+            }
+        }
+
+        if (ui.categories.isNotEmpty()) {
+            Spacer(Modifier.height(8.dp))
+            Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                for ((index, catName) in ui.categories.withIndex()) {
+                    Pill(
+                        text = catName,
+                        on = category == catName,
+                        onClick = { category = if (category == catName) "" else catName },
+                    )
+                    if (index < ui.categories.lastIndex) Spacer(Modifier.width(7.dp))
+                }
+            }
+        }
+
+        // 펼쳤을 때 나오는 것은 «짐작이 틀렸을 때만 필요한 것»뿐이다 — 이름·금액과 차단.
         if (editing) {
             Spacer(Modifier.height(12.dp))
             OutlinedTextField(
@@ -202,45 +237,12 @@ private fun PendingRow(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            if (ui.purses.size > 1) {
-                Spacer(Modifier.height(12.dp))
-                Text(text = "곳간", color = HomePalette.Muted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.height(6.dp))
-                Row {
-                    for ((index, candidate) in ui.purses.withIndex()) {
-                        Pill(
-                            text = ui.purseLabels[candidate] ?: candidate.defaultLabel,
-                            on = purse == candidate,
-                            onClick = { purse = candidate },
-                        )
-                        if (index < ui.purses.lastIndex) Spacer(Modifier.width(7.dp))
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(12.dp))
-            Text(text = "카테고리", color = HomePalette.Muted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(6.dp))
-            Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
-                for ((index, catName) in ui.categories.withIndex()) {
-                    Pill(
-                        text = catName,
-                        on = category == catName,
-                        onClick = { category = if (category == catName) "" else catName },
-                    )
-                    if (index < ui.categories.lastIndex) Spacer(Modifier.width(7.dp))
-                }
-            }
-
             Spacer(Modifier.height(12.dp))
             Row {
                 TextLink("이 발신자 안 보기") { onBlockSender(item) }
                 Spacer(Modifier.width(14.dp))
                 TextLink("이 앱 안 보기") { onBlockApp(item) }
             }
-        } else if (category.isNotBlank()) {
-            Spacer(Modifier.height(8.dp))
-            Pill(text = category, on = true, onClick = { editing = true })
         }
 
         Spacer(Modifier.height(12.dp))
@@ -263,7 +265,7 @@ private fun PendingRow(
                 )
             }
             Spacer(Modifier.width(10.dp))
-            TextLink(if (editing) "접기" else "수정") { editing = !editing }
+            TextLink(if (editing) "접기" else "이름·금액") { editing = !editing }
             Spacer(Modifier.width(14.dp))
             TextLink("무시") { onIgnore(item) }
         }
