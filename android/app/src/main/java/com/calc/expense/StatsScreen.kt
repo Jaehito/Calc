@@ -60,17 +60,58 @@ fun StatsScreen(
     }
 }
 
-/** 주간 추이 — 지난 14일 일별 막대. 앞 7일은 흐리게, 최근 7일은 민트로. */
+/**
+ * 최근 7일 카드 — 목표 대비를 주로 보여주고, 견줄 지난주가 있을 때만 비교 줄을 덧붙인다.
+ *
+ * 예전에는 «이전 7일 대비»만 있어서 지난주 기록이 없으면(설치 첫 주) 0원 쓴 주와 견주게 되고,
+ * 무조건 «더 썼어요»가 빨갛게 떴다. 판정은 [WeekTrends] 가 한다 — 여기서는 그리기만 한다.
+ */
 @Composable
 private fun TrendCard(data: StatsData) {
-    val diff: Long = data.recent7 - data.prev7
+    val trend: WeekTrend = WeekTrends.of(
+        spent = data.recent7,
+        budget = data.week7Budget,
+        prevSpent = data.prev7,
+    )
     CardBox {
-        Text(text = "주간 추이", color = HomePalette.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(14.dp))
+        Text(text = "최근 7일", color = HomePalette.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(12.dp))
+
+        if (trend.hasBudget) {
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    text = StatusText.won(trend.spent),
+                    color = HomePalette.Ink,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    style = Figures,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = "목표 " + StatusText.won(trend.budget),
+                    color = HomePalette.Muted,
+                    fontSize = 12.sp,
+                    style = Figures,
+                )
+            }
+            Spacer(Modifier.height(9.dp))
+            Gauge(percent = trend.percent)
+            Spacer(Modifier.height(9.dp))
+            Text(
+                text =
+                    if (trend.left >= 0L) StatusText.won(trend.left) + " 남았어요"
+                    else StatusText.won(-trend.left) + " 넘겼어요",
+                color = if (trend.left >= 0L) HomePalette.Accent else HomePalette.Over,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                style = Figures,
+            )
+            Spacer(Modifier.height(16.dp))
+        }
 
         val bars: List<Long> = data.daily14
         val max: Long = bars.maxOrNull() ?: 0L
-        Canvas(modifier = Modifier.fillMaxWidth().height(92.dp)) {
+        Canvas(modifier = Modifier.fillMaxWidth().height(76.dp)) {
             val n: Int = bars.size.coerceAtLeast(1)
             val gap: Float = 5.dp.toPx()
             val bw: Float = (size.width - gap * (n - 1)) / n
@@ -92,18 +133,54 @@ private fun TrendCard(data: StatsData) {
             Text("이전 7일", color = HomePalette.Muted, fontSize = 11.sp, modifier = Modifier.weight(1f))
             Text("최근 7일", color = HomePalette.Muted, fontSize = 11.sp)
         }
-        Spacer(Modifier.height(12.dp))
-        val msg: String = when {
-            diff < 0L -> "이전 7일보다 ${StatusText.won(-diff)} 덜 썼어요"
-            diff > 0L -> "이전 7일보다 ${StatusText.won(diff)} 더 썼어요"
-            else -> "이전 7일과 똑같이 썼어요"
+
+        // 견줄 지난주가 없으면 줄 자체가 없다 — Ledger.vsLastCycle 과 같은 규칙.
+        val diff: Long? = trend.vsPrev
+        if (diff != null) {
+            Spacer(Modifier.height(11.dp))
+            Text(
+                text = when {
+                    diff < 0L -> "이전 7일보다 " + StatusText.won(-diff) + " 덜 썼어요"
+                    diff > 0L -> "이전 7일보다 " + StatusText.won(diff) + " 더 썼어요"
+                    else -> "이전 7일과 똑같이 썼어요"
+                },
+                color = when {
+                    diff < 0L -> HomePalette.Accent
+                    diff > 0L -> HomePalette.Over
+                    else -> HomePalette.Muted
+                },
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                style = Figures,
+            )
+        } else if (!trend.hasBudget) {
+            Spacer(Modifier.height(11.dp))
+            Text(
+                text = "설정에서 예산을 정하면 목표 대비로 보여드려요",
+                color = HomePalette.Muted,
+                fontSize = 12.sp,
+            )
         }
-        val msgColor = when {
-            diff < 0L -> HomePalette.Accent
-            diff > 0L -> HomePalette.Over
-            else -> HomePalette.Muted
-        }
-        Text(text = msg, color = msgColor, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, style = Figures)
+    }
+}
+
+/** 목표 대비 게이지. 넘긴 만큼은 빨강으로 채운다 — 넘겼다는 사실을 색으로도 말한다. */
+@Composable
+private fun Gauge(percent: Int) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(7.dp)
+            .clip(RoundedCornerShape(99.dp))
+            .background(HomePalette.Chip),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(percent.coerceIn(0, 100) / 100f)
+                .height(7.dp)
+                .clip(RoundedCornerShape(99.dp))
+                .background(if (percent > 100) HomePalette.Over else HomePalette.AccentBright),
+        )
     }
 }
 

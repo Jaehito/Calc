@@ -43,14 +43,7 @@ object ChallengeWeek {
      * 흔들리지 않는 기준치라야 주끼리 공정하게 견줄 수 있다.
      */
     fun myWeek(context: Context, today: LocalDate = LocalDate.now()): Pair<Long, Long> {
-        val settings: Settings = SettingsStore.load(context)
         val spent: Long = StatsRepository.spentBetween(context, start(today), today)
-
-        val cycle: BudgetCycle = Payday.cycleOf(today, settings.payDay)
-        var budget: Long = 0L
-        for (purse in settings.linkedPurses) {
-            budget += Budget.baseRate(settings.of(purse).monthlyBudget, cycle) * 7L
-        }
-        return spent to budget
+        return spent to StatsRepository.dailyBudget(context, today) * 7L
     }
 }

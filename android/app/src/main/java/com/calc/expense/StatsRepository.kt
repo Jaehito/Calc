@@ -8,6 +8,8 @@ import java.time.YearMonth
 data class StatsData(
     val recent7: Long,
     val prev7: Long,
+    /** 최근 7일 목표 (연결된 곳간의 하루치 합 × 7). 예산 미설정이면 0. */
+    val week7Budget: Long,
     val thisMonth: Long,
     val lastMonth: Long,
     /** 카테고리 막대가 어느 달인지 (이번 달/지난 달). */
@@ -45,6 +47,7 @@ object StatsRepository {
         return StatsData(
             recent7 = spentBetween(context, today.minusDays(6), today),
             prev7 = spentBetween(context, prev7End.minusDays(6), prev7End),
+            week7Budget = dailyBudget(context, today) * 7L,
             thisMonth = spentInMonth(context, thisMonth),
             lastMonth = spentInMonth(context, lastMonth),
             categoryMonthLabel = "이번 달",
@@ -54,6 +57,23 @@ object StatsRepository {
             loadingCategories = true,
             error = null,
         )
+    }
+
+    /**
+     * 연결된 곳간의 **하루치 합**. 주간 목표는 여기에 7을 곱한다.
+     *
+     * 기준은 그 주기의 하루치 기본값([Budget.baseRate])이다 — 초과로 줄어든 오늘의 실제
+     * dailyRate 가 아니다. 흔들리지 않는 기준이라야 주끼리 견줄 수 있다.
+     * [ChallengeWeek.myWeek] 과 [GradeRepository] 도 같은 기준을 쓴다.
+     */
+    fun dailyBudget(context: Context, today: LocalDate): Long {
+        val settings: Settings = SettingsStore.load(context)
+        val cycle: BudgetCycle = Payday.cycleOf(today, settings.payDay)
+        var total = 0L
+        for (purse in settings.linkedPurses) {
+            total += Budget.baseRate(settings.of(purse).monthlyBudget, cycle)
+        }
+        return total
     }
 
     /** 모든 연결된 곳간을 합쳐 [from]~[to](양끝 포함) 지출을 더한다. */
