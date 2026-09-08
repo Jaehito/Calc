@@ -8,6 +8,11 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.app.Person
+import androidx.core.content.LocusIdCompat
+import androidx.core.content.pm.ShortcutInfoCompat
+import androidx.core.content.pm.ShortcutManagerCompat
+import androidx.core.graphics.drawable.IconCompat
 
 /**
  * 잠금화면에 상주하는 입력용 알림.
@@ -46,6 +51,21 @@ object NotificationHelper {
 
     private const val IDLE_TEXT = "눌러서 기록하세요 · 예: 커피 4500"
 
+    /**
+     * 상시 카드를 **«대화» 알림**으로 만들기 위한 바로가기 id.
+     *
+     * 안드로이드 11 부터 알림 목록 맨 위 칸은 «대화» 전용이고, 일반 알림은 중요도를 아무리
+     * 올려도 그 아래에서 시작한다. v3 에서 IMPORTANCE_HIGH 로 올려도 다른 앱 알림에 밀리던
+     * 이유가 이것이다. 대화로 인정받으려면 세 가지가 필요하다 —
+     * [NotificationCompat.MessagingStyle], 오래 사는 동적 바로가기, 그리고 둘을 잇는 이 id.
+     *
+     * 사용자가 이 알림을 길게 눌러 «우선 대화» 로 지정하면 그 칸 안에서도 맨 위에 고정된다.
+     */
+    private const val SHORTCUT_ID = "gotgan_record"
+
+    /** 대화 상대. 알림에 이 이름이 보인다 — 이 앱의 말로 «곳간» 이다. */
+    private const val SENDER_NAME = "곳간"
+
     private const val REQUEST_OPEN_INPUT = 1
     private const val REQUEST_DISMISSED = 2
     private const val REQUEST_OPEN_HOME = 3
@@ -54,6 +74,7 @@ object NotificationHelper {
 
     /**
      * IMPORTANCE_HIGH 로 잠금화면 상단(알림) 영역에 올린다 — 다른 앱의 새 알림에도 덜 밀린다.
+     * 정렬의 본체는 이제 [SHORTCUT_ID] 의 «대화» 승격이고, 중요도는 그 보조다.
      * 대신 소리·진동은 채널에서 꺼 둔다(setSound null·enableVibration false) — HIGH 라도 소리는
      * 나지 않는다. 다만 «알림» 영역 소속이라 처음 뜰 때 헤드업 배너가 한 번 뜰 수 있고, 이후
      * 갱신은 [show] 의 setOnlyAlertOnce 로 반복 배너를 막는다. 무음 유지를 위해 이전엔 붙였던
@@ -79,6 +100,63 @@ object NotificationHelper {
     }
 
     /**
+     * 그 문으로 들어왔을 때 열 화면. 규칙은 [EntryRoutes] 가 갖고 여기서는 액티비티로 옮기기만 한다.
+     *
+     * 알림마다 목적지를 직접 적지 않는 이유는, 그렇게 두면 알림이 늘 때마다 «홈이야 기록이야» 를
+     * 그 자리에서 다시 정하게 되고 규칙이 흩어지기 때문이다.
+     */
+    private fun openFor(context: Context, door: EntryDoor, requestCode: Int): PendingIntent {
+        val intent: Intent = when (EntryRoutes.of(door)) {
+            EntryRoute.HOME -> Intent(context, HomeActivity::class.java)
+            EntryRoute.RECORD -> Intent(context, QuickInputActivity::class.java)
+                .putExtra(QuickInputActivity.EXTRA_FORCE_INPUT, true)
+        }
+        return PendingIntent.getActivity(
+            context,
+            requestCode,
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+
+    /** 알림에 보일 «곳간». 바로가기와 알림이 같은 사람을 가리켜야 대화로 묶인다. */
+    private fun sender(context: Context): Person = Person.Builder()
+        .setKey(SHORTCUT_ID)
+        .setName(SENDER_NAME)
+        .setIcon(IconCompat.createWithResource(context, R.drawable.ic_wallet))
+        .setBot(false)
+        // 우선 대화 후보로 올려 준다. 지정은 사용자가 한다.
+        .setImportant(true)
+        .build()
+
+    /**
+     * 대화 알림이 붙을 **오래 사는 동적 바로가기**를 만든다(이미 있으면 갱신).
+     *
+     * [ShortcutInfoCompat.Builder.setLongLived] 가 핵심이다 — 이게 없으면 시스템이 바로가기를
+     * 잠깐 쓰는 것으로 보고 대화로 묶지 않는다. 바로가기 자체도 홈 화면에 꺼내 쓸 수 있어
+     * «기록» 바로가기 노릇을 겸한다.
+     */
+    private fun ensureShortcut(context: Context) {
+        val shortcut = ShortcutInfoCompat.Builder(context, SHORTCUT_ID)
+            .setShortLabel(SENDER_NAME)
+            .setLongLabel("지출 기록")
+            .setIcon(IconCompat.createWithResource(context, R.drawable.ic_wallet))
+            .setPerson(sender(context))
+            .setLongLived(true)
+            .setIntent(
+                Intent(context, QuickInputActivity::class.java)
+                    .setAction(Intent.ACTION_VIEW)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
+            .build()
+        try {
+            ShortcutManagerCompat.pushDynamicShortcut(context, shortcut)
+        } catch (_: Exception) {
+            // 바로가기 상한을 넘었거나 제조사가 막은 경우. 알림은 그대로 뜨되 일반 알림이 된다.
+        }
+    }
+
+    /**
      * 상시 알림을 띄우거나 갱신한다.
      *
      * @param lines 직전 기록 결과. null 이면 기본 안내 문구를 보여준다.
@@ -88,6 +166,7 @@ object NotificationHelper {
      */
     fun show(context: Context, lines: StatusLines? = null) {
         ensureChannel(context)
+        ensureShortcut(context)
 
         // 알림 카드 전체가 입력 화면을 여는 버튼이 된다. 작은 액션 버튼보다 조준이 쉽고,
         // 무엇보다 적는 동안 오늘 쓸 수 있는 돈이 보인다. 그래서 «기록» 액션 버튼은 두지 않는다.
@@ -109,13 +188,31 @@ object NotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
+        val now: Long = System.currentTimeMillis()
+        val who: Person = sender(context)
+        val message: String = lines?.summary ?: IDLE_TEXT
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_wallet)
-            .setContentTitle("지출 기록")
-            .setContentText(lines?.summary ?: IDLE_TEXT)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(lines?.detail ?: IDLE_TEXT))
+            // 대화 알림은 MessagingStyle 이어야 한다. 그 대신 BigText 본문을 잃으므로
+            // 접힌 한 줄(summary)을 그대로 쓴다 — 어차피 대부분은 펼치지 않고, 자세한
+            // 숫자는 카드를 눌러 들어간 입력 화면에 다 있다.
+            .setStyle(
+                NotificationCompat.MessagingStyle(who)
+                    .addMessage(message, now, who),
+            )
+            .setShortcutId(SHORTCUT_ID)
+            .setLocusId(LocusIdCompat(SHORTCUT_ID))
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setOngoing(true)
+            // setOngoing(true) 를 뺐다. One UI 는 «진행 중» 알림을 별도 묶음으로 내리므로,
+            // 켜 두면 중요도를 올려도 그 묶음째 아래에 깔린다. 지워져도 DismissReceiver 가
+            // 되살리므로 상시성은 그대로다 — 안드로이드 13 부터 setOngoing 은 어차피
+            // 스와이프를 막지 못했다.
+            .setOngoing(false)
+            // 다시 띄울 때마다 시각을 갱신해 목록 위쪽으로 되돌린다. 시각 자체는 숨긴다 —
+            // «오전 6:54» 는 마지막 기록 시각으로 오해되기 쉽다.
+            .setWhen(now)
+            .setShowWhen(false)
             // 처음 한 번만 알린다(배너). 이후 기록·앱 열기로 갱신될 때는 다시 튀지 않는다.
             .setOnlyAlertOnce(true)
             // setSilent 는 일부러 안 쓴다 — 무음 알림 묶음으로 내려가 상단 정렬을 깨기 때문.
@@ -139,13 +236,7 @@ object NotificationHelper {
     fun showWeekly(context: Context, lines: StatusLines) {
         ensureWeeklyChannel(context)
 
-        val openHome = PendingIntent.getActivity(
-            context,
-            REQUEST_OPEN_HOME,
-            Intent(context, HomeActivity::class.java)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
+        val openHome: PendingIntent = openFor(context, EntryDoor.WEEKLY_REVIEW, REQUEST_OPEN_HOME)
 
         val notification = NotificationCompat.Builder(context, WEEKLY_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_wallet)
@@ -172,13 +263,7 @@ object NotificationHelper {
     fun showGrade(context: Context, lines: StatusLines) {
         ensureGradeChannel(context)
 
-        val openHome = PendingIntent.getActivity(
-            context,
-            REQUEST_OPEN_HOME_GRADE,
-            Intent(context, HomeActivity::class.java)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
+        val openHome: PendingIntent = openFor(context, EntryDoor.DAILY_GRADE, REQUEST_OPEN_HOME_GRADE)
 
         val notification = NotificationCompat.Builder(context, GRADE_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_wallet)
@@ -244,6 +329,8 @@ object NotificationHelper {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+        // 위 인텐트는 openFor(EntryDoor.PAYMENT_REMINDER) 와 같은 곳을 연다.
+        // 잠금화면 특성(showWhenLocked)을 잃지 않으려 QuickInputActivity 로 직행시킨다.
 
         val notification = NotificationCompat.Builder(context, REMINDER_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_wallet)
