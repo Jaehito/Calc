@@ -56,6 +56,12 @@ class HomeActivity : ComponentActivity() {
     /** 막 끝난 주기 결산. 월급날이 지난 걸 처음 확인한 순간에만 채워진다. */
     private var cycleGrade: SpendingGrade.Graded? by mutableStateOf(null)
 
+    /** 어제 등급. B 이상일 때만 채워진다 ([GradeDelivery]) — 하루 한 번. */
+    private var dailyGrade: SpendingGrade.Graded? by mutableStateOf(null)
+
+    /** 어제 하루치에서 아껴 곳간으로 간 돈. 0 이면 팝업에서 그 줄을 생략한다. */
+    private var dailySaved: Long by mutableStateOf(0L)
+
     /**
      * 이번에 앱을 연 뒤 수집함을 이미 띄웠는지.
      *
@@ -96,8 +102,22 @@ class HomeActivity : ComponentActivity() {
                         )
                     }
 
-                    cycleGrade?.let { grade ->
-                        CycleGradeDialog(grade = grade, onDismiss = { cycleGrade = null })
+                    // 한 번에 하나만 띄운다. 기록(수집함)이 채점보다 먼저다 — 수집함에서 한 건
+                    // 적으면 등급이 달라지므로 순서가 결과를 바꾼다. 그 다음이 주기 결산(진짜
+                    // 평가), 마지막이 어제 등급(격려)이다.
+                    val inboxOpen: Boolean = inboxVisible && inbox.items.isNotEmpty()
+                    if (!inboxOpen) {
+                        val ended: SpendingGrade.Graded? = cycleGrade
+                        val yesterday: SpendingGrade.Graded? = dailyGrade
+                        if (ended != null) {
+                            CycleGradeDialog(grade = ended, onDismiss = { cycleGrade = null })
+                        } else if (yesterday != null) {
+                            DailyGradeDialog(
+                                grade = yesterday,
+                                saved = dailySaved,
+                                onDismiss = { dailyGrade = null },
+                            )
+                        }
                     }
 
                     if (inboxVisible && inbox.items.isNotEmpty()) {
@@ -160,6 +180,7 @@ class HomeActivity : ComponentActivity() {
         republishNotification()
         resyncInBackground()
         checkCycleGrade()
+        checkDailyGrade()
         if (tab == 2) loadChallenge()
     }
 
@@ -188,6 +209,29 @@ class HomeActivity : ComponentActivity() {
 
         val result: SpendingGrade = GradeRepository.cycle(this, endedCycle)
         if (result is SpendingGrade.Graded) cycleGrade = result
+    }
+
+    /**
+     * 어제 등급을 하루에 한 번 보여준다.
+     *
+     * **오늘이 아니라 어제다** — 오늘은 아직 끝나지 않았으므로 채점할 수 없다. 그리고
+     * [GradeDelivery] 가 B 이상만 통과시키므로 나쁜 날은 조용히 넘어간다. 다만 그런 날도
+     * «봤다»고 기억해 둔다 — 안 그러면 다음 날 앱을 열 때마다 지난 나쁜 날을 다시 채점하려 든다.
+     */
+    private fun checkDailyGrade() {
+        val settings: Settings = SettingsStore.load(this)
+        if (!settings.isComplete) return
+
+        val yesterday: LocalDate = LocalDate.now().minusDays(1)
+        if (DailyGradeStore.lastShownDay(this) == yesterday) return
+        DailyGradeStore.setLastShownDay(this, yesterday)
+
+        val result: SpendingGrade = GradeRepository.day(this, yesterday)
+        if (!GradeDelivery.shouldSend(GradePeriod.DAILY, result)) return
+
+        val graded: SpendingGrade.Graded = result as SpendingGrade.Graded
+        dailySaved = maxOf(0L, graded.budget - graded.spent)
+        dailyGrade = graded
     }
 
     /**
