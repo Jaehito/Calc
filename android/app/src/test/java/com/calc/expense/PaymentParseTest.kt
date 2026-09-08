@@ -106,4 +106,92 @@ class PaymentParseTest {
         assertEquals("김밥천국", found?.merchant)
         assertEquals("식비", found?.category)
     }
+
+    // ── 실측으로 물린 형식들 (문구 10건을 돌려 5건이 오인이었다) ───────────────────
+
+    @Test
+    fun `카드사명과 뒷자리가 가맹점을 밀어내지 않는다`() {
+        // 예전엔 «가장 긴 토큰» 규칙 탓에 «국민9876»(7자)이 «배달의민족»을 이겼다.
+        val found = PaymentParse.parse(
+            "KB Pay",
+            "국민9876 승인\n홍길동님 43,000원\n09/07 19:02\n배달의민족",
+            categories,
+        )
+        assertEquals(43_000L, found?.amount)
+        assertEquals("배달의민족", found?.merchant)
+    }
+
+    @Test
+    fun `우리카드 뒷자리보다 짧은 가맹점도 살아남는다`() {
+        val found = PaymentParse.parse(
+            "15885000",
+            "우리4321 승인\n홍길동 3,000원\n09/07 09:20\n메가커피",
+            categories,
+        )
+        assertEquals(3_000L, found?.amount)
+        assertEquals("메가커피", found?.merchant)
+    }
+
+    @Test
+    fun `현대카드 푸시 — 한 줄에 뒷자리와 가맹점이 함께 와도 자리로 고른다`() {
+        val found = PaymentParse.parse("현대카드", "현대2580 승인 32,400원\n09/07 20:15 이마트", categories)
+        assertEquals(32_400L, found?.amount)
+        assertEquals("이마트", found?.merchant)
+    }
+
+    @Test
+    fun `알림 제목의 앱 이름을 가맹점으로 쓰지 않는다`() {
+        // 제목 «배달의민족»이 본문의 «교촌치킨»을 밀어내던 문제.
+        val found = PaymentParse.parse("배달의민족", "결제완료 24,000원\n가게 교촌치킨 성수점", categories)
+        assertEquals(24_000L, found?.amount)
+        assertEquals("교촌치킨", found?.merchant)
+    }
+
+    @Test
+    fun `주문번호를 가맹점으로 읽지 않는다`() {
+        val found = PaymentParse.parse(
+            "카카오페이",
+            "올리브영 결제 18,700원\n주문번호 20260907113355",
+            categories,
+        )
+        assertEquals(18_700L, found?.amount)
+        assertEquals("올리브영", found?.merchant)
+    }
+
+    @Test
+    fun `법인 접두사를 떼어낸다`() {
+        val found = PaymentParse.parse(
+            "삼성카드",
+            "일시불 승인\n홍*동님\n5,500원\n09/07 12:34\n(주)스타벅스커피코리아",
+            categories,
+        )
+        assertEquals(5_500L, found?.amount)
+        assertEquals("스타벅스커피코리아", found?.merchant)
+    }
+
+    @Test
+    fun `계좌 출금 — 잔액 줄을 건너뛰고 적요를 읽는다`() {
+        val found = PaymentParse.parse(
+            "NH농협",
+            "NH농협 09/07 15:23\n출금 300,000원\n잔액 1,234,567원\n관리비",
+            categories,
+        )
+        assertEquals(300_000L, found?.amount)
+        assertEquals("관리비", found?.merchant)
+    }
+
+    @Test
+    fun `사람 이름은 가맹점이 아니다`() {
+        // 날짜·시각이 없어 길이 규칙으로 되돌아가는 형식. «홍길동님»(4자)이 이기면 안 된다.
+        val found = PaymentParse.parse(null, "홍길동님 GS25 5,500원", categories)
+        assertEquals(5_500L, found?.amount)
+        assertEquals("GS25", found?.merchant)
+    }
+
+    @Test
+    fun `제목만 있는 알림은 제목에서라도 찾는다`() {
+        val found = PaymentParse.parse("스타벅스 5,500원", null, categories)
+        assertEquals(5_500L, found?.amount)
+        assertEquals("스타벅스", found?.merchant)
+    }
 }
