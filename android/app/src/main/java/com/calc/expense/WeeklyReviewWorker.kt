@@ -21,8 +21,12 @@ class WeeklyReviewWorker(
         try {
             if (NotificationState.isOn(app) && SettingsStore.load(app).isComplete) {
                 val base: StatusLines = StatusText.weekly(Ledger.weeklyTotals(app))
-                // 지난 7일 등급을 한 줄 덧붙인다. 채점 대상이 아니면(곳간 없음) 조용히 생략한다.
-                val gradeLine: String? = GradeText.trailing(GradeRepository.trailing(app, LocalDate.now(), 7))
+                // 지난 7일 등급을 한 줄 덧붙인다 — B 이상일 때만이다 ([GradeDelivery]).
+                // 돌아보기(사실)는 언제나 보내고, 등급(채점)만 좋을 때 붙인다.
+                val weekGrade: SpendingGrade = GradeRepository.trailing(app, LocalDate.now(), 7)
+                val gradeLine: String? =
+                    if (GradeDelivery.shouldSend(GradePeriod.WEEKLY, weekGrade)) GradeText.trailing(weekGrade)
+                    else null
                 val lines: StatusLines = if (gradeLine == null) {
                     base
                 } else {
