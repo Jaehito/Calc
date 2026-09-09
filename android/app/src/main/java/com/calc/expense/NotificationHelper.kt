@@ -29,7 +29,10 @@ object NotificationHelper {
      * 카드가 아래로 밀렸다(마지막 기록 시각이 옛날이라). HIGH 는 상단(알림) 영역으로 올려
      * 이 밀림을 줄인다. 안드로이드는 이미 만든 채널의 중요도를 앱이 못 바꾸므로(사용자만 가능)
      * id 를 바꿔야 기존 설치에도 적용된다 — [ensureChannel] 이 옛 v1·v2 채널을 지운다.
-     * 그래도 제조사(삼성 등) 정책에 따라 «항상 맨 위»가 100% 보장되진 않는다.
+     * 그래도 제조사(삼성 등) 정책에 따라 «항상 맨 위»가 100% 보장되진 않는다. 그래서 지금은
+     * **[CardRefreshWorker] 가 한 시간에 한 번 카드를 조용히 다시 올리는 쪽**이 정렬의 본체이고,
+     * 채널 중요도·대화 승격은 그 사이를 버티는 보조다 — «억지로 위에 붙잡아 두기»를 그만두고
+     * «내려가면 한 시간 안에 되올라온다»로 문제를 옮겼다.
      */
     const val CHANNEL_ID = "expense_input_v3"
     private const val LEGACY_CHANNEL_ID = "expense_input"
@@ -109,7 +112,6 @@ object NotificationHelper {
         val intent: Intent = when (EntryRoutes.of(door)) {
             EntryRoute.HOME -> Intent(context, HomeActivity::class.java)
             EntryRoute.RECORD -> Intent(context, QuickInputActivity::class.java)
-                .putExtra(QuickInputActivity.EXTRA_FORCE_INPUT, true)
         }
         return PendingIntent.getActivity(
             context,
@@ -143,6 +145,7 @@ object NotificationHelper {
             .setIcon(IconCompat.createWithResource(context, R.drawable.ic_wallet))
             .setPerson(sender(context))
             .setLongLived(true)
+            // 바로가기도 기록으로 간다 — [EntryRoutes] 의 OTHER 규칙과 같은 목적지다.
             .setIntent(
                 Intent(context, QuickInputActivity::class.java)
                     .setAction(Intent.ACTION_VIEW)
@@ -170,13 +173,11 @@ object NotificationHelper {
 
         // 알림 카드 전체가 입력 화면을 여는 버튼이 된다. 작은 액션 버튼보다 조준이 쉽고,
         // 무엇보다 적는 동안 오늘 쓸 수 있는 돈이 보인다. 그래서 «기록» 액션 버튼은 두지 않는다.
-        val openInput = PendingIntent.getActivity(
-            context,
-            REQUEST_OPEN_INPUT,
-            Intent(context, QuickInputActivity::class.java)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
+        //
+        // 목적지는 [EntryRoutes] 가 정한다 — LOCK_CARD 는 잠금 여부와 상관없이 언제나 기록이다.
+        // 예전에는 잠금이 풀려 있으면 홈으로 돌렸는데, 알림 셰이드에서 카드를 눌렀을 때도 홈이
+        // 열려 «적으려고 눌렀는데 메인이 뜬다»가 됐다. 카드를 누르는 이유는 늘 적으려는 것이다.
+        val openInput: PendingIntent = openFor(context, EntryDoor.LOCK_CARD, REQUEST_OPEN_INPUT)
 
         // 안드로이드 13 부터 setOngoing 으로는 스와이프도 «지우기» 도 막지 못한다.
         // 지워지면 이 인텐트가 불리고, 앱에서 끈 게 아니면 되살린다.
@@ -315,22 +316,13 @@ object NotificationHelper {
      * 금액도 개수도 말하지 않는다 — «방금 쓴 거 있으면 적어 둬요» 정도의 가벼운 찌름이다.
      * 누르면 바로 입력 화면이 열린다. 스와이프로 넘기면 그만이고 되살리지 않는다.
      *
-     * 잠금 여부와 무관하게 늘 입력 화면으로 간다(EXTRA_FORCE_INPUT) — 이 알림의 목적이
-     * "방금 그 결제를 지금 적자"라서, 상시 카드처럼 잠금 풀렸다고 홈으로 돌리면 안 된다.
+     * 잠금 여부와 무관하게 늘 입력 화면으로 간다 — 이 알림의 목적이 "방금 그 결제를 지금 적자"다.
      */
     fun showReminder(context: Context) {
         ensureReminderChannel(context)
 
-        val openInput = PendingIntent.getActivity(
-            context,
-            REQUEST_OPEN_INPUT_REMINDER,
-            Intent(context, QuickInputActivity::class.java)
-                .putExtra(QuickInputActivity.EXTRA_FORCE_INPUT, true)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-        // 위 인텐트는 openFor(EntryDoor.PAYMENT_REMINDER) 와 같은 곳을 연다.
-        // 잠금화면 특성(showWhenLocked)을 잃지 않으려 QuickInputActivity 로 직행시킨다.
+        val openInput: PendingIntent =
+            openFor(context, EntryDoor.PAYMENT_REMINDER, REQUEST_OPEN_INPUT_REMINDER)
 
         val notification = NotificationCompat.Builder(context, REMINDER_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_wallet)

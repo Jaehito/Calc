@@ -17,6 +17,7 @@ class BootReceiver : BroadcastReceiver() {
             NotificationHelper.show(app)
             WeeklyReviewScheduler.schedule(app)
             GradeScheduler.schedule(app)
+            CardRefreshScheduler.schedule(app)
         }
     }
 }

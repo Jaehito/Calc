@@ -95,8 +95,7 @@ class MainActivity : ComponentActivity() {
                 onOpenNotificationSettings = { openNotificationSettings() },
                 onOpenInput = {
                     startActivity(
-                        Intent(this@MainActivity, QuickInputActivity::class.java)
-                            .putExtra(QuickInputActivity.EXTRA_FORCE_INPUT, true),
+                        Intent(this@MainActivity, QuickInputActivity::class.java),
                     )
                 },
                 onToggleReminder = { toggleReminder() },
@@ -509,6 +508,7 @@ class MainActivity : ComponentActivity() {
         NotificationHelper.show(this)
         WeeklyReviewScheduler.schedule(this)
         GradeScheduler.schedule(this)
+        CardRefreshScheduler.schedule(this)
         notificationOn = true
 
         if (NotificationHelper.isEnabled(this)) {
@@ -533,6 +533,7 @@ class MainActivity : ComponentActivity() {
         NotificationHelper.hide(this)
         WeeklyReviewScheduler.cancel(this)
         GradeScheduler.cancel(this)
+        CardRefreshScheduler.cancel(this)
         notificationOn = false
         setStatus("알림을 껐습니다. 다시 켜기 전까지 잠금화면에 나오지 않습니다.")
     }

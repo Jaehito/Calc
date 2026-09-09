@@ -95,8 +95,7 @@ class HomeActivity : ComponentActivity() {
                             onOpenHistory = { purse -> openHistory(purse) },
                             onRecord = {
                                 startActivity(
-                                    Intent(this@HomeActivity, QuickInputActivity::class.java)
-                                        .putExtra(QuickInputActivity.EXTRA_FORCE_INPUT, true),
+                                    Intent(this@HomeActivity, QuickInputActivity::class.java),
                                 )
                             },
                         )
@@ -480,9 +479,11 @@ class HomeActivity : ComponentActivity() {
     private fun republishNotification() {
         if (NotificationState.isOn(this)) {
             NotificationHelper.show(this)
-            // 주 1회 돌아보기·매일 저녁 9시 등급 예약을 확인·갱신한다. 예약이 사라졌어도 앱을 열면 되살아난다.
+            // 주 1회 돌아보기·매일 저녁 9시 등급·한 시간마다 카드 다시 올리기 예약을 확인·갱신한다.
+            // 예약이 사라졌어도 앱을 열면 되살아난다.
             WeeklyReviewScheduler.schedule(this)
             GradeScheduler.schedule(this)
+            CardRefreshScheduler.schedule(this)
         }
     }
 
