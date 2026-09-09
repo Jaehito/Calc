@@ -135,7 +135,7 @@ object Budget {
      * 저장할 앵커와 오늘 화면에 쓸 상태.
      *
      * 둘을 나누는 이유는 곳간이 **캐시에서 매번 다시 계산되어야** 하기 때문이다. 정산 결과를
-     * 그대로 저장해 버리면, Notion 재동기화로 이번 달 지난 날짜가 고쳐져도 곳간이 따라오지 않는다.
+     * 그대로 저장해 버리면, 재동기화로 이번 달 지난 날짜가 고쳐져도 곳간이 따라오지 않는다.
      */
     data class Reckoning(val anchor: BudgetState, val today: BudgetState)
 

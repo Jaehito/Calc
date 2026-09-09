@@ -46,7 +46,7 @@ private val DateFormat: DateTimeFormatter =
  * 남았으면 초록, 넘겼으면 빨강 — 글자를 읽기 전에 눈에 들어온다.
  *
  * 오늘 쓴 항목 목록은 일부러 넣지 않았다. 지금 앱은 날짜별 합계만 캐시하므로
- * 항목을 보여주려면 홈에 들어올 때마다 Notion 을 왕복해야 한다.
+ * 항목을 보여주려면 홈에 들어올 때마다 저장소를 왕복해야 한다.
  */
 @Composable
 fun HomeScreen(
@@ -271,7 +271,7 @@ private fun EmptyCard() {
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            text = "설정에서 Notion 토큰과 DB를 넣고 월 예산을 정하면 " +
+            text = "설정에서 한 달 예산을 정하면 " +
                 "오늘 쓸 수 있는 돈이 여기에 나옵니다.",
             color = HomePalette.Ink2,
             fontSize = 13.sp,

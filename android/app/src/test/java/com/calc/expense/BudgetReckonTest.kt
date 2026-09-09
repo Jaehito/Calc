@@ -7,7 +7,7 @@ import java.time.LocalDate
 
 /**
  * 앵커(저장되는 값)와 오늘 상태(매번 다시 접는 값)의 분리를 고정한다.
- * 이 분리가 깨지면 Notion 재동기화로 고친 내역이 곳간에 반영되지 않는다.
+ * 이 분리가 깨지면 재동기화로 고친 내역이 곳간에 반영되지 않는다.
  */
 class BudgetReckonTest {
 
@@ -45,7 +45,7 @@ class BudgetReckonTest {
             anchor, budget, today, monthly,
             spent(LocalDate.of(2026, 8, 1) to 30_000L),
         )
-        // Notion 재동기화로 8/1 지출이 10,000 으로 고쳐졌다
+        // 재동기화로 8/1 지출이 10,000 으로 고쳐졌다
         val after = Budget.reckon(
             anchor, budget, today, monthly,
             spent(LocalDate.of(2026, 8, 1) to 10_000L),

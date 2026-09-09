@@ -2,7 +2,6 @@ package com.calc.expense
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,26 +29,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /** 설정 폼의 입력칸 값. 저장·검증 로직은 Activity 쪽(순수 상태가 아니라서)에 남는다. */
 data class SettingsFormUi(
-    val token: String = "",
-    val nameProp: String = "",
-    val priceProp: String = "",
-    val dateProp: String = "",
-    val purseProp: String = "",
-    val categoryProp: String = "",
     val categoriesText: String = "",
     val payDayText: String = "",
     val personalName: String = "",
-    val personalDatabaseId: String = "",
     val personalBudgetText: String = "",
     val sharedName: String = "",
-    val sharedDatabaseId: String = "",
     val sharedBudgetText: String = "",
 )
 
@@ -71,10 +60,6 @@ data class SettingsUi(
     val householdBusy: Boolean = false,
     val householdMessage: String? = null,
     val householdMessageIsError: Boolean = false,
-    val backfillBusy: Boolean = false,
-    val backfillMessage: String? = null,
-    val backfillMessageIsError: Boolean = false,
-    val firestoreReadEnabled: Boolean = false,
     /** 수집함에 담지 않는 발신자·앱. 해제할 수 있게 화면에 그대로 보여준다. */
     val blockedSenders: List<String> = emptyList(),
     val blockedPackages: List<String> = emptyList(),
@@ -83,16 +68,16 @@ data class SettingsUi(
 /**
  * 설정 화면. 홈·통계·챌린지·내역과 같은 민트 카드 화면군으로 맞춘다.
  *
- * 폼은 한 데이터클래스([SettingsFormUi])로 오르내린다 — 입력칸이 열세 개라 필드마다
- * 콜백을 따로 두면 호출부가 장황해진다. 저장·검증·알림 토글 같은 부수효과는 전부
- * Activity 쪽 콜백으로 위임한다(네트워크·SharedPreferences 는 Compose 상태가 아니다).
+ * 폼은 한 데이터클래스([SettingsFormUi])로 오르내린다 — 필드마다 콜백을 따로 두면 호출부가
+ * 장황해진다. 저장·알림 토글 같은 부수효과는 전부 Activity 쪽 콜백으로 위임한다
+ * (SharedPreferences·Firebase 는 Compose 상태가 아니다).
  */
 @Composable
 fun SettingsScreen(
     ui: SettingsUi,
     onBack: () -> Unit,
     onFormChange: (SettingsFormUi) -> Unit,
-    onSaveAndVerify: () -> Unit,
+    onSave: () -> Unit,
     onEnableNotification: () -> Unit,
     onDisableNotification: () -> Unit,
     onOpenNotificationSettings: () -> Unit,
@@ -106,8 +91,6 @@ fun SettingsScreen(
     onCreateHousehold: () -> Unit,
     onJoinHousehold: () -> Unit,
     onLeaveHousehold: () -> Unit,
-    onBackfill: () -> Unit,
-    onToggleFirestoreRead: () -> Unit,
     onUnblockSender: (String) -> Unit,
     onUnblockPackage: (String) -> Unit,
 ) {
@@ -155,40 +138,6 @@ fun SettingsScreen(
         Spacer(Modifier.height(12.dp))
 
         CardBox {
-            SectionTitle("Notion 연결")
-            HelperText("인테그레이션 시크릿 하나로 두 DB를 씁니다. 각 DB 페이지의 점 세 개 메뉴에서 연결(Connections)에 인테그레이션을 먼저 추가해야 합니다.")
-            Spacer(Modifier.height(12.dp))
-
-            var tokenVisible: Boolean by remember { mutableStateOf(false) }
-            MintField(
-                value = form.token,
-                onValueChange = { onFormChange(form.copy(token = it)) },
-                label = "인테그레이션 시크릿",
-                visualTransformation = if (tokenVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                trailingText = if (tokenVisible) "숨김" else "표시",
-                onTrailingClick = { tokenVisible = !tokenVisible },
-            )
-
-            Spacer(Modifier.height(18.dp))
-            SubTitle("DB 속성 이름")
-            Spacer(Modifier.height(10.dp))
-            MintField(form.nameProp, { onFormChange(form.copy(nameProp = it)) }, "이름 속성 (title 타입)")
-            Spacer(Modifier.height(10.dp))
-            MintField(form.priceProp, { onFormChange(form.copy(priceProp = it)) }, "금액 속성 (number 타입)")
-            Spacer(Modifier.height(10.dp))
-            MintField(form.dateProp, { onFormChange(form.copy(dateProp = it)) }, "날짜 속성 (date 타입)")
-            Spacer(Modifier.height(10.dp))
-            MintField(form.purseProp, { onFormChange(form.copy(purseProp = it)) }, "곳간 속성 (select 타입)")
-            Spacer(Modifier.height(8.dp))
-            HelperText("개인·공용을 한 DB에서 쓰려면 아래 두 곳간에 같은 DB를 넣고, Notion에 «개인»·«공용» 옵션을 가진 select 속성을 만드세요. DB를 따로 쓸 거면 이 칸은 비워도 됩니다.")
-            Spacer(Modifier.height(10.dp))
-            MintField(form.categoryProp, { onFormChange(form.copy(categoryProp = it)) }, "카테고리 속성 (통계용 select, 선택)")
-            Spacer(Modifier.height(8.dp))
-            HelperText("통계 탭의 카테고리별 막대가 이 select 속성을 읽습니다. 비워 두면 카테고리 통계는 표시되지 않습니다.")
-        }
-        Spacer(Modifier.height(12.dp))
-
-        CardBox {
             SectionTitle("카테고리 칩 목록")
             Spacer(Modifier.height(10.dp))
             MintField(
@@ -226,15 +175,13 @@ fun SettingsScreen(
                 label = "이름 (비우면 «개인»)",
             )
             Spacer(Modifier.height(10.dp))
-            MintField(form.personalDatabaseId, { onFormChange(form.copy(personalDatabaseId = it)) }, "DB ID 또는 DB URL 통째로")
-            Spacer(Modifier.height(10.dp))
             MintField(form.personalBudgetText, { onFormChange(form.copy(personalBudgetText = it)) }, "월 예산 (예: 930000 또는 93만)")
         }
         Spacer(Modifier.height(12.dp))
 
         CardBox {
             SectionTitle("공용 곳간")
-            HelperText("같이 쓰는 생활비. 아직 공용 계좌가 없으면 DB를 비워 두세요 — 비어 있으면 알림 버튼이 하나만 나옵니다. 나중에 여기만 채우면 됩니다.")
+            HelperText("같이 쓰는 생활비. 아래 «공용 곳간 동기화»로 배우자와 묶어야 나타납니다 — 묶기 전에는 기록할 때 곳간을 고르지 않습니다.")
             Spacer(Modifier.height(10.dp))
             MintField(
                 value = form.sharedName,
@@ -242,15 +189,13 @@ fun SettingsScreen(
                 label = "이름 (비우면 «공용»)",
             )
             Spacer(Modifier.height(10.dp))
-            MintField(form.sharedDatabaseId, { onFormChange(form.copy(sharedDatabaseId = it)) }, "DB ID 또는 DB URL 통째로")
-            Spacer(Modifier.height(10.dp))
             MintField(form.sharedBudgetText, { onFormChange(form.copy(sharedBudgetText = it)) }, "월 예산 (예: 930000 또는 93만)")
         }
         Spacer(Modifier.height(12.dp))
 
         CardBox {
             SectionTitle("공용 곳간 동기화 (베타)")
-            HelperText("공용 곳간 지출을 배우자와 함께 보려면 가정 코드로 한 번만 묶으세요. 노션 기록에는 영향이 없습니다.")
+            HelperText("공용 곳간은 배우자와 가정 코드로 한 번 묶어야 쓸 수 있습니다. 개인 곳간에는 영향이 없습니다.")
             Spacer(Modifier.height(10.dp))
             if (ui.householdPaired) {
                 Text(
@@ -291,57 +236,10 @@ fun SettingsScreen(
         }
         Spacer(Modifier.height(12.dp))
 
-        CardBox {
-            SectionTitle("노션 데이터 백필 (베타)")
-            HelperText("지금까지 노션에 적힌 지출을 Firestore로 한 번 복사합니다. 여러 번 눌러도 안전합니다(같은 항목은 덮어쓸 뿐 중복되지 않음). 노션 기록은 그대로 남고 지워지지 않습니다.")
-            Spacer(Modifier.height(10.dp))
-            PillButton(
-                text = if (ui.backfillBusy) "복사 중…" else "노션 → Firestore 백필 실행",
-                onClick = onBackfill,
-                enabled = !ui.backfillBusy,
-            )
-            if (ui.backfillMessage != null) {
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = ui.backfillMessage,
-                    color = if (ui.backfillMessageIsError) HomePalette.Over else HomePalette.Accent,
-                    fontSize = 12.sp,
-                )
-            }
-        }
-        Spacer(Modifier.height(12.dp))
-
-        CardBox {
-            SectionTitle("읽기 전환 (실험적)")
-            HelperText("켜면 홈 화면 숫자·통계·내역을 노션 대신 Firestore에서 읽습니다. 실패하면 그때그때 자동으로 노션으로 돌아가지만, Firestore에 데이터가 비어 있는데 읽기 자체는 성공하는 경우(백필 전, 또는 아직 규칙이 안 걸린 경우)는 걸러내지 못합니다 — 그러면 지출이 실제보다 적게(0에 가깝게) 보일 수 있습니다. 위 백필을 먼저 실행하고, Firestore 콘솔에서 데이터가 보이는 걸 확인한 뒤에 켜세요.")
-            Spacer(Modifier.height(10.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(9.dp)
-                        .clip(RoundedCornerShape(999.dp))
-                        .background(if (ui.firestoreReadEnabled) HomePalette.AccentBright else HomePalette.Muted),
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = if (ui.firestoreReadEnabled) "켜짐 — Firestore에서 읽는 중" else "꺼짐 — 노션에서 읽는 중(기본)",
-                    color = if (ui.firestoreReadEnabled) HomePalette.Accent else HomePalette.Ink2,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
-            Spacer(Modifier.height(10.dp))
-            if (ui.firestoreReadEnabled) {
-                OutlinedPillButton("끄고 노션으로 돌아가기", onToggleFirestoreRead, modifier = Modifier.fillMaxWidth())
-            } else {
-                PillButton(text = "Firestore 읽기 켜기", onClick = onToggleFirestoreRead)
-            }
-        }
-
         Spacer(Modifier.height(16.dp))
         PillButton(
-            text = if (ui.saving) "확인 중…" else "저장하고 연결 확인",
-            onClick = onSaveAndVerify,
+            text = if (ui.saving) "저장 중…" else "저장",
+            onClick = onSave,
             enabled = !ui.saving,
         )
 

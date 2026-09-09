@@ -2,9 +2,9 @@ package com.calc.expense
 
 import java.time.LocalDate
 
-/** 지출 한 줄. 노션(또는 나중에 다른 DB) 한 행을 화면이 쓰기 좋은 형태로 옮긴 것. */
+/** 지출 한 줄. 저장소의 한 행을 화면이 쓰기 좋은 형태로 옮긴 것. */
 data class ExpenseRow(
-    /** 노션 페이지 id. 나중에 이 줄만 지우거나 고칠 때 쓴다(지금은 표시만). */
+    /** 저장소의 줄 id. 이 줄만 지우거나 고칠 때 쓴다. */
     val id: String,
     val name: String,
     val amount: Long,
@@ -21,7 +21,7 @@ data class DayGroup(
 )
 
 /**
- * 내역 화면이 쓰는 순수 묶기·합계. 저장소(노션/DB)와 무관하다 — 어디서 읽어 왔든 [ExpenseRow]
+ * 내역 화면이 쓰는 순수 묶기·합계. 저장소와 무관하다 — 어디서 읽어 왔든 [ExpenseRow]
  * 목록만 받으면 된다. 그래서 나중에 저장소를 바꿔도 이 로직과 화면은 그대로 살아남는다.
  */
 object ExpenseHistoryGrouping {

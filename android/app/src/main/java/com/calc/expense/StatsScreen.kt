@@ -184,7 +184,7 @@ private fun Gauge(percent: Int) {
     }
 }
 
-/** 카테고리 도넛 + 범례. 노션 «카테고리» 속성을 읽어 온 결과를 그린다. */
+/** 카테고리 도넛 + 범례. 저장소에서 읽어 온 카테고리별 합계를 그린다. */
 @Composable
 private fun CategoryCard(data: StatsData, onToggle: () -> Unit) {
     CardBox {
@@ -214,10 +214,10 @@ private fun CategoryCard(data: StatsData, onToggle: () -> Unit) {
             data.error != null ->
                 Text(text = data.error, color = HomePalette.Over, fontSize = 13.sp)
             data.loadingCategories ->
-                Text(text = "노션에서 불러오는 중…", color = HomePalette.Muted, fontSize = 13.sp)
+                Text(text = "불러오는 중…", color = HomePalette.Muted, fontSize = 13.sp)
             data.categories.isEmpty() ->
                 Text(
-                    text = "이 달에는 카테고리 지출이 없습니다. 노션 «카테고리» 속성을 채우면 여기에 나옵니다.",
+                    text = "이 달에는 카테고리 지출이 없습니다. 기록할 때 카테고리 칩을 고르면 여기에 나옵니다.",
                     color = HomePalette.Ink2,
                     fontSize = 13.sp,
                 )

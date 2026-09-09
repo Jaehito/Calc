@@ -5,7 +5,7 @@ import android.content.Context
 /**
  * 챌린지 로컬 기억. 참가 중인 방 id 와 내 표시 이름만 담는다.
  *
- * 비밀이 아니라(노션 토큰과 달리) 평문 SharedPreferences 로 충분하다. 방의 실제 데이터는
+ * 비밀이 아니라 평문 SharedPreferences 로 충분하다. 방의 실제 데이터는
  * Firestore 에 있고 여기엔 "어느 방에 있나"만 둔다.
  */
 object ChallengeStore {

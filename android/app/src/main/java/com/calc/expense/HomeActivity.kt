@@ -192,7 +192,7 @@ class HomeActivity : ComponentActivity() {
      */
     private fun checkCycleGrade() {
         val settings: Settings = SettingsStore.load(this)
-        if (!settings.isComplete) return
+        if (!PurseAccess.isReady(this)) return
 
         val today: LocalDate = LocalDate.now()
         val currentCycle: BudgetCycle = Payday.cycleOf(today, settings.payDay)
@@ -218,8 +218,7 @@ class HomeActivity : ComponentActivity() {
      * «봤다»고 기억해 둔다 — 안 그러면 다음 날 앱을 열 때마다 지난 나쁜 날을 다시 채점하려 든다.
      */
     private fun checkDailyGrade() {
-        val settings: Settings = SettingsStore.load(this)
-        if (!settings.isComplete) return
+        if (!PurseAccess.isReady(this)) return
 
         val yesterday: LocalDate = LocalDate.now().minusDays(1)
         if (DailyGradeStore.lastShownDay(this) == yesterday) return
@@ -241,7 +240,7 @@ class HomeActivity : ComponentActivity() {
      */
     private fun refreshInbox(show: Boolean = false) {
         val settings: Settings = SettingsStore.load(this)
-        val purses: List<Purse> = settings.linkedPurses
+        val purses: List<Purse> = PurseAccess.linked(this)
         val items: List<PendingPayment> = PendingPaymentStore.load(this)
 
         inbox = inbox.copy(
@@ -326,7 +325,7 @@ class HomeActivity : ComponentActivity() {
         )
     }
 
-    /** 통계 탭으로 옮기며 데이터를 채운다. 기간 비교는 즉시, 카테고리는 노션에서 뒤따라. */
+    /** 통계 탭으로 옮기며 데이터를 채운다. 기간 비교는 즉시, 카테고리는 저장소에서 뒤따라. */
     private fun selectStats() {
         tab = 1
         loadStats()
@@ -465,10 +464,10 @@ class HomeActivity : ComponentActivity() {
         return if (left <= 0) "오늘 마지막 날" else "${left}일 남음"
     }
 
-    /** 로컬 캐시만으로 즉시 그린다. Notion 왕복은 그 뒤에 따라온다. */
+    /** 로컬 캐시만으로 즉시 그린다. 저장소 대조는 그 뒤에 따라온다. */
     private fun refresh() {
         val today: LocalDate = LocalDate.now()
-        snapshots = SettingsStore.load(this).linkedPurses
+        snapshots = PurseAccess.linked(this)
             .mapNotNull { Ledger.snapshot(this, it, today) }
     }
 
@@ -488,17 +487,17 @@ class HomeActivity : ComponentActivity() {
     }
 
     /**
-     * Notion 을 기준으로 캐시를 다시 맞춘다.
+     * 저장소를 기준으로 캐시를 다시 맞춘다.
      *
      * 잠금화면 기록은 로컬 사본만 더하고 끝낸다 — 브로드캐스트 수명 안에 왕복을 두 번 할 수 없다.
-     * 그래서 Notion 에서 직접 고친 행이나 다른 기기의 기록은 여기서만 반영된다.
+     * 그래서 다른 기기에서 적은 기록은 여기서만 반영된다.
      */
     private fun resyncInBackground() {
         val app = applicationContext
-        val purses: List<Purse> = SettingsStore.load(this).linkedPurses
+        val purses: List<Purse> = PurseAccess.linked(this)
         if (purses.isEmpty()) return
 
-        notice = "Notion과 맞추는 중…"
+        notice = "맞추는 중…"
         io.execute {
             var failure: String? = null
             for (purse in purses) {

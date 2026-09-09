@@ -5,12 +5,12 @@ import java.time.LocalDate
 import java.time.YearMonth
 
 /**
- * 곳간 계산 · 로컬 캐시 · Notion 을 잇는 유일한 진입점.
+ * 곳간 계산 · 로컬 캐시 · 저장소를 잇는 유일한 진입점.
  *
- * [Budget] 은 순수 계산, [SpendingCache] 는 저장, [NotionClient] 는 네트워크다.
+ * [Budget] 은 순수 계산, [SpendingCache] 는 로컬 사본, [FirestoreExpenseReader] 는 저장소다.
  * 셋을 어디서 어떤 순서로 부를지는 여기 한 곳에서만 정한다.
  *
- * 모든 함수가 [Purse] 를 받는다. 개인과 공용은 DB·캐시·곳간이 전부 따로이고,
+ * 모든 함수가 [Purse] 를 받는다. 개인과 공용은 컬렉션·캐시·곳간이 전부 따로이고,
  * 이 파일 어디에서도 둘을 합치지 않는다.
  *
  * 캐시는 달력 월로 나눠 담는다. 예산 주기는 월급날 기준이라 두 달에 걸치는데,
@@ -30,7 +30,7 @@ object Ledger {
     ): LedgerSnapshot? {
         val settings = SettingsStore.load(context)
         val config = settings.of(purse)
-        if (!config.isActive) return null
+        if (!config.hasBudget || !PurseAccess.isLinked(context, purse)) return null
 
         val stored: BudgetState? = BudgetStore.load(context, purse)
         val reckoning: Budget.Reckoning =
@@ -39,7 +39,7 @@ object Ledger {
             }
 
         // 저장하는 건 앵커뿐이다. 오늘 상태는 매번 캐시에서 다시 접으므로
-        // Notion 재동기화로 이번 주기 지난 날짜가 고쳐지면 곳간도 같이 고쳐진다.
+        // 재동기화로 이번 주기 지난 날짜가 고쳐지면 곳간도 같이 고쳐진다.
         if (reckoning.anchor != stored) BudgetStore.save(context, reckoning.anchor, purse)
 
         val cycle: BudgetCycle = Payday.cycleOf(today, settings.payDay)
@@ -119,7 +119,7 @@ object Ledger {
         days: Int = 7,
     ): List<StatusText.WeeklySpend> {
         val settings = SettingsStore.load(context)
-        return settings.linkedPurses.map { purse ->
+        return PurseAccess.linked(context).map { purse ->
             var total: Long = 0L
             var i = 0
             while (i < days) {
@@ -130,25 +130,25 @@ object Ledger {
         }
     }
 
-    /** Notion 쓰기가 성공한 뒤 로컬 사본에 반영한다. 실패한 기록을 더하면 숫자가 거짓말을 한다. */
+    /** 저장이 받아들여진 뒤 로컬 사본에 반영한다. 실패한 기록을 더하면 숫자가 거짓말을 한다. */
     fun record(context: Context, purse: Purse, day: LocalDate, amount: Long) {
         SpendingCache.add(context, purse, day, amount)
     }
 
-    /** 아카이브가 성공한 뒤 로컬 사본에서 뺀다. Notion 삭제가 성공한 뒤에만 부른다. */
+    /** 저장소에서 지운 뒤 로컬 사본에서도 뺀다. 삭제가 받아들여진 뒤에만 부른다. */
     fun unrecord(context: Context, purse: Purse, day: LocalDate, amount: Long) {
         SpendingCache.add(context, purse, day, -amount)
     }
 
     /**
-     * Notion 을 기준으로 이번 주기가 걸친 달들의 캐시를 다시 맞춘다.
+     * 저장소를 기준으로 이번 주기가 걸친 달들의 캐시를 다시 맞춘다.
      * 성공하면 null, 실패하면 오류 문구.
      *
      * 달 단위로 통째로 교체한다. 주기 범위만 조회해 교체하면 같은 달의 주기 밖 날짜가
      * 지워지기 때문이다.
      *
-     * 네트워크를 타므로 반드시 백그라운드 스레드에서 부른다. 잠금화면 기록 경로에서는
-     * 부르지 않는다 — 브로드캐스트 수명 안에 왕복을 두 번 할 수 없다.
+     * 반드시 백그라운드 스레드에서 부른다([FirestoreExpenseReader] 가 블로킹이다).
+     * 잠금화면 기록 경로에서는 부르지 않는다 — 브로드캐스트 수명 안에 끝낼 일이 아니다.
      */
     fun resync(
         context: Context,
@@ -161,32 +161,18 @@ object Ledger {
         // 지난 주기까지 함께 맞춘다 — 홈의 «지난 주기 이맘때보다» 비교가 그 캐시를 읽는다.
         val previous: BudgetCycle = Payday.cycleOf(cycle.start.minusDays(1), settings.payDay)
 
-        // 노션 target 은 Firestore 읽기가 실패했을 때만 필요하다 — 미리 없다고 실패시키지 않는다
-        // (3단계 이후 노션 연결 없이 Firestore만 쓰는 구성도 가능해야 하므로).
-        val target: NotionTarget? = settings.target(purse)
-        val client: NotionClient? = target?.let { NotionClient(it) }
-        val useFirestore: Boolean = FirestoreReadMode.isEnabled(context)
-
         // 두 주기가 걸친 달들을 한 번씩만 조회한다. 주기가 한 달을 공유해도 중복 조회하지 않는다.
         var month: YearMonth = YearMonth.from(previous.start)
         val lastMonth: YearMonth = YearMonth.from(cycle.lastDay)
 
         while (!month.isAfter(lastMonth)) {
-            val firestoreRows: List<ExpenseRow>? =
-                if (useFirestore) FirestoreExpenseReader.monthRows(context, purse, month) else null
+            val rows: List<ExpenseRow> = FirestoreExpenseReader.monthRows(context, purse, month)
+                ?: return "${settings.labelOf(purse)} 곳간을 불러오지 못했습니다"
 
-            if (firestoreRows != null) {
-                val totals = LinkedHashMap<LocalDate, Long>()
-                for (row in firestoreRows) totals[row.date] = (totals[row.date] ?: 0L) + row.amount
-                SpendingCache.replaceMonth(context, purse, month, totals)
-            } else {
-                if (client == null) return "${settings.labelOf(purse)} 곳간에 DB가 연결되지 않았습니다"
-                when (val r = client.queryMonth(month)) {
-                    is NotionClient.MonthOutcome.Ok ->
-                        SpendingCache.replaceMonth(context, purse, month, r.totals)
-                    is NotionClient.MonthOutcome.Err -> return r.message
-                }
-            }
+            val totals = LinkedHashMap<LocalDate, Long>()
+            for (row in rows) totals[row.date] = (totals[row.date] ?: 0L) + row.amount
+            SpendingCache.replaceMonth(context, purse, month, totals)
+
             month = month.plusMonths(1)
         }
         return null

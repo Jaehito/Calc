@@ -3,7 +3,6 @@ package com.calc.expense
 import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -45,10 +44,6 @@ class MainActivity : ComponentActivity() {
     private var householdBusy: Boolean by mutableStateOf(false)
     private var householdMessage: String? by mutableStateOf(null)
     private var householdMessageIsError: Boolean by mutableStateOf(false)
-    private var backfillBusy: Boolean by mutableStateOf(false)
-    private var backfillMessage: String? by mutableStateOf(null)
-    private var backfillMessageIsError: Boolean by mutableStateOf(false)
-    private var firestoreReadEnabled: Boolean by mutableStateOf(false)
     private var blockedSenders: List<String> by mutableStateOf(emptyList())
     private var blockedPackages: List<String> by mutableStateOf(emptyList())
 
@@ -80,16 +75,12 @@ class MainActivity : ComponentActivity() {
                     householdBusy = householdBusy,
                     householdMessage = householdMessage,
                     householdMessageIsError = householdMessageIsError,
-                    backfillBusy = backfillBusy,
-                    backfillMessage = backfillMessage,
-                    backfillMessageIsError = backfillMessageIsError,
-                    firestoreReadEnabled = firestoreReadEnabled,
                     blockedSenders = blockedSenders,
                     blockedPackages = blockedPackages,
                 ),
                 onBack = { finish() },
                 onFormChange = { form = it },
-                onSaveAndVerify = { saveAndVerify() },
+                onSave = { save() },
                 onEnableNotification = { requestNotificationThenEnable() },
                 onDisableNotification = { disableNotification() },
                 onOpenNotificationSettings = { openNotificationSettings() },
@@ -107,8 +98,6 @@ class MainActivity : ComponentActivity() {
                 onCreateHousehold = { createHousehold() },
                 onJoinHousehold = { joinHousehold() },
                 onLeaveHousehold = { leaveHousehold() },
-                onBackfill = { runBackfill() },
-                onToggleFirestoreRead = { toggleFirestoreRead() },
                 onUnblockSender = { sender ->
                     PaymentBlocklist.unblockSender(this, sender)
                     refreshBlocklist()
@@ -124,32 +113,6 @@ class MainActivity : ComponentActivity() {
     private fun refreshBlocklist() {
         blockedSenders = PaymentBlocklist.blockedSenders(this).sorted()
         blockedPackages = PaymentBlocklist.blockedPackages(this).sorted()
-    }
-
-    private fun toggleFirestoreRead() {
-        val next: Boolean = !firestoreReadEnabled
-        FirestoreReadMode.setEnabled(this, next)
-        firestoreReadEnabled = next
-    }
-
-    /** 노션 지출 전체를 Firestore로 1회 복사한다(3단계). 네트워크를 타므로 백그라운드에서. */
-    private fun runBackfill() {
-        backfillBusy = true
-        backfillMessage = null
-        val appContext: Context = applicationContext
-        io.execute {
-            val result: FirestoreBackfill.Result = FirestoreBackfill.run(appContext)
-            runOnUiThread {
-                backfillBusy = false
-                if (result.ok) {
-                    backfillMessage = "${result.attempted}건 복사를 시도했어요. 잠시 뒤 Firestore 콘솔에서 개수를 확인해 보세요."
-                    backfillMessageIsError = false
-                } else {
-                    backfillMessage = result.message.ifBlank { "백필에 실패했어요" }
-                    backfillMessageIsError = true
-                }
-            }
-        }
     }
 
     /** 로그아웃하고 [LoginActivity] 로 돌아간다. 로컬 곳간·설정은 지우지 않는다 — 계정만 바뀐다. */
@@ -169,7 +132,6 @@ class MainActivity : ComponentActivity() {
         refreshLedger()
         refreshReminderButton()
         notificationOn = NotificationState.isOn(this)
-        firestoreReadEnabled = FirestoreReadMode.isEnabled(this)
         refreshBlocklist()
         resyncInBackground()
         refreshHousehold()
@@ -344,26 +306,18 @@ class MainActivity : ComponentActivity() {
      */
     private fun republishNotification() {
         if (!NotificationState.isOn(this)) return
-        if (!SettingsStore.load(this).isComplete) return
+        if (!PurseAccess.isReady(this)) return
         NotificationHelper.show(this)
     }
 
     private fun loadIntoForm() {
         val s: Settings = SettingsStore.load(this)
         form = SettingsFormUi(
-            token = s.token,
-            nameProp = s.nameProp,
-            priceProp = s.priceProp,
-            dateProp = s.dateProp,
-            purseProp = s.purseProp,
-            categoryProp = s.categoryProp,
             categoriesText = Categories.format(CategoryStore.load(this)),
             payDayText = s.payDay.toString(),
             personalName = s.personal.name,
-            personalDatabaseId = s.personal.databaseId,
             personalBudgetText = budgetText(s.personal.monthlyBudget),
             sharedName = s.shared.name,
-            sharedDatabaseId = s.shared.databaseId,
             sharedBudgetText = budgetText(s.shared.monthlyBudget),
         )
     }
@@ -371,20 +325,12 @@ class MainActivity : ComponentActivity() {
     private fun budgetText(amount: Long): String = if (amount > 0L) amount.toString() else ""
 
     private fun currentForm(): Settings = Settings(
-        token = form.token.trim(),
-        nameProp = form.nameProp.trim(),
-        priceProp = form.priceProp.trim(),
-        dateProp = form.dateProp.trim(),
-        purseProp = form.purseProp.trim(),
-        categoryProp = form.categoryProp.trim(),
         payDay = Payday.normalize(form.payDayText.trim().toIntOrNull() ?: Payday.DEFAULT),
         personal = PurseSettings(
-            databaseId = form.personalDatabaseId.trim(),
             monthlyBudget = readBudget(form.personalBudgetText),
             name = form.personalName.trim(),
         ),
         shared = PurseSettings(
-            databaseId = form.sharedDatabaseId.trim(),
             monthlyBudget = readBudget(form.sharedBudgetText),
             name = form.sharedName.trim(),
         ),
@@ -400,13 +346,13 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * 앱을 연 김에 Notion 을 기준으로 이번 달 캐시를 곳간마다 다시 맞춘다.
-     * 잠금화면 기록은 로컬 사본만 보고 계산하므로, 다른 기기에서 고친 것은 여기서 들어온다.
+     * 앱을 연 김에 저장소를 기준으로 이번 달 캐시를 곳간마다 다시 맞춘다.
+     * 잠금화면 기록은 로컬 사본만 보고 계산하므로, 다른 기기에서 적은 것은 여기서 들어온다.
      */
     private fun resyncInBackground() {
         val settings: Settings = SettingsStore.load(this)
-        val purses: List<Purse> = Purse.entries.filter { settings.of(it).isActive }
-        if (settings.token.isBlank() || purses.isEmpty()) return
+        val purses: List<Purse> = PurseAccess.active(this, settings)
+        if (purses.isEmpty()) return
 
         io.execute {
             val failures: List<String> = purses.mapNotNull { purse ->
@@ -418,7 +364,7 @@ class MainActivity : ComponentActivity() {
                 refreshLedger()
                 if (failures.isNotEmpty()) {
                     setStatus(
-                        "Notion 대조에 실패해 로컬 기록으로 표시 중입니다.\n\n" +
+                        "저장소 대조에 실패해 로컬 기록으로 표시 중입니다.\n\n" +
                             failures.joinToString("\n"),
                         isError = true,
                     )
@@ -431,63 +377,27 @@ class MainActivity : ComponentActivity() {
         showStorageNotice = !SettingsStore.usingEncryption
     }
 
-    private fun saveAndVerify() {
-        // 카테고리 칩 목록은 노션 연결과 무관하므로 완성도 검사 전에 먼저 저장한다.
+    /**
+     * 설정을 저장한다. 예전에는 저장과 함께 노션 연결까지 확인했지만, 이제 확인할 연결이 없다 —
+     * 저장소는 로그인 계정을 따라오므로 «틀린 값을 넣었나»를 물을 칸 자체가 사라졌다.
+     */
+    private fun save() {
         CategoryStore.save(this, Categories.parse(form.categoriesText))
-
-        val formSettings: Settings = currentForm()
-        if (!formSettings.isComplete) {
-            setStatus(
-                "토큰과 속성 이름을 채우고, 두 곳간 중 최소 한 곳에 DB를 연결하세요.",
-                isError = true,
-            )
-            return
-        }
-
-        SettingsStore.save(this, formSettings)
-        loadIntoForm() // 정규화된 DB ID를 화면에 반영
+        SettingsStore.save(this, currentForm())
+        loadIntoForm()
         refreshStorageNotice()
 
-        val saved: Settings = SettingsStore.load(this)
-        setStatus("확인 중…")
-        saving = true
+        setStatus("저장했습니다.")
 
-        io.execute {
-            val results: List<Pair<Boolean, String>> = saved.linkedPurses.map { purse ->
-                val target: NotionTarget = saved.target(purse)
-                    ?: return@map false to "${saved.labelOf(purse)}: DB를 읽지 못했습니다"
-                when (val outcome = NotionClient(target).verify()) {
-                    is NotionClient.Outcome.Ok -> true to "${saved.labelOf(purse)}: ${outcome.detail}"
-                    is NotionClient.Outcome.Err ->
-                        false to "${saved.labelOf(purse)}\n${outcome.message}"
-                }
-            }
-
-            runOnUiThread {
-                if (isFinishing || isDestroyed) return@runOnUiThread
-                saving = false
-
-                val allOk: Boolean = results.all { it.first }
-                val report: String = results.joinToString("\n\n") { it.second }
-                setStatus(
-                    if (allOk) "저장 완료. DB 연결 확인됨.\n\n$report"
-                    else "저장은 됐지만 연결에 문제가 있습니다.\n\n$report",
-                    isError = !allOk,
-                )
-
-                // 알림 액션이 연결된 곳간 수에 따라 달라지므로 다시 그린다
-                if (NotificationHelper.isEnabled(this@MainActivity)) {
-                    NotificationHelper.show(this@MainActivity)
-                }
-                refreshLedger()
-                resyncInBackground()
-            }
-        }
+        // 알림 액션이 연결된 곳간 수에 따라 달라지므로 다시 그린다.
+        if (NotificationHelper.isEnabled(this)) NotificationHelper.show(this)
+        refreshLedger()
+        resyncInBackground()
     }
 
     private fun requestNotificationThenEnable() {
-        if (!SettingsStore.load(this).isComplete) {
-            setStatus("먼저 설정을 저장하고 연결을 확인하세요.", isError = true)
+        if (!PurseAccess.isReady(this)) {
+            setStatus("먼저 로그인해 주세요. 계정이 있어야 기록을 저장할 수 있습니다.", isError = true)
             return
         }
 
@@ -512,7 +422,7 @@ class MainActivity : ComponentActivity() {
         notificationOn = true
 
         if (NotificationHelper.isEnabled(this)) {
-            val purses: List<Purse> = SettingsStore.load(this).linkedPurses
+            val purses: List<Purse> = PurseAccess.linked(this)
             val howTo: String =
                 "알림 카드를 누르면 입력 화면이 바로 뜹니다. «커피 4500» 처럼 적으세요.\n" +
                     "엔터를 칠 때마다 한 건씩 들어가고 위의 숫자가 줄어듭니다.\n" +

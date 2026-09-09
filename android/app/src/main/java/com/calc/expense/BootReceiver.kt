@@ -13,7 +13,7 @@ class BootReceiver : BroadcastReceiver() {
 
         val app = context.applicationContext
         // 사용자가 앱에서 켜 둔 상태였을 때만 되살린다.
-        if (NotificationState.isOn(app) && SettingsStore.load(app).isComplete) {
+        if (NotificationState.isOn(app) && PurseAccess.isReady(app)) {
             NotificationHelper.show(app)
             WeeklyReviewScheduler.schedule(app)
             GradeScheduler.schedule(app)

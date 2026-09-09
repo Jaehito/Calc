@@ -24,7 +24,7 @@ enum class Tone {
         /**
          * 기록 한 건의 결과 색.
          *
-         * 실패는 예산과 무관하게 실패다 — Notion 에 들어가지도 않은 건을 두고
+         * 실패는 예산과 무관하게 실패다 — 저장되지도 않은 건을 두고
          * 남았는지 넘었는지 말하면 거짓말이 된다.
          */
         fun of(ok: Boolean, snapshot: LedgerSnapshot?): Tone = when {

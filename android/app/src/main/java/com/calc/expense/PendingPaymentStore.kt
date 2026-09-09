@@ -6,7 +6,7 @@ import android.content.Context
  * 수집함 저장소. 목록 규칙은 [PendingPayments], 직렬화는 [PendingPaymentCodec] 이 하고
  * 여기는 SharedPreferences 입출력만 한다.
  *
- * 지출 데이터이긴 하지만 아직 «기록»이 아니라 확인 대기열이고, 노션 토큰 같은 비밀도 아니라
+ * 지출 데이터이긴 하지만 아직 «기록»이 아니라 확인 대기열이고, 비밀도 아니라
  * 평문 저장소를 쓴다([CategoryStore] 와 같은 판단).
  */
 object PendingPaymentStore {

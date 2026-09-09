@@ -4,7 +4,7 @@ package com.calc.expense
 data class CategorySlice(val name: String, val amount: Long, val percent: Int)
 
 /**
- * 카테고리별 지출을 막대·퍼센트로 옮긴다. 통계 탭이 노션에서 읽어 온 «카테고리 → 합계»를 받는다.
+ * 카테고리별 지출을 막대·퍼센트로 옮긴다. 통계 탭이 저장소에서 읽어 온 «카테고리 → 합계»를 받는다.
  *
  * Android 에 의존하지 않아 단위 테스트로 고정한다.
  */

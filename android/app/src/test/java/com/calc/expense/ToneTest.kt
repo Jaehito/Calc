@@ -42,7 +42,7 @@ class ToneTest {
 
     @Test
     fun `기록이 안 됐으면 예산과 무관하게 실패다`() {
-        // 남아 있는 상태라도 Notion 에 안 들어간 건을 두고 남았다고 말하면 거짓말이다
+        // 남아 있는 상태라도 저장되지 않은 건을 두고 남았다고 말하면 거짓말이다
         assertEquals(Tone.FAILED, Tone.of(ok = false, snapshot = remaining))
         assertEquals(Tone.FAILED, Tone.of(ok = false, snapshot = null))
     }

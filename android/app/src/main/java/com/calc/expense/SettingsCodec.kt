@@ -5,30 +5,29 @@ import java.util.Base64
 /**
  * 설정을 한 줄 텍스트 코드로 옮기고 되돌린다. 재설치 뒤 다시 타이핑하지 않으려는 용도.
  *
- * 계정·서버가 아니라 «내보내기 코드» 방식이다 — 코드를 복사해 두었다가 새 기기·새 설치에서
- * 붙여넣으면 토큰·DB·예산이 한 번에 복원된다. 노션 토큰이 들어 있으므로 이 코드는 비밀이다.
+ * 노션을 쓰던 시절에는 토큰·DB 를 다시 넣는 것이 재설치의 가장 큰 짐이라 이 코드가 비밀이었다.
+ * 이제 저장소는 구글 로그인이 따라오므로 여기 담기는 것은 **예산 주기와 곳간 이름·금액뿐**이고,
+ * 비밀이 아니다. 그래도 남겨 두는 이유는 예산을 다시 정하는 일이 여전히 성가시기 때문이다.
  *
  * Android 에 의존하지 않아(Base64 는 JVM 표준) 단위 테스트로 고정한다.
  */
 object SettingsCodec {
 
-    private const val VERSION = "v1"
+    /**
+     * v2 부터 노션 칸이 빠졌다. **v1 코드도 읽는다** — 옛 코드를 들고 있던 사람이 붙여넣으면
+     * 예산·이름·월급날만 살려 낸다(토큰·DB 줄은 버린다). 옛 코드를 거절하면 그 사람은
+     * 되돌릴 방법이 없다.
+     */
+    private const val VERSION = "v2"
+    private const val LEGACY_VERSION = "v1"
     private const val SEP = "\t"
 
     fun encode(s: Settings): String {
         val lines: List<String> = listOf(
             VERSION,
-            "token$SEP${s.token}",
-            "nameProp$SEP${s.nameProp}",
-            "priceProp$SEP${s.priceProp}",
-            "dateProp$SEP${s.dateProp}",
-            "purseProp$SEP${s.purseProp}",
-            "categoryProp$SEP${s.categoryProp}",
             "payDay$SEP${s.payDay}",
-            "personal.db$SEP${s.personal.databaseId}",
             "personal.budget$SEP${s.personal.monthlyBudget}",
             "personal.name$SEP${s.personal.name}",
-            "shared.db$SEP${s.shared.databaseId}",
             "shared.budget$SEP${s.shared.monthlyBudget}",
             "shared.name$SEP${s.shared.name}",
         )
@@ -36,7 +35,7 @@ object SettingsCodec {
         return Base64.getEncoder().encodeToString(body)
     }
 
-    /** 코드를 되돌린다. 형식이 아니거나 버전이 다르면 null — 붙여넣기 오류를 조용히 삼키지 않는다. */
+    /** 코드를 되돌린다. 형식이 아니거나 아는 버전이 아니면 null — 붙여넣기 오류를 조용히 삼키지 않는다. */
     fun decode(code: String): Settings? {
         val text: String = try {
             String(Base64.getDecoder().decode(code.trim()), Charsets.UTF_8)
@@ -45,7 +44,8 @@ object SettingsCodec {
         }
 
         val lines: List<String> = text.split("\n")
-        if (lines.firstOrNull() != VERSION) return null
+        val version: String? = lines.firstOrNull()
+        if (version != VERSION && version != LEGACY_VERSION) return null
 
         val map: Map<String, String> = lines.drop(1)
             .mapNotNull { line ->
@@ -54,24 +54,16 @@ object SettingsCodec {
             }
             .toMap()
 
-        // 최소한 토큰 키라도 있어야 유효한 코드로 본다.
-        if (!map.containsKey("token")) return null
+        // 최소한 월급날 키라도 있어야 유효한 코드로 본다.
+        if (!map.containsKey("payDay")) return null
 
         return Settings(
-            token = map["token"].orEmpty(),
-            nameProp = map["nameProp"].orEmpty().ifBlank { Settings().nameProp },
-            priceProp = map["priceProp"].orEmpty().ifBlank { Settings().priceProp },
-            dateProp = map["dateProp"].orEmpty().ifBlank { Settings().dateProp },
-            purseProp = map["purseProp"].orEmpty().ifBlank { Settings().purseProp },
-            categoryProp = map["categoryProp"].orEmpty().ifBlank { Settings().categoryProp },
             payDay = Payday.normalize(map["payDay"]?.toIntOrNull() ?: Payday.DEFAULT),
             personal = PurseSettings(
-                databaseId = map["personal.db"].orEmpty(),
                 monthlyBudget = map["personal.budget"]?.toLongOrNull() ?: 0L,
                 name = map["personal.name"].orEmpty(),
             ),
             shared = PurseSettings(
-                databaseId = map["shared.db"].orEmpty(),
                 monthlyBudget = map["shared.budget"]?.toLongOrNull() ?: 0L,
                 name = map["shared.name"].orEmpty(),
             ),

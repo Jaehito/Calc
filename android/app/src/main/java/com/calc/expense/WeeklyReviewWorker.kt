@@ -19,7 +19,7 @@ class WeeklyReviewWorker(
     override fun doWork(): Result {
         val app: Context = applicationContext
         try {
-            if (NotificationState.isOn(app) && SettingsStore.load(app).isComplete) {
+            if (NotificationState.isOn(app) && PurseAccess.isReady(app)) {
                 val base: StatusLines = StatusText.weekly(Ledger.weeklyTotals(app))
                 // 지난 7일 등급을 한 줄 덧붙인다 — B 이상일 때만이다 ([GradeDelivery]).
                 // 돌아보기(사실)는 언제나 보내고, 등급(채점)만 좋을 때 붙인다.

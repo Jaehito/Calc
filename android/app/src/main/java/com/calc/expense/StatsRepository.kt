@@ -4,7 +4,7 @@ import android.content.Context
 import java.time.LocalDate
 import java.time.YearMonth
 
-/** 통계 화면이 쓰는 한 벌. 기간 비교는 로컬 캐시, 카테고리 막대는 노션에서 온다. */
+/** 통계 화면이 쓰는 한 벌. 기간 비교는 로컬 캐시, 카테고리 막대는 저장소에서 온다. */
 data class StatsData(
     val recent7: Long,
     val prev7: Long,
@@ -26,7 +26,7 @@ data class StatsData(
  * 통계 데이터를 모은다.
  *
  * 기간 총액 비교(최근 7일·이번 달)는 **로컬 캐시**로 즉시 만든다 — 네트워크가 없어도 뜬다.
- * 카테고리 막대만 노션 «카테고리» 속성을 조회한다. 곳간(개인/공용)은 합쳐서 본다.
+ * 카테고리 막대만 저장소를 조회한다. 곳간(개인/공용)은 합쳐서 본다.
  */
 object StatsRepository {
 
@@ -70,7 +70,7 @@ object StatsRepository {
         val settings: Settings = SettingsStore.load(context)
         val cycle: BudgetCycle = Payday.cycleOf(today, settings.payDay)
         var total = 0L
-        for (purse in settings.linkedPurses) {
+        for (purse in PurseAccess.linked(context)) {
             total += Budget.baseRate(settings.of(purse).monthlyBudget, cycle)
         }
         return total
@@ -78,7 +78,7 @@ object StatsRepository {
 
     /** 모든 연결된 곳간을 합쳐 [from]~[to](양끝 포함) 지출을 더한다. */
     fun spentBetween(context: Context, from: LocalDate, to: LocalDate): Long {
-        val purses: List<Purse> = SettingsStore.load(context).linkedPurses
+        val purses: List<Purse> = PurseAccess.linked(context)
         var total: Long = 0L
         var day: LocalDate = from
         while (!day.isAfter(to)) {
@@ -92,51 +92,21 @@ object StatsRepository {
         spentBetween(context, month.atDay(1), month.atEndOfMonth())
 
     /**
-     * 그 달의 카테고리별 합계를 노션에서 가져온다. 네트워크를 타므로 백그라운드에서 부른다.
+     * 그 달의 카테고리별 합계. 저장소를 읽으므로 백그라운드에서 부른다.
      *
-     * 두 곳간이 다른 DB 를 쓰면 각 DB 를 한 번씩 조회해 합친다(같은 DB 면 한 번만). 성공하면
-     * (카테고리 합계, null), 실패하면 (빈 맵, 오류 문구).
+     * 곳간마다 한 번씩 읽어 합친다. 성공하면 (카테고리 합계, null), 실패하면 (빈 맵, 오류 문구) —
+     * **한 곳간이라도 실패하면 전부 실패로 본다.** 반쪽만 담아 보여주면 숫자가 조용히 작아진다.
      */
     fun fetchCategories(context: Context, month: YearMonth): Pair<Map<String, Long>, String?> {
-        val settings = SettingsStore.load(context)
-
-        if (FirestoreReadMode.isEnabled(context)) {
-            val fromFirestore: Map<String, Long>? = fetchCategoriesFromFirestore(context, settings, month)
-            if (fromFirestore != null) return fromFirestore to null
-            // 곳간 중 하나라도 Firestore 읽기가 실패하면 전부 노션으로 — 출처가 섞이면 숫자가 어긋난다.
-        }
-
         val merged = LinkedHashMap<String, Long>()
-        val seenDatabases = HashSet<String>()
-
-        for (purse in settings.linkedPurses) {
-            val target: NotionTarget = settings.target(purse) ?: continue
-            if (target.categoryProp.isBlank()) continue
-            if (!seenDatabases.add(target.databaseId)) continue
-
-            when (val r = NotionClient(target).queryMonthCategories(month)) {
-                is NotionClient.CategoryOutcome.Err -> return emptyMap<String, Long>() to r.message
-                is NotionClient.CategoryOutcome.Ok ->
-                    for ((name, amount) in r.totals) merged[name] = (merged[name] ?: 0L) + amount
-            }
-        }
-        return merged to null
-    }
-
-    /** [fetchCategories] 의 Firestore 경로. 곳간 하나라도 실패하면 null(폴백 신호). */
-    private fun fetchCategoriesFromFirestore(
-        context: Context,
-        settings: Settings,
-        month: YearMonth,
-    ): Map<String, Long>? {
-        val merged = LinkedHashMap<String, Long>()
-        for (purse in settings.linkedPurses) {
-            val rows: List<ExpenseRow> = FirestoreExpenseReader.monthRows(context, purse, month) ?: return null
+        for (purse in PurseAccess.linked(context)) {
+            val rows: List<ExpenseRow> = FirestoreExpenseReader.monthRows(context, purse, month)
+                ?: return emptyMap<String, Long>() to "카테고리를 불러오지 못했습니다"
             for (row in rows) {
                 if (row.category.isBlank()) continue
                 merged[row.category] = (merged[row.category] ?: 0L) + row.amount
             }
         }
-        return merged
+        return merged to null
     }
 }

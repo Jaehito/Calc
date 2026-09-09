@@ -36,7 +36,7 @@ import java.util.concurrent.Executors
 class QuickInputActivity : AppCompatActivity() {
 
     companion object {
-        /** «없음» 칩의 표시 이름. 실제 카테고리 값(노션에 쓰는 값)은 빈 문자열이다. */
+        /** «없음» 칩의 표시 이름. 실제 카테고리 값(저장소에 쓰는 값)은 빈 문자열이다. */
         private const val CATEGORY_NONE = "없음"
     }
 
@@ -63,13 +63,13 @@ class QuickInputActivity : AppCompatActivity() {
     private var recorded: Int = 0
 
     /**
-     * 이 화면에서 방금 적은 항목. ✕ 로 지울 수 있게 Notion 페이지 id 를 들고 있는다.
+     * 이 화면에서 방금 적은 항목. ✕ 로 지울 수 있게 저장소의 줄 id 를 들고 있는다.
      * 창을 닫으면 사라진다 — 지난 기록은 로컬에 항목 단위로 저장하지 않기 때문이다.
      */
     private data class Entry(
         val name: String,
         val amount: Long,
-        val pageId: String,
+        val rowId: String,
         val purse: Purse,
         val day: LocalDate,
         val row: View,
@@ -166,7 +166,7 @@ class QuickInputActivity : AppCompatActivity() {
     /** 연결된 곳간이 하나뿐이면 고르게 하지 않는다. 멈칫하는 3초가 이탈 지점이다. */
     private fun setUpPurses() {
         val settings = SettingsStore.load(this)
-        purses = settings.linkedPurses
+        purses = PurseAccess.linked(this)
         selected = purses.firstOrNull() ?: Purse.PERSONAL
 
         if (purses.size < 2) {
@@ -328,7 +328,7 @@ class QuickInputActivity : AppCompatActivity() {
                     val after: LedgerSnapshot? = refreshNumbers()
 
                     val e: Expense? = result.expense
-                    if (e != null) addEntryRow(e, result.pageId, purse, day)
+                    if (e != null) addEntryRow(e, result.rowId, purse, day)
                     showResult(
                         if (e == null) "기록됨" else StatusText.entered(e.name, e.amount, recorded),
                         Tone.of(ok = true, snapshot = after),
@@ -342,7 +342,7 @@ class QuickInputActivity : AppCompatActivity() {
     }
 
     /** 방금 적은 항목을 목록 맨 위에 한 줄 추가한다. ✕ 를 누르면 [removeEntry] 로 지운다. */
-    private fun addEntryRow(expense: Expense, pageId: String, purse: Purse, day: LocalDate) {
+    private fun addEntryRow(expense: Expense, rowId: String, purse: Purse, day: LocalDate) {
         val row: View = layoutInflater.inflate(R.layout.item_entry_row, ui.listEntries, false)
         val label: android.widget.TextView = row.findViewById(R.id.textEntry)
         label.text = if (expense.category.isBlank()) {
@@ -351,14 +351,14 @@ class QuickInputActivity : AppCompatActivity() {
             "${expense.name} · ${expense.category}  ${StatusText.won(expense.amount)}"
         }
 
-        val entry = Entry(expense.name, expense.amount, pageId, purse, day, row)
+        val entry = Entry(expense.name, expense.amount, rowId, purse, day, row)
         entries.add(entry)
         ui.listEntries.addView(row, 0)
 
         row.findViewById<View>(R.id.buttonRemove).setOnClickListener { removeEntry(entry) }
     }
 
-    /** ✕ 를 누르면 Notion 에서 그 줄을 지우고 로컬 숫자도 되돌린다. */
+    /** ✕ 를 누르면 저장소에서 그 줄을 지우고 로컬 숫자도 되돌린다. */
     private fun removeEntry(entry: Entry) {
         val remove: View = entry.row.findViewById(R.id.buttonRemove)
         remove.isEnabled = false
@@ -366,7 +366,7 @@ class QuickInputActivity : AppCompatActivity() {
         val app = applicationContext
         io.execute {
             val result: DeleteResult = try {
-                RecordExpense.delete(app, entry.pageId, entry.purse.key, entry.day, entry.amount)
+                RecordExpense.delete(app, entry.rowId, entry.purse.key, entry.day, entry.amount)
             } catch (e: Exception) {
                 DeleteResult(ok = false, message = "오류: ${e.message ?: e.javaClass.simpleName}")
             }

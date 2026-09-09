@@ -19,7 +19,7 @@ object GradeRepository {
     /** 그 날 채점. 로컬 캐시만 읽는다 — 네트워크가 없어도 된다. */
     fun day(context: Context, day: LocalDate): SpendingGrade {
         val settings: Settings = SettingsStore.load(context)
-        val purses: List<Purse> = settings.linkedPurses
+        val purses: List<Purse> = PurseAccess.linked(context)
         if (purses.isEmpty()) return SpendingGrade.NoBudget
 
         val cycle: BudgetCycle = Payday.cycleOf(day, settings.payDay)
@@ -29,7 +29,7 @@ object GradeRepository {
 
         for (purse in purses) {
             val config: PurseSettings = settings.of(purse)
-            if (!config.isActive) continue
+            if (!config.hasBudget) continue
             budget += Budget.baseRate(config.monthlyBudget, cycle)
 
             val monthTotals: Map<LocalDate, Long> = SpendingCache.totals(context, purse, YearMonth.from(day))
@@ -48,14 +48,14 @@ object GradeRepository {
      */
     fun trailing(context: Context, today: LocalDate, days: Int): SpendingGrade {
         val settings: Settings = SettingsStore.load(context)
-        val purses: List<Purse> = settings.linkedPurses
+        val purses: List<Purse> = PurseAccess.linked(context)
         if (purses.isEmpty()) return SpendingGrade.NoBudget
 
         val cycle: BudgetCycle = Payday.cycleOf(today, settings.payDay)
         var budget = 0L
         for (purse in purses) {
             val config: PurseSettings = settings.of(purse)
-            if (config.isActive) budget += Budget.baseRate(config.monthlyBudget, cycle) * days
+            if (config.hasBudget) budget += Budget.baseRate(config.monthlyBudget, cycle) * days
         }
 
         val spent: Long = StatsRepository.spentBetween(context, today.minusDays((days - 1).toLong()), today)
@@ -65,14 +65,14 @@ object GradeRepository {
     /** 막 끝난 주기 채점. 월급날이 지나 새 주기로 넘어간 직후 한 번 부른다. */
     fun cycle(context: Context, cycle: BudgetCycle): SpendingGrade {
         val settings: Settings = SettingsStore.load(context)
-        val purses: List<Purse> = settings.linkedPurses
+        val purses: List<Purse> = PurseAccess.linked(context)
         if (purses.isEmpty()) return SpendingGrade.NoBudget
 
         var spent = 0L
         var budget = 0L
         for (purse in purses) {
             val config: PurseSettings = settings.of(purse)
-            if (!config.isActive) continue
+            if (!config.hasBudget) continue
             budget += config.monthlyBudget
             spent += Ledger.spentInCycle(context, purse, cycle)
         }

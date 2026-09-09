@@ -22,7 +22,7 @@ class GradeWorker(
     override fun doWork(): Result {
         val app: Context = applicationContext
         try {
-            if (NotificationState.isOn(app) && SettingsStore.load(app).isComplete) {
+            if (NotificationState.isOn(app) && PurseAccess.isReady(app)) {
                 val grade: SpendingGrade = GradeRepository.day(app, LocalDate.now())
                 // B 이상일 때만 보낸다 — 나쁜 등급을 매일 들이밀면 격려가 잔소리가 된다.
                 if (GradeDelivery.shouldSend(GradePeriod.DAILY, grade)) {

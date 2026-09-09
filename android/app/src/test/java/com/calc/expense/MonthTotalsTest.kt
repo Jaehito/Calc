@@ -38,7 +38,7 @@ class MonthTotalsTest {
 
     @Test
     fun `깨진 값은 예외 대신 빈 맵이 된다`() {
-        // 캐시는 파생 데이터다. 앱이 못 켜지는 것보다 Notion 에서 다시 받는 편이 낫다
+        // 캐시는 파생 데이터다. 앱이 못 켜지는 것보다 저장소에서 다시 받는 편이 낫다
         assertEquals(0, MonthTotals.decode("{잘림").size)
         assertEquals(0, MonthTotals.decode("[]").size)
     }
