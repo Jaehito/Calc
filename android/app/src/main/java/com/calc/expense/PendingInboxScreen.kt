@@ -272,15 +272,19 @@ private fun PendingRow(
     }
 }
 
-/** 발신자·앱·시각 한 줄. 어디서 온 알림인지 알아야 «안 보기»를 판단할 수 있다. */
+/**
+ * 출처·시각 한 줄. 어디서 온 알림인지 알아야 «안 보기»를 판단할 수 있다.
+ *
+ * 발신자가 «1577-8000» 같은 번호면 그 번호로는 아무것도 알 수 없으므로, 내용에서 읽은
+ * 은행·카드사 이름을 대신 보인다 ([PendingPayment.sourceName]).
+ */
 private fun sourceLine(item: PendingPayment): String {
     val time: String = try {
         Instant.ofEpochMilli(item.postedAt).atZone(ZoneId.systemDefault()).format(TimeFormat)
     } catch (_: Exception) {
         ""
     }
-    val who: String = item.sender.ifBlank { item.packageName }
-    return listOf(who, time).filter { it.isNotBlank() }.joinToString(" · ")
+    return listOf(item.sourceName, time).filter { it.isNotBlank() }.joinToString(" · ")
 }
 
 @Composable

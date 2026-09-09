@@ -15,14 +15,18 @@ class PendingPaymentTest {
         postedAt: Long = now,
         packageName: String = "com.kakao.talk",
         sender: String = "1588-1234",
+        merchant: String = "스타벅스",
+        category: String = "카페",
+        issuer: String = "",
     ) = PendingPayment(
         id = id,
         amount = amount,
-        merchant = "스타벅스",
-        category = "카페",
+        merchant = merchant,
+        category = category,
         packageName = packageName,
         sender = sender,
         postedAt = postedAt,
+        issuer = issuer,
     )
 
     @Test
@@ -127,6 +131,93 @@ class PendingPaymentTest {
         )
 
         assertEquals("near", PendingPayments.matchRecorded(items, 4_500L, now))
+    }
+
+    // ── 한 결제가 두 알림으로 올 때 (문자앱 + 은행앱) ──────────────────────────────
+
+    @Test
+    fun `같은 금액이 몇 초 차이로 또 오면 한 건으로 합친다`() {
+        // 실제로 물린 것: 문자앱(발신번호)과 은행앱이 같은 1원 이체를 각각 올려 팝업이 두 번 떴다.
+        val fromSms: PendingPayment =
+            item("sms", amount = 1L, postedAt = now, sender = "1577-8000", merchant = "최재호")
+        val fromBank: PendingPayment = item(
+            "bank",
+            amount = 1L,
+            postedAt = now + 20_000L,
+            packageName = "com.kakaobank.channel",
+            sender = "카카오뱅크",
+            merchant = "카카오뱅크 최재호",
+        )
+
+        var items: List<PendingPayment> = PendingPayments.add(emptyList(), fromSms, now)
+        items = PendingPayments.add(items, fromBank, now)
+
+        assertEquals(1, items.size)
+        // 이름을 더 잘 읽은 쪽이 남는다.
+        assertEquals("카카오뱅크 최재호", items[0].merchant)
+        // 시각은 이른 쪽 — 문자는 결제보다 늦게 온다.
+        assertEquals(now, items[0].postedAt)
+    }
+
+    @Test
+    fun `합칠 때 빈 카테고리는 진 쪽에서 채운다`() {
+        val rich: PendingPayment = item("a", amount = 9_000L, merchant = "이마트성수점", category = "")
+        val poor: PendingPayment = item("b", amount = 9_000L, postedAt = now + 5_000L, merchant = "이마트", category = "마트")
+
+        var items: List<PendingPayment> = PendingPayments.add(emptyList(), rich, now)
+        items = PendingPayments.add(items, poor, now)
+
+        assertEquals(1, items.size)
+        assertEquals("이마트성수점", items[0].merchant)
+        assertEquals("마트", items[0].category)
+    }
+
+    @Test
+    fun `이름을 못 읽은 쪽은 읽은 쪽에 진다`() {
+        val blank: PendingPayment = item("a", amount = 3_000L, merchant = "")
+        val named: PendingPayment = item("b", amount = 3_000L, postedAt = now + 1_000L, merchant = "메가커피")
+
+        var items: List<PendingPayment> = PendingPayments.add(emptyList(), blank, now)
+        items = PendingPayments.add(items, named, now)
+
+        assertEquals(listOf("메가커피"), items.map { it.merchant })
+    }
+
+    @Test
+    fun `시간 폭 밖의 같은 금액은 다른 결제다`() {
+        // 같은 커피를 아침저녁으로 두 번 사면 두 건이어야 한다.
+        val far: Long = now + (PendingPayments.DUPLICATE_WINDOW_MINUTES + 1) * 60_000L
+        var items: List<PendingPayment> = PendingPayments.add(emptyList(), item("a", amount = 4_500L), now)
+        items = PendingPayments.add(items, item("b", amount = 4_500L, postedAt = far), far)
+
+        assertEquals(2, items.size)
+    }
+
+    @Test
+    fun `금액이 다르면 잇따라 와도 합치지 않는다`() {
+        var items: List<PendingPayment> = PendingPayments.add(emptyList(), item("a", amount = 4_500L), now)
+        items = PendingPayments.add(items, item("b", amount = 5_500L, postedAt = now + 3_000L), now)
+
+        assertEquals(2, items.size)
+    }
+
+    // ── 출처 이름 — 발신번호는 이름 노릇을 못 한다 ────────────────────────────────
+
+    @Test
+    fun `발신자가 번호면 내용에서 읽은 은행명을 보인다`() {
+        val fromSms: PendingPayment = item("a", sender = "1577-8000", issuer = "신한은행")
+        assertEquals("신한은행", fromSms.sourceName)
+    }
+
+    @Test
+    fun `발신자가 이름이면 그대로 보인다`() {
+        assertEquals("카카오뱅크", item("a", sender = "카카오뱅크", issuer = "카카오뱅크").sourceName)
+    }
+
+    @Test
+    fun `번호인데 은행명도 모르면 번호라도 보인다`() {
+        // 아무것도 안 보이는 것보다는 낫다 — «안 보기» 를 누를 단서가 필요하다.
+        assertEquals("1577-8000", item("a", sender = "1577-8000", issuer = "").sourceName)
     }
 
     @Test

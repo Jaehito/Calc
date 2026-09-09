@@ -59,6 +59,7 @@ class PaymentNotificationListener : NotificationListenerService() {
                 packageName = sbn.packageName,
                 sender = sender,
                 postedAt = if (sbn.postTime > 0L) sbn.postTime else System.currentTimeMillis(),
+                issuer = candidate.issuer,
             ),
         )
     }

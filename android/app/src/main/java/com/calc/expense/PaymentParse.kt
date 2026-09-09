@@ -7,11 +7,14 @@ package com.calc.expense
  * @param amount 결제 금액. 누적·잔액은 걸러낸 값이다
  * @param merchant 짐작한 가맹점 이름. 못 찾으면 빈 문자열 — 그러면 사용자가 직접 적는다
  * @param category [CategoryClassifier] 가 가맹점 이름에서 짐작한 카테고리. 없으면 빈 문자열
+ * @param issuer 내용에서 읽은 은행·카드사·페이 이름. 없으면 빈 문자열 —
+ *   알림 제목이 발신번호(«1577-8000»)일 때 그 자리를 대신한다
  */
 data class PaymentCandidate(
     val amount: Long,
     val merchant: String,
     val category: String,
+    val issuer: String = "",
 )
 
 /**
@@ -74,6 +77,62 @@ object PaymentParse {
     private const val TRIM_CHARS = "[]()·,.…-~!?\"'"
 
     /**
+     * 은행·카드사·간편결제 브랜드 이름. **긴 이름이 먼저 와야 한다** — «신한은행» 을 «신한» 으로
+     * 잘라 읽지 않기 위해서다.
+     *
+     * 쓰는 곳이 둘이다. ① 알림 제목이 발신번호(«1577-8000»)라 이름 노릇을 못 할 때 그 자리를
+     * 대신한다. ② 계좌 이체처럼 상대가 사람인 거래에서 «신한은행 최재호» 로 앞에 붙는다 —
+     * 사람 이름만 남으면 며칠 뒤 내역에서 «이게 어느 계좌였지» 를 알 수 없다.
+     */
+    private val ISSUERS = listOf(
+        "카카오뱅크", "케이뱅크", "토스뱅크", "카카오페이", "네이버페이", "삼성페이", "페이코",
+        "새마을금고", "우체국", "농협은행", "국민은행", "신한은행", "우리은행", "하나은행",
+        "기업은행", "수협은행", "부산은행", "대구은행", "광주은행", "전북은행", "경남은행",
+        "제주은행", "신협", "산업은행", "씨티은행", "SC제일은행",
+        "국민카드", "신한카드", "우리카드", "하나카드", "삼성카드", "현대카드", "롯데카드",
+        "비씨카드", "농협카드", "KB국민", "NH농협", "IBK기업", "카카오", "토스",
+        "국민", "신한", "우리", "하나", "농협", "기업", "삼성", "현대", "롯데", "비씨",
+        "KB", "NH", "IBK", "BC", "SC",
+    )
+
+    /**
+     * 계좌 거래를 뜻하는 낱말. 이 낱말이 있으면 상대 이름이 **가맹점이 아니라 사람**일 수 있다.
+     *
+     * 카드 승인(«승인»·«결제»)과 갈라 두는 이유는 은행명을 붙이는 규칙이 여기서만 옳기 때문이다 —
+     * «신한 이마트» 는 이름을 더 나쁘게 만들고, «신한은행 최재호» 는 더 낫게 만든다.
+     */
+    private val TRANSFER_WORDS = listOf("이체", "송금", "입금", "출금", "인출", "보냈", "받았")
+
+    /**
+     * 흔한 한국 성(姓). 2~4글자에 이 성으로 시작하면 사람 이름으로 본다.
+     *
+     * 길이만으로 가르면 «이마트»(이)·«정관장»(정)처럼 성으로 시작하는 상호가 전부 사람이 된다.
+     * 그래서 [TRANSFER_WORDS] 가 함께 있을 때만 이 판정을 쓴다.
+     */
+    private val SURNAMES = setOf(
+        "김", "이", "박", "최", "정", "강", "조", "윤", "장", "임", "한", "오", "서", "신",
+        "권", "황", "안", "송", "류", "유", "홍", "전", "고", "문", "손", "양", "배", "백",
+        "허", "남", "심", "노", "하", "곽", "성", "차", "주", "우", "구", "원", "천", "방",
+        "공", "현", "함", "변", "염", "여", "추", "도", "소", "석", "선", "설", "마", "길",
+        "연", "위", "표", "명", "기", "반", "왕", "금", "옥", "육", "인", "맹", "제", "모",
+        "탁", "국", "진", "지", "엄", "채", "봉", "피", "두",
+    )
+
+    /**
+     * 이 글자로 끝나면 사람 이름이 아니다. «임대료»(임)·«관리비»(관)처럼 성으로 시작하는
+     * 적요를 사람으로 오인하지 않기 위한 안전장치다.
+     *
+     * «원» 은 일부러 뺐다 — «지원»·«서원» 같은 이름이 흔해서 넣으면 더 많이 틀린다.
+     */
+    private val NOT_PERSON_TAILS = listOf("료", "비", "세", "금", "값", "점", "실", "회")
+
+    /** 발신번호·계좌번호처럼 숫자와 기호뿐인 이름. 제목이 이 꼴이면 이름 노릇을 못 한다. */
+    private val NUMERIC_NAME = Regex("^[0-9][0-9\\-+ ()]*$")
+
+    /** 한글 음절 또는 마스킹 «*» 한 글자인가. «홍*동» 같은 가린 이름도 사람으로 본다. */
+    private fun isNameChar(c: Char): Boolean = c == '*' || (c in '\uAC00'..'\uD7A3')
+
+    /**
      * 알림에서 결제 한 건을 읽는다. 금액을 못 찾으면 null — 금액 없는 알림은 후보가 아니다.
      *
      * **금액은 제목까지 뒤지고 가맹점은 본문에서만 찾는다.** 제목은 앱 이름이나 문자 발신번호라
@@ -88,10 +147,56 @@ object PaymentParse {
 
         val amount: Long = readAmount(body) ?: return null
         val nameSource: String = (text ?: "").trim().ifEmpty { (title ?: "").trim() }
-        val merchant: String = readMerchant(nameSource)
+        val issuer: String = readIssuer(body)
+        val merchant: String = nameFor(readMerchant(nameSource), issuer, body)
         val category: String = CategoryClassifier.classify(merchant, categories).orEmpty()
-        return PaymentCandidate(amount = amount, merchant = merchant, category = category)
+        return PaymentCandidate(
+            amount = amount,
+            merchant = merchant,
+            category = category,
+            issuer = issuer,
+        )
     }
+
+    /**
+     * 수집함에 보일 이름을 정한다. 규칙 셋이고, 위에서부터 먼저 맞는 것을 쓴다.
+     *
+     * 1. 가맹점을 못 읽었으면 **은행·카드사 이름이라도** 쓴다. 빈칸보다는 «카카오뱅크» 가 낫다 —
+     *    적어도 어디서 나간 돈인지는 알 수 있고, 이름 칸을 고칠 때 기억을 되짚을 단서가 된다.
+     * 2. 계좌 이체이고 상대가 사람 이름이면 **«은행명 사람이름»** 으로 붙인다. 사람 이름만 남으면
+     *    며칠 뒤에 어느 계좌에서 나갔는지 알 수 없다.
+     * 3. 그 밖에는 읽은 그대로 둔다. 카드 승인에 은행명을 붙이면(«신한 이마트») 되레 나빠진다.
+     */
+    fun nameFor(merchant: String, issuer: String, body: String): String {
+        if (merchant.isBlank()) return issuer
+        if (issuer.isEmpty()) return merchant
+        if (merchant.startsWith(issuer)) return merchant
+        if (!isTransfer(body)) return merchant
+        if (!looksLikePerson(merchant)) return merchant
+        return issuer + " " + merchant
+    }
+
+    /** 내용에 나오는 은행·카드사·페이 이름. 없으면 빈 문자열. 긴 이름이 먼저 걸린다. */
+    fun readIssuer(body: String): String {
+        for (issuer in ISSUERS) {
+            if (body.contains(issuer, ignoreCase = true)) return issuer
+        }
+        return ""
+    }
+
+    /** 카드 승인이 아니라 계좌 이체·입출금인가. 은행명을 이름 앞에 붙일지 가르는 조건이다. */
+    fun isTransfer(body: String): Boolean = TRANSFER_WORDS.any { body.contains(it) }
+
+    /** 사람 이름으로 보이는가. 2~4글자 한글(마스킹 «*» 포함)이고 흔한 성으로 시작해야 한다. */
+    fun looksLikePerson(name: String): Boolean {
+        if (name.length !in 2..4) return false
+        if (!name.all { isNameChar(it) }) return false
+        if (name.take(1) !in SURNAMES) return false
+        return NOT_PERSON_TAILS.none { name.endsWith(it) }
+    }
+
+    /** 발신번호·계좌번호처럼 숫자뿐이라 이름 노릇을 못 하는 문자열인가. */
+    fun looksLikeNumber(text: String): Boolean = NUMERIC_NAME.matches(text.trim())
 
     /**
      * 결제 금액. 여러 금액이 있으면 «누적·잔액» 류를 뺀 **첫 번째**를 결제액으로 본다 —
@@ -165,6 +270,9 @@ object PaymentParse {
         // 이름을 떼어 봐야 가맹점이 아니다.
         if (token.endsWith("님")) return null
         if (token.contains("원") && token.any { it.isDigit() }) return null
+        // 은행·카드사 이름 자체는 가맹점이 아니다. 이름을 못 읽었을 때 [nameFor] 가
+        // 마지막 수단으로 쓸 뿐, 진짜 가맹점을 밀어내서는 안 된다.
+        if (ISSUERS.any { token.equals(it, ignoreCase = true) }) return null
 
         val lower: String = token.lowercase()
         if (NOISE.any { lower.contains(it) }) return null

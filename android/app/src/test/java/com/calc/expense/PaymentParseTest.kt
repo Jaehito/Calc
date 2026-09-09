@@ -1,7 +1,9 @@
 package com.calc.expense
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -186,6 +188,77 @@ class PaymentParseTest {
         val found = PaymentParse.parse(null, "홍길동님 GS25 5,500원", categories)
         assertEquals(5_500L, found?.amount)
         assertEquals("GS25", found?.merchant)
+    }
+
+    // ── 은행명·사람 이름 (계좌 이체) ─────────────────────────────────────────────
+
+    @Test
+    fun `계좌 이체는 은행명을 사람 이름 앞에 붙인다`() {
+        // 실제로 물린 것: 수집함에 «최재호» 만 남아 어느 계좌에서 나갔는지 알 수 없었다.
+        val found = PaymentParse.parse(
+            "1577-8000",
+            "[Web발신]\n신한은행 09/09 09:14\n입금 1원\n최재호",
+            categories,
+        )
+        assertEquals(1L, found?.amount)
+        assertEquals("신한은행 최재호", found?.merchant)
+        assertEquals("신한은행", found?.issuer)
+    }
+
+    @Test
+    fun `카드 승인에는 은행명을 붙이지 않는다`() {
+        // «신한 이마트» 는 이름을 더 나쁘게 만든다. 은행명은 계좌 거래에서만 뜻이 있다.
+        val found = PaymentParse.parse("신한카드", "신한1234 승인 32,400원 09/07 20:15 이마트", categories)
+        assertEquals("이마트", found?.merchant)
+    }
+
+    @Test
+    fun `이체라도 사람 이름이 아니면 그대로 둔다`() {
+        // «관리비»·«임대료» 같은 적요에 은행명을 붙일 이유가 없다.
+        val found = PaymentParse.parse(
+            "NH농협",
+            "NH농협 09/07 15:23\n출금 300,000원\n잔액 1,234,567원\n관리비",
+            categories,
+        )
+        assertEquals("관리비", found?.merchant)
+    }
+
+    @Test
+    fun `이름을 못 읽으면 은행명이라도 남긴다`() {
+        // 빈칸보다는 «카카오뱅크» 가 낫다 — 어디서 나간 돈인지는 알 수 있다.
+        val found = PaymentParse.parse("카카오뱅크", "카드 승인 9,000원", categories)
+        assertEquals(9_000L, found?.amount)
+        assertEquals("카카오뱅크", found?.merchant)
+    }
+
+    @Test
+    fun `은행 이름 자체가 가맹점을 밀어내지 않는다`() {
+        val found = PaymentParse.parse(null, "카카오뱅크 승인 12,000원 09/05 14:23 메가커피", categories)
+        assertEquals("메가커피", found?.merchant)
+    }
+
+    @Test
+    fun `이미 은행명으로 시작하면 두 번 붙이지 않는다`() {
+        assertEquals("신한은행 최재호", PaymentParse.nameFor("신한은행 최재호", "신한은행", "이체 1원"))
+    }
+
+    @Test
+    fun `사람 이름 판정 — 성으로 시작하는 2~4글자만`() {
+        assertTrue(PaymentParse.looksLikePerson("최재호"))
+        assertTrue(PaymentParse.looksLikePerson("홍*동"))
+        assertFalse(PaymentParse.looksLikePerson("관리비"))
+        assertFalse(PaymentParse.looksLikePerson("임대료"))
+        assertFalse(PaymentParse.looksLikePerson("스타벅스코엑스점"))
+        assertFalse(PaymentParse.looksLikePerson("GS25"))
+    }
+
+    @Test
+    fun `발신번호는 이름 노릇을 못 한다`() {
+        assertTrue(PaymentParse.looksLikeNumber("1577-8000"))
+        assertTrue(PaymentParse.looksLikeNumber("15885000"))
+        assertTrue(PaymentParse.looksLikeNumber("010-1234-5678"))
+        assertFalse(PaymentParse.looksLikeNumber("카카오뱅크"))
+        assertFalse(PaymentParse.looksLikeNumber("KB Pay"))
     }
 
     @Test
