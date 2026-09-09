@@ -39,6 +39,9 @@ class HomeActivity : ComponentActivity() {
 
     private var tab: Int by mutableStateOf(0)
     private var snapshots: List<LedgerSnapshot> by mutableStateOf(emptyList())
+
+    /** 이번 달 고정비 합계. 0 이면 홈에 그 카드를 그리지 않는다. */
+    private var fixedTotal: Long by mutableStateOf(0L)
     private var notice: String? by mutableStateOf(null)
 
     private var stats: StatsData? by mutableStateOf(null)
@@ -55,6 +58,9 @@ class HomeActivity : ComponentActivity() {
 
     /** 막 끝난 주기 결산. 월급날이 지난 걸 처음 확인한 순간에만 채워진다. */
     private var cycleGrade: SpendingGrade.Graded? by mutableStateOf(null)
+
+    /** 그 팝업에 함께 붙는 새 주기 추천 금액. 월급을 안 적었으면 비어 있다. */
+    private var cyclePlan: FixedCostPlan by mutableStateOf(FixedCostPlan())
 
     /** 어제 등급. B 이상일 때만 채워진다 ([GradeDelivery]) — 하루 한 번. */
     private var dailyGrade: SpendingGrade.Graded? by mutableStateOf(null)
@@ -91,6 +97,8 @@ class HomeActivity : ComponentActivity() {
                             today = LocalDate.now(),
                             snapshots = snapshots,
                             notice = notice,
+                            fixedTotal = fixedTotal,
+                            onSetBudget = { startActivity(Intent(this@HomeActivity, OnboardingActivity::class.java)) },
                             onOpenSettings = { startActivity(Intent(this@HomeActivity, MainActivity::class.java)) },
                             onOpenHistory = { purse -> openHistory(purse) },
                             onRecord = {
@@ -109,7 +117,14 @@ class HomeActivity : ComponentActivity() {
                         val ended: SpendingGrade.Graded? = cycleGrade
                         val yesterday: SpendingGrade.Graded? = dailyGrade
                         if (ended != null) {
-                            CycleGradeDialog(grade = ended, onDismiss = { cycleGrade = null })
+                            CycleGradeDialog(
+                                grade = ended,
+                                recommended = if (cyclePlan.canRecommend) cyclePlan.recommended else 0L,
+                                fixedTotal = cyclePlan.fixedTotal,
+                                monthlyIncome = cyclePlan.monthlyIncome,
+                                onApply = { applyRecommendedBudget() },
+                                onDismiss = { cycleGrade = null },
+                            )
                         } else if (yesterday != null) {
                             DailyGradeDialog(
                                 grade = yesterday,
@@ -207,7 +222,26 @@ class HomeActivity : ComponentActivity() {
         CycleGradeStore.setLastSeenStart(this, currentCycle.start)
 
         val result: SpendingGrade = GradeRepository.cycle(this, endedCycle)
-        if (result is SpendingGrade.Graded) cycleGrade = result
+        if (result !is SpendingGrade.Graded) return
+
+        cyclePlan = FixedCostStore.load(this)
+        cycleGrade = result
+    }
+
+    /**
+     * 결산 팝업의 «적용» — 추천 금액을 개인 곳간 예산에 넣는다.
+     *
+     * 공용 곳간은 건드리지 않는다. 고정비 파이프라인은 개인 곳간만 정한다(첫 시작과 같은 규칙).
+     */
+    private fun applyRecommendedBudget() {
+        val amount: Long = cyclePlan.recommended
+        cycleGrade = null
+        if (amount <= 0L) return
+
+        val settings: Settings = SettingsStore.load(this)
+        SettingsStore.save(this, settings.copy(personal = settings.personal.copy(monthlyBudget = amount)))
+        refresh()
+        NotificationHelper.show(this)
     }
 
     /**
@@ -469,6 +503,7 @@ class HomeActivity : ComponentActivity() {
         val today: LocalDate = LocalDate.now()
         snapshots = PurseAccess.linked(this)
             .mapNotNull { Ledger.snapshot(this, it, today) }
+        fixedTotal = FixedCostStore.load(this).fixedTotal
     }
 
     /**

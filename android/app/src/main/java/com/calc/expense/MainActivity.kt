@@ -75,6 +75,7 @@ class MainActivity : ComponentActivity() {
                     householdBusy = householdBusy,
                     householdMessage = householdMessage,
                     householdMessageIsError = householdMessageIsError,
+                    fixedTotal = fixedTotal,
                     blockedSenders = blockedSenders,
                     blockedPackages = blockedPackages,
                 ),
@@ -98,6 +99,9 @@ class MainActivity : ComponentActivity() {
                 onCreateHousehold = { createHousehold() },
                 onJoinHousehold = { joinHousehold() },
                 onLeaveHousehold = { leaveHousehold() },
+                onOpenFixedCosts = {
+                    startActivity(Intent(this@MainActivity, OnboardingActivity::class.java))
+                },
                 onUnblockSender = { sender ->
                     PaymentBlocklist.unblockSender(this, sender)
                     refreshBlocklist()
@@ -109,6 +113,9 @@ class MainActivity : ComponentActivity() {
             )
         }
     }
+
+    /** 이번 달 고정비 합계. 설정 카드의 문구가 이 값으로 갈린다. */
+    private var fixedTotal: Long by mutableStateOf(0L)
 
     private fun refreshBlocklist() {
         blockedSenders = PaymentBlocklist.blockedSenders(this).sorted()
@@ -132,6 +139,7 @@ class MainActivity : ComponentActivity() {
         refreshLedger()
         refreshReminderButton()
         notificationOn = NotificationState.isOn(this)
+        fixedTotal = FixedCostStore.load(this).fixedTotal
         refreshBlocklist()
         resyncInBackground()
         refreshHousehold()

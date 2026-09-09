@@ -53,9 +53,12 @@ fun HomeScreen(
     today: LocalDate,
     snapshots: List<LedgerSnapshot>,
     notice: String?,
+    /** 이번 달 고정비 합계. 0 이면 그 카드를 그리지 않는다 — 안 적은 사람에게 빈 칸을 보이지 않는다. */
+    fixedTotal: Long = 0L,
     onOpenSettings: () -> Unit,
     onOpenHistory: (Purse) -> Unit,
     onRecord: () -> Unit,
+    onSetBudget: () -> Unit = {},
 ) {
     // 위(카드·내역)는 스크롤하고, 기록하기 버튼은 아래에 고정한다.
     // 곳간 카드가 둘이면 스크롤이 길어지는데, 버튼이 스크롤 안에 있으면 하단 탭에 가려진다.
@@ -95,10 +98,14 @@ fun HomeScreen(
             Spacer(Modifier.height(16.dp))
 
             if (snapshots.isEmpty()) {
-                EmptyCard()
+                EmptyCard(onSetBudget)
             } else {
                 for (snapshot in snapshots) {
                     PurseCard(snapshot, showLabel = snapshots.size > 1, onClick = { onOpenHistory(snapshot.purse) })
+                    Spacer(Modifier.height(12.dp))
+                }
+                if (fixedTotal > 0L) {
+                    FixedCostCard(fixedTotal, onSetBudget)
                     Spacer(Modifier.height(12.dp))
                 }
             }
@@ -261,21 +268,67 @@ private fun VaultBar(snapshot: LedgerSnapshot) {
 }
 
 @Composable
-private fun EmptyCard() {
+private fun EmptyCard(onSetBudget: () -> Unit) {
     CardBox {
         Text(
-            text = "아직 연결된 곳간이 없습니다",
+            text = "아직 챌린지 금액을 안 정했어요",
             color = HomePalette.Ink,
             fontSize = 17.sp,
             fontWeight = FontWeight.SemiBold,
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            text = "설정에서 한 달 예산을 정하면 " +
-                "오늘 쓸 수 있는 돈이 여기에 나옵니다.",
+            text = "월급에서 고정비를 빼면 한 달에 쓸 수 있는 돈이 나옵니다. " +
+                "정하고 나면 오늘 쓸 수 있는 돈이 여기에 뜹니다.",
             color = HomePalette.Ink2,
             fontSize = 13.sp,
+            lineHeight = 20.sp,
         )
+        Spacer(Modifier.height(14.dp))
+        Text(
+            text = "챌린지 금액 정하기",
+            color = Color.White,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier
+                .clip(RoundedCornerShape(999.dp))
+                .background(HomePalette.AccentBright)
+                .clickable(onClick = onSetBudget)
+                .padding(horizontal = 18.dp, vertical = 10.dp),
+        )
+    }
+}
+
+/**
+ * 이번 달 고정비 합계. 큰 숫자가 아니라 **근거**로 존재한다 — 오늘 쓸 수 있는 돈이 왜 그
+ * 금액인지 설명하는 줄이다. 그래서 곳간 카드보다 조용하게 그린다.
+ */
+@Composable
+private fun FixedCostCard(fixedTotal: Long, onEdit: () -> Unit) {
+    CardBox {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = "이번 달 고정비", color = HomePalette.Ink2, fontSize = 13.sp)
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = StatusText.won(fixedTotal),
+                    color = HomePalette.Ink,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            Text(
+                text = "다시 계산",
+                color = HomePalette.Accent,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(HomePalette.Soft)
+                    .clickable(onClick = onEdit)
+                    .padding(horizontal = 14.dp, vertical = 7.dp),
+            )
+        }
     }
 }
 

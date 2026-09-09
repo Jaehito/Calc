@@ -55,7 +55,7 @@ class LoginActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         if (auth.currentUser != null) {
-            goHome()
+            goNext()
             return
         }
 
@@ -75,7 +75,7 @@ class LoginActivity : ComponentActivity() {
                         val result: Result<Unit> = signInWithGoogle()
                         signingIn = false
                         result
-                            .onSuccess { goHome() }
+                            .onSuccess { goNext() }
                             .onFailure { errorMessage = "로그인에 실패했어요. 다시 시도해 주세요." }
                     }
                 },
@@ -108,8 +108,19 @@ class LoginActivity : ComponentActivity() {
         }
     }
 
-    private fun goHome() {
-        startActivity(Intent(this, HomeActivity::class.java))
+    /**
+     * 로그인 뒤 도착할 곳. 처음 쓰는 사람은 «챌린지 금액 정하기»부터 지나간다.
+     *
+     * 규칙은 [Onboarding.shouldShow] 하나가 갖는다 — 여기서 조건을 다시 적으면 «한 번
+     * 물어봤으면 다시 묻지 않는다»가 조용히 깨진다.
+     */
+    private fun goNext() {
+        val show: Boolean = Onboarding.shouldShow(
+            wasAsked = FixedCostStore.wasAsked(this),
+            hasBudget = SettingsStore.load(this).personal.hasBudget,
+        )
+        val target: Class<*> = if (show) OnboardingActivity::class.java else HomeActivity::class.java
+        startActivity(Intent(this, target))
         finish()
     }
 }

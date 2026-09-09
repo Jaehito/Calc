@@ -60,6 +60,8 @@ data class SettingsUi(
     val householdBusy: Boolean = false,
     val householdMessage: String? = null,
     val householdMessageIsError: Boolean = false,
+    /** 지금 저장된 고정비 합계. 0 이면 아직 안 적은 것이다. */
+    val fixedTotal: Long = 0L,
     /** 수집함에 담지 않는 발신자·앱. 해제할 수 있게 화면에 그대로 보여준다. */
     val blockedSenders: List<String> = emptyList(),
     val blockedPackages: List<String> = emptyList(),
@@ -91,6 +93,7 @@ fun SettingsScreen(
     onCreateHousehold: () -> Unit,
     onJoinHousehold: () -> Unit,
     onLeaveHousehold: () -> Unit,
+    onOpenFixedCosts: () -> Unit,
     onUnblockSender: (String) -> Unit,
     onUnblockPackage: (String) -> Unit,
 ) {
@@ -176,6 +179,25 @@ fun SettingsScreen(
             )
             Spacer(Modifier.height(10.dp))
             MintField(form.personalBudgetText, { onFormChange(form.copy(personalBudgetText = it)) }, "월 예산 (예: 930000 또는 93만)")
+        }
+        Spacer(Modifier.height(12.dp))
+
+        CardBox {
+            SectionTitle("고정비로 금액 정하기")
+            HelperText(
+                if (ui.fixedTotal > 0L) {
+                    "지금 적어 둔 고정비는 ${StatusText.won(ui.fixedTotal)}입니다. " +
+                        "월급이나 고정비가 바뀌었으면 다시 계산해 개인 곳간 예산에 넣으세요."
+                } else {
+                    "월세·대출이자·보험처럼 매달 그냥 나가는 돈을 적어 두면, 월급에서 그만큼 뺀 금액을 " +
+                        "개인 곳간 예산으로 넣어 줍니다. 고정비는 지출로 기록되지 않습니다."
+                },
+            )
+            Spacer(Modifier.height(10.dp))
+            PillButton(
+                text = if (ui.fixedTotal > 0L) "고정비 고치고 다시 계산" else "고정비로 계산하기",
+                onClick = onOpenFixedCosts,
+            )
         }
         Spacer(Modifier.height(12.dp))
 
