@@ -122,7 +122,12 @@ class MainActivity : ComponentActivity() {
         blockedPackages = PaymentBlocklist.blockedPackages(this).sorted()
     }
 
-    /** 로그아웃하고 [LoginActivity] 로 돌아간다. 로컬 곳간·설정은 지우지 않는다 — 계정만 바뀐다. */
+    /**
+     * 로그아웃하고 [LoginActivity] 로 돌아간다.
+     *
+     * 여기서는 아무것도 지우지 않는다 — 같은 계정으로 다시 들어올 수도 있기 때문이다.
+     * 비우는 판단은 **다시 로그인할 때** [AccountScope] 가 uid 를 비교해서 한다.
+     */
     private fun signOut() {
         FirebaseAuth.getInstance().signOut()
         startActivity(

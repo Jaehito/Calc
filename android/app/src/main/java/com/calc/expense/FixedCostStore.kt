@@ -46,4 +46,9 @@ object FixedCostStore {
     fun markAsked(context: Context) {
         prefs(context).edit().putBoolean(KEY_ASKED, true).apply()
     }
+
+    /** 계정이 바뀌면 월급도 고정비도 «물어봤다»도 전부 남의 것이다. */
+    fun clear(context: Context) {
+        prefs(context).edit().clear().apply()
+    }
 }

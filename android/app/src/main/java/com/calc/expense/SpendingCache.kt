@@ -44,4 +44,9 @@ object SpendingCache {
     fun replaceMonth(context: Context, purse: Purse, month: YearMonth, totals: Map<LocalDate, Long>) {
         prefs(context).edit().putString(key(purse, month), MonthTotals.encode(totals)).apply()
     }
+
+    /** 이 기기의 사본을 통째로 비운다. 계정이 바뀔 때 부른다 — 남의 지출을 내 숫자로 세면 안 된다. */
+    fun clear(context: Context) {
+        prefs(context).edit().clear().apply()
+    }
 }

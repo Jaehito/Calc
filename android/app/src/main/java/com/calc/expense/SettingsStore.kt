@@ -91,4 +91,9 @@ object SettingsStore {
         for (key in LEGACY_NOTION_KEYS) edit.remove(key)
         edit.apply()
     }
+
+    /** 계정이 바뀔 때. 예산·곳간 이름·월급날은 그 사람의 것이라 남기지 않는다. */
+    fun clear(context: Context) {
+        prefs(context).edit().clear().apply()
+    }
 }

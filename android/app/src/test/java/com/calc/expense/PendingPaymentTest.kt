@@ -108,11 +108,13 @@ class PendingPaymentTest {
     }
 
     @Test
-    fun `시간 폭을 벗어나면 치우지 않는다`() {
-        val far: Long = now - (PendingPayments.MATCH_WINDOW_MINUTES + 5) * 60_000L
-        val items: List<PendingPayment> = listOf(item("a", amount = 4_500L, postedAt = far))
+    fun `몇 시간 뒤에 적어도 금액이 같으면 치운다`() {
+        // 저녁에 결제한 걸 밤에 적었을 때 수집함에 남아 있으면, 이미 적은 것과 안 적은 것이
+        // 섞인 목록을 사람이 다시 가려내야 한다. 어느 걸 적었는지는 금액이 유일한 단서다.
+        val evening: Long = now - 6 * 60 * 60_000L
+        val items: List<PendingPayment> = listOf(item("a", amount = 4_500L, postedAt = evening))
 
-        assertEquals(null, PendingPayments.matchRecorded(items, 4_500L, now))
+        assertEquals("a", PendingPayments.matchRecorded(items, 4_500L, now))
     }
 
     @Test
@@ -131,6 +133,20 @@ class PendingPaymentTest {
         )
 
         assertEquals("near", PendingPayments.matchRecorded(items, 4_500L, now))
+    }
+
+    @Test
+    fun `기록 안 한 것 셋과 한 것 하나가 섞여 있어도 적은 금액만 빠진다`() {
+        // 실제로 물린 상황 — 셋은 안 적고 하나만 적었을 때, 적은 그 한 건만 사라져야 한다.
+        val items: List<PendingPayment> = listOf(
+            item("a", amount = 4_500L, postedAt = now - 40 * 60_000L),
+            item("b", amount = 12_000L, postedAt = now - 30 * 60_000L),
+            item("c", amount = 3_200L, postedAt = now - 20 * 60_000L),
+        )
+
+        val matched: String? = PendingPayments.matchRecorded(items, 12_000L, now)
+        assertEquals("b", matched)
+        assertEquals(listOf("a", "c"), PendingPayments.remove(items, matched!!).map { it.id })
     }
 
     // ── 한 결제가 두 알림으로 올 때 (문자앱 + 은행앱) ──────────────────────────────

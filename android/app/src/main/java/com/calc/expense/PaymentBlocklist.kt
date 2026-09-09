@@ -54,4 +54,9 @@ object PaymentBlocklist {
     private fun put(context: Context, key: String, value: Set<String>) {
         prefs(context).edit().putStringSet(key, value).apply()
     }
+
+    /** 계정이 바뀌면 차단 목록도 비운다 — 내가 막은 카드사가 다음 사람에게도 막혀 있으면 안 된다. */
+    fun clear(context: Context) {
+        prefs(context).edit().clear().apply()
+    }
 }

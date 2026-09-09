@@ -64,4 +64,14 @@ object ReminderState {
         val count: Int = if (p.getString(KEY_COUNT_DATE, "") == today.toString()) p.getInt(KEY_COUNT, 0) else 0
         p.edit().putString(KEY_COUNT_DATE, today.toString()).putInt(KEY_COUNT, count + 1).apply()
     }
+
+    /** 계정이 바뀔 때. 기능 켬/끔은 기기 설정이라 남기고, 그 계정의 기록 시각·카운트만 지운다. */
+    fun clearAccountState(context: Context) {
+        prefs(context).edit()
+            .remove(KEY_PENDING_AT)
+            .remove(KEY_LAST_RECORD_AT)
+            .remove(KEY_COUNT_DATE)
+            .remove(KEY_COUNT)
+            .apply()
+    }
 }

@@ -27,4 +27,9 @@ object CycleGradeStore {
     fun setLastSeenStart(context: Context, start: LocalDate) {
         prefs(context).edit().putString(KEY_LAST_SEEN_START, start.toString()).apply()
     }
+
+    /** 계정이 바뀌면 «어느 주기까지 봤나»도 남의 기억이다. */
+    fun clear(context: Context) {
+        prefs(context).edit().clear().apply()
+    }
 }

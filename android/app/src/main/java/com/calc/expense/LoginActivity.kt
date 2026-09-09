@@ -115,6 +115,10 @@ class LoginActivity : ComponentActivity() {
      * 물어봤으면 다시 묻지 않는다»가 조용히 깨진다.
      */
     private fun goNext() {
+        // 계정이 바뀌었으면 앞사람의 예산·고정비·곳간을 먼저 비운다. 이걸 빼먹으면 새 계정이
+        // 남의 챌린지 금액을 물려받고, «이미 물어봤다»로 온보딩까지 건너뛴다.
+        AccountScope.syncTo(this, auth.currentUser?.uid)
+
         val show: Boolean = Onboarding.shouldShow(
             wasAsked = FixedCostStore.wasAsked(this),
             hasBudget = SettingsStore.load(this).personal.hasBudget,

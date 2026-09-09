@@ -39,4 +39,9 @@ object ChallengeStore {
             .putString(KEY_NAME, name.trim().take(MAX_NAME_LENGTH))
             .apply()
     }
+
+    /** 계정이 바뀌면 참가 중인 방도 남의 것이다. */
+    fun clear(context: Context) {
+        prefs(context).edit().clear().apply()
+    }
 }

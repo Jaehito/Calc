@@ -29,4 +29,9 @@ object DailyGradeStore {
     fun setLastShownDay(context: Context, day: LocalDate) {
         prefs(context).edit().putString(KEY_LAST_SHOWN_DAY, day.toString()).apply()
     }
+
+    /** 계정이 바뀌면 «어느 날까지 봤나»도 남의 기억이다. */
+    fun clear(context: Context) {
+        prefs(context).edit().clear().apply()
+    }
 }
