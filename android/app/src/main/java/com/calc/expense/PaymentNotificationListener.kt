@@ -36,10 +36,15 @@ class PaymentNotificationListener : NotificationListenerService() {
     }
 
     /**
-     * 결제로 보이는 알림을 수집함에 담는다.
+     * 결제로 보이는 알림을 **수집함과 결제 기록 두 곳에** 담는다.
      *
-     * 알림 키([StatusBarNotification.getKey])를 그대로 항목 id 로 쓴다 — 안드로이드가 같은 알림을
-     * 갱신할 때마다 다시 올리는데, 이 키가 같으므로 덮어써서 중복이 쌓이지 않는다.
+     * 알림 키([StatusBarNotification.getKey])를 그대로 수집함 항목 id 로 쓴다 — 안드로이드가 같은
+     * 알림을 갱신할 때마다 다시 올리는데, 이 키가 같으므로 덮어써서 중복이 쌓이지 않는다.
+     *
+     * 목록이 둘인 이유는 수명이 다르기 때문이다. 수집함은 «지금 물어볼 것»이라 기록하거나
+     * 무시하면 그 자리에서 사라지고 7일이면 버린다. 결제 기록([PaymentLogStore])은 그것과
+     * 무관하게 남아 «달마다 되풀이되는 것»을 세는 재료가 된다 — 월세·보험처럼 손으로 적지 않고
+     * 수집함에서도 치워 버리는 항목이 정작 사용자가 모르는 고정비다.
      */
     private fun collect(sbn: StatusBarNotification, title: String?, text: String?) {
         val app = applicationContext
@@ -48,6 +53,8 @@ class PaymentNotificationListener : NotificationListenerService() {
 
         val candidate: PaymentCandidate =
             PaymentParse.parse(title, text, CategoryStore.load(app)) ?: return
+
+        val postedAt: Long = if (sbn.postTime > 0L) sbn.postTime else System.currentTimeMillis()
 
         PendingPaymentStore.add(
             app,
@@ -58,9 +65,14 @@ class PaymentNotificationListener : NotificationListenerService() {
                 category = candidate.category,
                 packageName = sbn.packageName,
                 sender = sender,
-                postedAt = if (sbn.postTime > 0L) sbn.postTime else System.currentTimeMillis(),
+                postedAt = postedAt,
                 issuer = candidate.issuer,
             ),
+        )
+
+        PaymentLogStore.add(
+            app,
+            PaymentLogEntry(name = candidate.merchant, amount = candidate.amount, at = postedAt),
         )
     }
 }

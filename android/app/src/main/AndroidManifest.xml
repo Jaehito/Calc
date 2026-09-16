@@ -39,6 +39,13 @@
             android:exported="false"
             android:label="@string/app_name" />
 
+        <!-- 주기 리포트. 결산 팝업과 통계 탭 두 곳에서 들어온다. -->
+        <activity
+            android:name=".CycleReportActivity"
+            android:exported="false"
+            android:label="지난 주기 리포트"
+            android:parentActivityName=".HomeActivity" />
+
         <!-- 곳간 내역. 홈의 곳간 카드에서만 들어온다. -->
         <activity
             android:name=".PurseHistoryActivity"

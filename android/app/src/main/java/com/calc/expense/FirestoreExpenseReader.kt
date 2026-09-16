@@ -23,10 +23,18 @@ object FirestoreExpenseReader {
 
     private const val TIMEOUT_SECONDS = 8L
 
-    fun monthRows(context: Context, purse: Purse, month: YearMonth): List<ExpenseRow>? {
+    fun monthRows(context: Context, purse: Purse, month: YearMonth): List<ExpenseRow>? =
+        rowsBetween(context, purse, month.atDay(1), month.atEndOfMonth())
+
+    /**
+     * [first]~[last](양끝 포함) 사이의 지출 행.
+     *
+     * 주기는 월급날에서 잘려 달력 달과 어긋나므로, 주기 단위로 읽는 쪽([CycleReportRepository])은
+     * 달이 아니라 날짜 범위로 묻는다. 날짜를 «2026-08-05» 꼴 문자열로 적어 두었기에
+     * 사전순 비교가 곧 날짜순 비교다.
+     */
+    fun rowsBetween(context: Context, purse: Purse, first: LocalDate, last: LocalDate): List<ExpenseRow>? {
         val collection: CollectionReference = FirestoreExpenseStore.collectionFor(context, purse) ?: return null
-        val first: LocalDate = month.atDay(1)
-        val last: LocalDate = month.atEndOfMonth()
 
         return try {
             val snapshot: QuerySnapshot = Tasks.await(

@@ -1,6 +1,7 @@
 package com.calc.expense
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -36,6 +37,10 @@ fun gradeColor(grade: Grade): Color = when (grade) {
  * 앱을 열 때 이미 셋(수집함·주기 결산·어제 등급)이 줄 서 있어서, 넷째를 더하면 앱 열자마자
  * 팝업 넘기기가 되기 때문이다. 결산을 보는 자리가 다음 달 금액을 정하기에도 맞는 자리다.
  *
+ * 금액을 정하지 못하는 사람을 위한 문도 여기에 있다 — «고정비가 뭔지 모르겠어요»를 누르면
+ * 리포트로 간다([CycleReportActivity]). 팝업은 주기가 바뀐 그 순간 한 번만 뜨는데, 자기
+ * 고정비를 모르는 사람에게는 바로 그 순간이 «그래서 얼마로 하지»가 막히는 순간이다.
+ *
  * @param recommended 월급 − 고정비로 계산한 금액. 0 이면 그 줄을 통째로 생략한다
  *   (월급을 안 적었거나 고정비가 월급을 넘은 경우)
  */
@@ -46,6 +51,7 @@ fun CycleGradeDialog(
     fixedTotal: Long = 0L,
     monthlyIncome: Long = 0L,
     onApply: () -> Unit = {},
+    onOpenReport: () -> Unit = {},
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
@@ -100,6 +106,20 @@ fun CycleGradeDialog(
                         )
                     }
                 }
+
+                Spacer(Modifier.height(if (recommended > 0L) 12.dp else 18.dp))
+                Text(
+                    text =
+                        if (recommended > 0L) "고정비 다시 찾아보기 ›"
+                        else "고정비가 뭔지 모르겠어요 ›",
+                    color = HomePalette.Accent,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable(onClick = onOpenReport)
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                )
             }
         },
         confirmButton = {

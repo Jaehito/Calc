@@ -43,6 +43,7 @@ private val Figures = TextStyle(fontFeatureSettings = "tnum")
 fun StatsScreen(
     data: StatsData,
     onToggleCategoryMonth: () -> Unit,
+    onOpenReport: () -> Unit = {},
 ) {
     Column(
         modifier = Modifier
@@ -57,6 +58,41 @@ fun StatsScreen(
         TrendCard(data)
         Spacer(Modifier.height(12.dp))
         CategoryCard(data, onToggleCategoryMonth)
+        Spacer(Modifier.height(12.dp))
+        ReportCard(onOpenReport)
+    }
+}
+
+/**
+ * 주기 리포트로 가는 문.
+ *
+ * 리포트는 결산 팝업에서도 열리지만 그 팝업은 주기가 바뀐 그 순간 한 번만 뜬다. 자기 고정비가
+ * 궁금해지는 때는 대개 그 순간이 아니라 «이번 달도 왜 이렇게 썼지» 하고 통계를 들여다볼 때다.
+ * 그래서 늘 있는 자리에 문을 하나 더 둔다.
+ */
+@Composable
+private fun ReportCard(onOpenReport: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .background(HomePalette.Card)
+            .clickable(onClick = onOpenReport)
+            .padding(20.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("지난 주기 리포트", color = HomePalette.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "달마다 되풀이되는 결제를 찾아 고정비를 정리해요",
+                    color = HomePalette.Ink2,
+                    fontSize = 12.5f.sp,
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            Text("›", color = HomePalette.Muted, fontSize = 22.sp)
+        }
     }
 }
 

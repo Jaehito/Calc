@@ -85,6 +85,7 @@ class HomeActivity : ComponentActivity() {
                         1 -> StatsScreen(
                             data = stats ?: StatsRepository.localOnly(this@HomeActivity),
                             onToggleCategoryMonth = { toggleCategoryMonth() },
+                            onOpenReport = { openCycleReport() },
                         )
                         2 -> ChallengeScreen(
                             ui = challengeUi,
@@ -123,6 +124,10 @@ class HomeActivity : ComponentActivity() {
                                 fixedTotal = cyclePlan.fixedTotal,
                                 monthlyIncome = cyclePlan.monthlyIncome,
                                 onApply = { applyRecommendedBudget() },
+                                onOpenReport = {
+                                    cycleGrade = null
+                                    openCycleReport()
+                                },
                                 onDismiss = { cycleGrade = null },
                             )
                         } else if (yesterday != null) {
@@ -242,6 +247,11 @@ class HomeActivity : ComponentActivity() {
         SettingsStore.save(this, settings.copy(personal = settings.personal.copy(monthlyBudget = amount)))
         refresh()
         NotificationHelper.show(this)
+    }
+
+    /** 주기 리포트 화면을 연다. 결산 팝업과 통계 탭 두 곳에서 같은 곳으로 보낸다. */
+    private fun openCycleReport() {
+        startActivity(Intent(this, CycleReportActivity::class.java))
     }
 
     /**
