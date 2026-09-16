@@ -46,6 +46,13 @@
             android:label="지난 주기 리포트"
             android:parentActivityName=".HomeActivity" />
 
+        <!-- 카테고리 하나를 이름별로 펼치고 다시 분류하는 화면. 통계 도넛과 리포트 막대에서 들어온다. -->
+        <activity
+            android:name=".CategoryDetailActivity"
+            android:exported="false"
+            android:label="카테고리"
+            android:parentActivityName=".HomeActivity" />
+
         <!-- 곳간 내역. 홈의 곳간 카드에서만 들어온다. -->
         <activity
             android:name=".PurseHistoryActivity"

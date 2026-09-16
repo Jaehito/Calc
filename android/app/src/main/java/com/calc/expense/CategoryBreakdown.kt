@@ -11,6 +11,12 @@ data class CategorySlice(val name: String, val amount: Long, val percent: Int)
 object CategoryBreakdown {
 
     /**
+     * 카테고리 없이 적은 돈을 묶는 이름. 저장된 값은 빈 문자열이고 이건 **보여줄 때의 이름**이다.
+     * 도넛·리포트·펼치기 화면이 같은 말을 써야 해서 여기서만 정한다.
+     */
+    const val UNCATEGORIZED = "미분류"
+
+    /**
      * 큰 것부터 정렬한 카테고리 목록. 퍼센트는 반올림해 합이 100 근처가 되지만 정확히 100은
      * 아닐 수 있다(반올림 오차) — 막대 길이는 이걸로 충분하고, 숫자는 원값을 함께 보여준다.
      *
@@ -20,7 +26,7 @@ object CategoryBreakdown {
         val merged = LinkedHashMap<String, Long>()
         for ((rawName, amount) in totals) {
             if (amount <= 0L) continue
-            val name: String = rawName.trim().ifBlank { "미분류" }
+            val name: String = rawName.trim().ifBlank { UNCATEGORIZED }
             merged[name] = (merged[name] ?: 0L) + amount
         }
 

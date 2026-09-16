@@ -57,6 +57,7 @@ fun CycleReportScreen(
     onToggle: (FixedCostCandidate) -> Unit,
     onApply: () -> Unit,
     onEditFixed: () -> Unit,
+    onOpenCategory: (String) -> Unit = {},
     onClose: () -> Unit,
 ) {
     Column(
@@ -93,7 +94,7 @@ fun CycleReportScreen(
 
         if (report.categories.isNotEmpty()) {
             Spacer(Modifier.height(12.dp))
-            CategoryCard(report)
+            CategoryCard(report, onOpenCategory)
         }
 
         val error: String? = report.error
@@ -346,13 +347,19 @@ private fun CandidateRow(candidate: FixedCostCandidate, checked: Boolean, onTogg
 
 /** 어디에 썼나. 통계 탭의 도넛과 달리 막대 한 줄씩 — 리포트에서는 순위만 알면 된다. */
 @Composable
-private fun CategoryCard(report: CycleReport) {
+private fun CategoryCard(report: CycleReport, onOpenCategory: (String) -> Unit) {
     CardBox {
         Text("어디에 썼나", color = HomePalette.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(14.dp))
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             report.categories.take(5).forEachIndexed { index, slice ->
-                Column {
+                // 통계 탭과 같은 문이다 — 누르면 그 카테고리 안이 이름별로 펼쳐진다.
+                Column(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable { onOpenCategory(slice.name) }
+                        .padding(vertical = 2.dp),
+                ) {
                     Row(verticalAlignment = Alignment.Bottom) {
                         Box(
                             modifier = Modifier
@@ -374,6 +381,8 @@ private fun CategoryCard(report: CycleReport) {
                             fontSize = 12.sp,
                             style = Figures,
                         )
+                        Spacer(Modifier.width(5.dp))
+                        Text("›", color = HomePalette.Muted, fontSize = 14.sp)
                     }
                     Spacer(Modifier.height(6.dp))
                     Box(

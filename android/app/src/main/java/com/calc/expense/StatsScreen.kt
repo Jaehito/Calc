@@ -44,6 +44,7 @@ fun StatsScreen(
     data: StatsData,
     onToggleCategoryMonth: () -> Unit,
     onOpenReport: () -> Unit = {},
+    onOpenCategory: (String) -> Unit = {},
 ) {
     Column(
         modifier = Modifier
@@ -57,7 +58,7 @@ fun StatsScreen(
 
         TrendCard(data)
         Spacer(Modifier.height(12.dp))
-        CategoryCard(data, onToggleCategoryMonth)
+        CategoryCard(data, onToggleCategoryMonth, onOpenCategory)
         Spacer(Modifier.height(12.dp))
         ReportCard(onOpenReport)
     }
@@ -222,7 +223,7 @@ private fun Gauge(percent: Int) {
 
 /** 카테고리 도넛 + 범례. 저장소에서 읽어 온 카테고리별 합계를 그린다. */
 @Composable
-private fun CategoryCard(data: StatsData, onToggle: () -> Unit) {
+private fun CategoryCard(data: StatsData, onToggle: () -> Unit, onOpenCategory: (String) -> Unit) {
     CardBox {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -257,19 +258,27 @@ private fun CategoryCard(data: StatsData, onToggle: () -> Unit) {
                     color = HomePalette.Ink2,
                     fontSize = 13.sp,
                 )
-            else -> DonutAndLegend(data)
+            else -> DonutAndLegend(data, onOpenCategory)
         }
     }
 }
 
 @Composable
-private fun DonutAndLegend(data: StatsData) {
+private fun DonutAndLegend(data: StatsData, onOpenCategory: (String) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Donut(data.categories, modifier = Modifier.size(128.dp))
         Spacer(Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(11.dp)) {
             data.categories.forEachIndexed { i, slice ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                // 조각을 누르면 그 안이 이름별로 펼쳐진다 — 이 앱의 «하위 카테고리»다
+                // ([CategoryDetailScreen]). 미분류 조각은 치우는 문이기도 하다.
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable { onOpenCategory(slice.name) }
+                        .padding(vertical = 2.dp),
+                ) {
                     Box(
                         modifier = Modifier
                             .size(10.dp)
@@ -283,6 +292,8 @@ private fun DonutAndLegend(data: StatsData) {
                         Text(StatusText.figure(slice.amount), color = HomePalette.Muted, fontSize = 10.sp, style = Figures)
                     }
                     Text("${slice.percent}%", color = HomePalette.Ink, fontSize = 13.sp, fontWeight = FontWeight.Bold, style = Figures)
+                    Spacer(Modifier.width(5.dp))
+                    Text("›", color = HomePalette.Muted, fontSize = 15.sp)
                 }
             }
         }

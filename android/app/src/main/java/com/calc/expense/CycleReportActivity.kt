@@ -37,6 +37,7 @@ class CycleReportActivity : ComponentActivity() {
                 onEditFixed = {
                     startActivity(Intent(this@CycleReportActivity, OnboardingActivity::class.java))
                 },
+                onOpenCategory = { name -> openCategoryDetail(name) },
                 onClose = { finish() },
             )
         }
@@ -67,6 +68,18 @@ class CycleReportActivity : ComponentActivity() {
     override fun onDestroy() {
         io.shutdown()
         super.onDestroy()
+    }
+
+    /**
+     * 카테고리 막대를 이름별로 펼친다. 범위는 **이 리포트가 보고 있는 주기**다 —
+     * 통계 탭에서 들어오면 그 달, 여기서 들어오면 이 주기. 화면에 적힌 숫자와 같아야 한다.
+     */
+    private fun openCategoryDetail(sliceName: String) {
+        val cycle: BudgetCycle = report?.cycle ?: return
+        val category: String = if (sliceName == CategoryBreakdown.UNCATEGORIZED) "" else sliceName
+        startActivity(
+            CategoryDetailActivity.intent(this, category, cycle.start, cycle.lastDay),
+        )
     }
 
     private fun toggle(candidate: FixedCostCandidate) {

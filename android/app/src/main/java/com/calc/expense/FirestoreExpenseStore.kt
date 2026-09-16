@@ -64,6 +64,33 @@ object FirestoreExpenseStore {
     }
 
     /**
+     * 그 줄의 **카테고리만** 바꾼다. [add] 와 같은 이유로 서버 응답을 기다리지 않는다.
+     *
+     * [RecordExpense.edit] 를 쓰지 않는 이유가 있다. 그쪽은 새 문서를 만들고 옛 것을 지우는
+     * 방식이라 한 줄을 고치는 데 쓰기가 두 번 일어나고 줄의 id 가 바뀐다. 이름·금액이 함께
+     * 달라질 때는 그게 맞지만, 카테고리 한 칸만 고치면서 그러면 스무 줄을 고칠 때 마흔 번을
+     * 쓴다. 일괄 재분류([CategoryDetailRepository])는 그 규모로 도는 기능이다.
+     *
+     * 금액을 건드리지 않으므로 로컬 캐시([SpendingCache])도 그대로다 — 곳간 숫자는 변하지 않고
+     * 카테고리 집계만 달라진다.
+     */
+    fun updateCategory(context: Context, purse: Purse, id: String, category: String): Outcome {
+        if (id.isBlank()) return Outcome.Err("고칠 줄을 찾을 수 없습니다")
+        val collection: CollectionReference =
+            collectionFor(context, purse) ?: return Outcome.Err(missingReason(purse))
+
+        collection.document(id)
+            .update(
+                mapOf(
+                    "category" to category,
+                    "updatedAt" to FieldValue.serverTimestamp(),
+                ),
+            )
+            .addOnFailureListener { Log.w(TAG, "카테고리 서버 반영 실패(로컬엔 남음)", it) }
+        return Outcome.Ok(id)
+    }
+
+    /**
      * 그 곳간의 컬렉션. 쓸 곳이 없으면 null 이고, 그것이 곧 «이 곳간에는 기록할 수 없다»는 뜻이다
      * ([PurseAccess] 가 이 판정을 그대로 쓴다).
      *

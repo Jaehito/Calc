@@ -86,6 +86,7 @@ class HomeActivity : ComponentActivity() {
                             data = stats ?: StatsRepository.localOnly(this@HomeActivity),
                             onToggleCategoryMonth = { toggleCategoryMonth() },
                             onOpenReport = { openCycleReport() },
+                            onOpenCategory = { name -> openCategoryDetail(name) },
                         )
                         2 -> ChallengeScreen(
                             ui = challengeUi,
@@ -200,6 +201,9 @@ class HomeActivity : ComponentActivity() {
         resyncInBackground()
         checkCycleGrade()
         checkDailyGrade()
+        // 카테고리를 펼쳐 다시 분류하고 돌아오면 도넛이 달라져 있어야 한다. 대조(resync)
+        // 끝에도 한 번 부르지만 그건 네트워크를 타므로, 돌아온 자리에서 바로 한 번 더 읽는다.
+        if (tab == 1) loadStats()
         if (tab == 2) loadChallenge()
     }
 
@@ -252,6 +256,20 @@ class HomeActivity : ComponentActivity() {
     /** 주기 리포트 화면을 연다. 결산 팝업과 통계 탭 두 곳에서 같은 곳으로 보낸다. */
     private fun openCycleReport() {
         startActivity(Intent(this, CycleReportActivity::class.java))
+    }
+
+    /**
+     * 도넛 조각 하나를 이름별로 펼친다. 범위는 **지금 도넛이 보고 있는 달**과 같아야 한다 —
+     * 화면에 「이번 달 620,000원」이라 써 놓고 펼쳤더니 다른 합계가 나오면 숫자를 못 믿는다.
+     *
+     * 도넛의 «미분류»는 저장된 값이 빈 문자열이다([CategoryBreakdown.UNCATEGORIZED]).
+     */
+    private fun openCategoryDetail(sliceName: String) {
+        val month: YearMonth = YearMonth.from(LocalDate.now()).minusMonths(categoryMonthBack.toLong())
+        val category: String = if (sliceName == CategoryBreakdown.UNCATEGORIZED) "" else sliceName
+        startActivity(
+            CategoryDetailActivity.intent(this, category, month.atDay(1), month.atEndOfMonth()),
+        )
     }
 
     /**
