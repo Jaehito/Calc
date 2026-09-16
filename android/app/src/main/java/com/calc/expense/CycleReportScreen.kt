@@ -175,7 +175,7 @@ private fun CandidateCard(
         Text("고정비로 보이는 것", color = HomePalette.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(4.dp))
         Text(
-            text = "기록과 결제 알림에서 달마다 되풀이된 것들이에요. 아닌 건 체크를 빼 주세요.",
+            text = "손으로 적은 기록과 결제 알림에서 달마다 되풀이된 것들이에요. 아닌 건 체크를 빼 주세요.",
             color = HomePalette.Ink2,
             fontSize = 12.sp,
         )
@@ -205,6 +205,19 @@ private fun CandidateCard(
                     onToggle = { onToggle(candidate) },
                 )
             }
+        }
+
+        // 기록에서 온 줄은 사용자가 지금까지 「지출」로 적어 오던 것이다. 고정비로 옮기고도
+        // 계속 적으면 예산에서 한 번, 지출에서 또 한 번 빠져 두 번 깎인다. 그 말을 여기서 한다 —
+        // 화면이 말해 주지 않으면 숫자가 왜 안 맞는지 사용자가 알아낼 방법이 없다.
+        if (chosen.any { it.fromRecord }) {
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = "«기록»에서 온 건 고정비로 넣은 뒤부터 따로 안 적으셔도 돼요. " +
+                    "고정비는 지출이 아니라 쓸 수 있는 돈을 정하는 재료라, 둘 다 하면 두 번 빠져요.",
+                color = HomePalette.Muted,
+                fontSize = 11.5f.sp,
+            )
         }
 
         Spacer(Modifier.height(14.dp))
@@ -311,8 +324,11 @@ private fun CandidateRow(candidate: FixedCostCandidate, checked: Boolean, onTogg
             )
             Spacer(Modifier.height(2.dp))
             Text(
+                // 출처와 «평균인가»를 함께 밝힌다. 평균이라는 말이 없으면 사용자는 그 숫자를
+                // 지난달에 실제로 나간 돈으로 읽고, 다르다고 생각해 그 줄을 빼 버린다.
                 text = "최근 ${RecurringCosts.LOOK_BACK_CYCLES}주기 중 ${candidate.cycles}번" +
-                    if (candidate.fromRecord) " · 기록" else " · 알림",
+                    (if (candidate.fromRecord) " · 기록" else " · 알림") +
+                    (if (candidate.averaged) " · 평균" else ""),
                 color = HomePalette.Muted,
                 fontSize = 11.sp,
             )

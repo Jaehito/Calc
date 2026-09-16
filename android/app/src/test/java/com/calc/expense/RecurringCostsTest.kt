@@ -232,6 +232,115 @@ class RecurringCostsTest {
     }
 
     @Test
+    fun `손으로 적은 제목은 금액이 달라도 고정비로 본다`() {
+        // 석 달 내리 「관리비」라고 적었다면 그건 관리비다. 그 제목은 사용자가 직접 고른 말이라
+        // 앱이 짐작한 이름보다 믿을 만하다. 달마다 액수가 달라지는 것들(관리비·전기·학원비)이
+        // 정작 사용자가 모르는 고정비인데, 금액 폭을 걸면 그것들만 골라서 빠진다.
+        val found: List<FixedCostCandidate> = RecurringCosts.of(
+            listOf(
+                event("관리비", 98_000L, "2026-06-20", fromRecord = true),
+                event("관리비", 131_000L, "2026-07-20", fromRecord = true),
+                event("관리비", 112_000L, "2026-08-20", fromRecord = true),
+            ),
+            cycles,
+        )
+
+        assertEquals(1, found.size)
+        assertEquals("관리비", found[0].name)
+        assertTrue(found[0].fromRecord)
+    }
+
+    @Test
+    fun `금액이 흔들리면 평균을 제안한다`() {
+        // 「지금 값」이라 할 만한 것이 없을 때 마지막 달을 집으면, 그 달이 유난히 많았을 뿐일 수 있다.
+        val found: List<FixedCostCandidate> = RecurringCosts.of(
+            listOf(
+                event("관리비", 98_000L, "2026-06-20", fromRecord = true),
+                event("관리비", 131_000L, "2026-07-20", fromRecord = true),
+                event("관리비", 112_000L, "2026-08-20", fromRecord = true),
+            ),
+            cycles,
+        )
+
+        assertEquals(113_667L, found[0].amount)
+        assertTrue(found[0].averaged)
+    }
+
+    @Test
+    fun `금액이 고르면 평균이 아니라 최근 값이다`() {
+        // 보험료가 올랐으면 오른 값이 다음 달에 나간다. 평균을 내면 둘 다 아닌 숫자가 된다.
+        val found: List<FixedCostCandidate> = RecurringCosts.of(
+            listOf(
+                event("보험", 100_000L, "2026-07-15", fromRecord = true),
+                event("보험", 108_000L, "2026-08-15", fromRecord = true),
+            ),
+            cycles,
+        )
+
+        assertEquals(108_000L, found[0].amount)
+        assertFalse(found[0].averaged)
+    }
+
+    @Test
+    fun `알림에서만 온 것은 금액이 흔들리면 여전히 아니다`() {
+        // 앱이 문구에서 짐작한 이름이라 「같은 곳」이라는 근거가 이름 하나뿐이다.
+        // 금액까지 제각각이면 같은 가게에서 다른 것을 산 것일 뿐이다.
+        val found: List<FixedCostCandidate> = RecurringCosts.of(
+            listOf(
+                event("우리카드 이마트성수점", 50_000L, "2026-07-20"),
+                event("우리카드 이마트성수점", 70_000L, "2026-08-20"),
+            ),
+            cycles,
+        )
+
+        assertTrue(found.isEmpty())
+    }
+
+    @Test
+    fun `손으로 적었어도 한 주기에 여러 번이면 아니다`() {
+        // 「점심」을 달마다 여러 번 적는다. 제목이 같아도 이건 고정비가 아니다 —
+        // 기록 쪽 잣대를 느슨하게 한 뒤에도 이 줄이 목록을 지킨다.
+        val lunches: List<MoneyEvent> = listOf(
+            event("점심", 9_000L, "2026-07-02", fromRecord = true),
+            event("점심", 12_000L, "2026-07-09", fromRecord = true),
+            event("점심", 8_500L, "2026-07-16", fromRecord = true),
+            event("점심", 11_000L, "2026-08-04", fromRecord = true),
+            event("점심", 9_500L, "2026-08-11", fromRecord = true),
+        )
+
+        assertTrue(RecurringCosts.of(lunches, cycles).isEmpty())
+    }
+
+    @Test
+    fun `평균이 너무 적으면 제안하지 않는다`() {
+        val found: List<FixedCostCandidate> = RecurringCosts.of(
+            listOf(
+                event("편의점", 2_000L, "2026-07-03", fromRecord = true),
+                event("편의점", 6_000L, "2026-08-03", fromRecord = true),
+            ),
+            cycles,
+        )
+
+        assertTrue(found.isEmpty())
+    }
+
+    @Test
+    fun `기록이 하나라도 섞이면 느슨한 잣대를 쓴다`() {
+        // 7월엔 손으로 적었고 8월엔 알림만 남았다. 사용자가 그 이름을 한 번이라도 직접 적었으면
+        // 그 이름은 믿을 만하다 — 안 적은 달이 있다고 잣대가 되돌아가면 안 된다.
+        val found: List<FixedCostCandidate> = RecurringCosts.of(
+            listOf(
+                event("학원비", 250_000L, "2026-07-05", fromRecord = true),
+                event("학원비", 320_000L, "2026-08-05"),
+            ),
+            cycles,
+        )
+
+        assertEquals(1, found.size)
+        assertEquals(285_000L, found[0].amount)
+    }
+
+    @Test
     fun `이름이 비면 세지 않는다`() {
         // 파싱이 가맹점을 못 읽은 건들이 «이름 없음» 한 덩어리로 뭉쳐 고정비가 되면 안 된다.
         val found: List<FixedCostCandidate> = RecurringCosts.of(

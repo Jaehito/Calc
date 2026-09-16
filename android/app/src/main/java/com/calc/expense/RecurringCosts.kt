@@ -9,12 +9,14 @@ import java.time.LocalDate
  *   (평균이 아니다 — 보험료가 올랐으면 오른 값이 맞다)
  * @param cycles 최근 세 주기 중 몇 번 보였나. 화면에 «3개월 중 2번»으로 보인다
  * @param fromRecord 손으로 적은 기록에서도 보였나. 알림에서만 보였으면 false
+ * @param averaged 금액이 달마다 달라 평균을 냈나. 화면이 «평균»이라고 밝혀야 하는 값이다
  */
 data class FixedCostCandidate(
     val name: String,
     val amount: Long,
     val cycles: Int,
     val fromRecord: Boolean,
+    val averaged: Boolean = false,
 )
 
 /**
@@ -25,8 +27,13 @@ data class FixedCostCandidate(
  * «같은 이름 · 같은 금액이 여러 주기에 걸쳐 나왔나»만 센다.
  *
  * 재료는 두 갈래다 — 사용자가 적은 지출([ExpenseRow])과 앱이 본 결제 알림([PaymentLogEntry]).
- * 어느 쪽에서 왔든 [MoneyEvent] 로 같아지고, 여기서는 출처를 판정에 쓰지 않는다.
- * 통신비를 손으로 적는 사람과 안 적는 사람 모두에게 같은 답이 나와야 한다.
+ * 어느 쪽에서 왔든 [MoneyEvent] 로 같아져 **한 목록**에 담긴다.
+ *
+ * **다만 금액을 보는 잣대가 갈린다.** 알림의 이름은 앱이 문구에서 짐작한 것이라 틀릴 수 있어,
+ * «금액이 거의 같다»는 뒷받침이 더 필요하다. 손으로 적은 제목은 사용자가 직접 고른 말이다 —
+ * 석 달 내리 «관리비»라고 적었다면 그건 금액이 98,000 · 131,000 · 112,000 으로 흔들려도
+ * 관리비다. 그래서 기록에서 온 이름에는 금액 폭([TOLERANCE_PERCENT])을 걸지 않는다.
+ * 이 구분이 없으면 정작 달마다 액수가 달라지는 것들(관리비·전기·학원비)만 골라서 빠진다.
  *
  * Android 에 의존하지 않아 단위 테스트로 고정한다.
  */
@@ -39,10 +46,12 @@ object RecurringCosts {
     const val LOOK_BACK_CYCLES = 3
 
     /**
-     * 금액이 이만큼까지 흔들려도 같은 고정비로 본다.
+     * **알림에서만 본 것**의 금액이 이만큼까지 흔들려도 같은 고정비로 본다.
      *
      * 관리비·통신비는 달마다 조금씩 다르고, 그걸 «다른 항목»으로 갈라 버리면 정작 찾아야 할
      * 것들을 못 찾는다. 반대로 폭을 더 넓히면 커피값과 밥값이 한 덩어리가 된다.
+     *
+     * 손으로 적은 기록에는 이 폭을 걸지 않는다 — 아래 [of] 설명 참고.
      */
     const val TOLERANCE_PERCENT = 15
 
@@ -122,18 +131,31 @@ object RecurringCosts {
         val low: Long = amounts.min()
         val high: Long = amounts.max()
         // 정수만으로 «high 가 low 보다 TOLERANCE_PERCENT % 넘게 크지 않은가»를 본다.
-        if (high * 100L > low * (100L + TOLERANCE_PERCENT)) return null
+        val steady: Boolean = high * 100L <= low * (100L + TOLERANCE_PERCENT)
+
+        // 사람이 적은 제목이면 이름만으로 충분하다. 앱이 짐작한 이름에는 금액의 뒷받침이 필요하다.
+        val fromRecord: Boolean = entries.any { it.second.fromRecord }
+        if (!steady && !fromRecord) return null
 
         val latest: MoneyEvent = entries.maxByOrNull { it.second.date }?.second ?: return null
-        if (latest.amount < MIN_AMOUNT) return null
+
+        // 금액이 안정적이면 가장 최근 값(오른 보험료가 다음 달에 나간다). 흔들리면 평균 —
+        // «지금 값»이라 할 만한 것이 없을 때 마지막 달을 집으면 그 달이 유난히 많았을 뿐일 수 있다.
+        val amount: Long = if (steady) latest.amount else average(amounts)
+        if (amount < MIN_AMOUNT) return null
 
         return FixedCostCandidate(
             name = latest.name.trim(),
-            amount = latest.amount,
+            amount = amount,
             cycles = cycleCount,
-            fromRecord = entries.any { it.second.fromRecord },
+            fromRecord = fromRecord,
+            averaged = !steady,
         )
     }
+
+    /** 반올림한 평균. 예산에 들어갈 숫자라 내림으로 조금씩 모자라게 잡지 않는다. */
+    private fun average(amounts: List<Long>): Long =
+        (amounts.sum() + amounts.size / 2) / amounts.size
 
     /**
      * 이름을 견주기 좋게 다듬는다. 띄어쓰기만 없앤다 — 「우리카드 우아한형제들」과
