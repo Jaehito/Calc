@@ -193,9 +193,10 @@ class QuickInputActivity : AppCompatActivity() {
      * 카테고리 칩을 만든다. «없음» 이 맨 앞이고 기본 선택이다. 목록은 앱이 갖는다
      * (설정에서 편집) — 잠금화면에서 네트워크 없이 바로 그린다.
      *
-     * 이름을 입력하면 [CategoryClassifier] 가 낱말을 보고 짐작해 칩을 자동으로 켠다
-     * (네트워크·LLM 없음). 사용자가 칩을 직접 누르면 [manualCategoryOverride] 가 서서
-     * 그 뒤로는 자동이 끼어들지 않는다 — 스스로 고른 걸 되돌리면 안 되기 때문이다.
+     * 이름을 입력하면 [CategoryMemoryStore] 의 기억과 [CategoryClassifier] 의 낱말 규칙이
+     * 차례로 짐작해 칩을 자동으로 켠다 (네트워크·LLM 없음). 사용자가 칩을 직접 누르면
+     * [manualCategoryOverride] 가 서서 그 뒤로는 자동이 끼어들지 않는다 — 스스로 고른 걸
+     * 되돌리면 안 되기 때문이다.
      *
      * 각 칩에 [View.generateViewId] 로 id 를 준다. id 가 없으면(NO_ID) `findViewById` 가
      * 항상 null 을 돌려줘 어느 칩이 눌렸는지 알 수 없다.
@@ -236,9 +237,17 @@ class QuickInputActivity : AppCompatActivity() {
         return if (label == CATEGORY_NONE) "" else label
     }
 
-    /** [text] 에서 카테고리를 짐작해 칩을 켠다. 사용자가 아직 손대지 않았을 때만 불린다. */
+    /**
+     * [text] 에서 카테고리를 짐작해 칩을 켠다. 사용자가 아직 손대지 않았을 때만 불린다.
+     *
+     * **기억이 낱말 규칙을 이긴다.** [CategoryClassifier] 는 아는 말만 알아서 단골 가게 이름은
+     * 영영 «없음»으로 떨어진다. 한 번 정해 준 이름은 [CategoryMemoryStore] 가 기억하므로,
+     * 쓸수록 «없음»이 줄어든다. 순서를 뒤집으면 스타벅스를 식비로 적어 온 사람에게 앱이
+     * 매번 카페로 되돌리게 된다 — 그건 짐작이 아니라 고집이다.
+     */
     private fun applyAutoCategory(text: String) {
-        val guess: String? = CategoryClassifier.classify(text, categoryLabels)
+        val guess: String? = CategoryMemoryStore.recall(this, text, categoryLabels)
+            ?: CategoryClassifier.classify(text, categoryLabels)
         selectChip(guess ?: CATEGORY_NONE)
         selectedCategory = guess.orEmpty()
     }

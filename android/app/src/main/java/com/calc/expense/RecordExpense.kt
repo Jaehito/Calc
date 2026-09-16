@@ -82,6 +82,8 @@ object RecordExpense {
                 ReminderState.markRecorded(context, at)
                 // 방금 적은 것과 같은 결제로 보이는 수집함 후보를 치운다 — 같은 걸 두 번 묻지 않는다.
                 PendingPaymentStore.removeRecorded(context, parsed.amount, at)
+                // 이 이름을 어디에 넣었는지 기억한다. 다음에 같은 이름을 적으면 칩이 저절로 켜진다.
+                CategoryMemoryStore.remember(context, parsed.name, parsed.category)
                 // 저장소를 다시 읽지 않는다 — 로컬 사본만으로 계산하고, 대조는 앱을 열 때 한다.
                 RecordResult(
                     ok = true,

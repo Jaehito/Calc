@@ -96,6 +96,11 @@ object StatsRepository {
      *
      * 곳간마다 한 번씩 읽어 합친다. 성공하면 (카테고리 합계, null), 실패하면 (빈 맵, 오류 문구) —
      * **한 곳간이라도 실패하면 전부 실패로 본다.** 반쪽만 담아 보여주면 숫자가 조용히 작아진다.
+     *
+     * **카테고리가 없는 줄도 담는다.** 예전에는 빈 카테고리를 건너뛰었는데, 그러면 그 돈이
+     * 도넛에서 통째로 사라지고 「이 달 합계」도 실제보다 작아진다. 사용자 눈에는 모든 지출이
+     * 저절로 분류된 것처럼 보이지만 실제로는 분류 안 된 돈이 화면에서 없어진 것이다.
+     * 빈 이름은 [CategoryBreakdown] 이 «미분류»로 묶는다 — 주기 리포트도 같은 규칙을 쓴다.
      */
     fun fetchCategories(context: Context, month: YearMonth): Pair<Map<String, Long>, String?> {
         val merged = LinkedHashMap<String, Long>()
@@ -103,7 +108,6 @@ object StatsRepository {
             val rows: List<ExpenseRow> = FirestoreExpenseReader.monthRows(context, purse, month)
                 ?: return emptyMap<String, Long>() to "카테고리를 불러오지 못했습니다"
             for (row in rows) {
-                if (row.category.isBlank()) continue
                 merged[row.category] = (merged[row.category] ?: 0L) + row.amount
             }
         }

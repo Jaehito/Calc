@@ -51,6 +51,7 @@ object AccountScope {
         for (purse in Purse.entries) BudgetStore.clear(context, purse)
         PendingPaymentStore.clear(context)
         PaymentLogStore.clear(context)
+        CategoryMemoryStore.clear(context)
         PaymentBlocklist.clear(context)
         ReminderState.clearAccountState(context)
         CycleGradeStore.clear(context)

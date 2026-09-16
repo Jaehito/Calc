@@ -51,8 +51,14 @@ class PaymentNotificationListener : NotificationListenerService() {
         val sender: String = title.orEmpty()
         if (PaymentBlocklist.isBlocked(app, sbn.packageName, sender)) return
 
-        val candidate: PaymentCandidate =
-            PaymentParse.parse(title, text, CategoryStore.load(app)) ?: return
+        val categories: List<String> = CategoryStore.load(app)
+        val candidate: PaymentCandidate = PaymentParse.parse(title, text, categories) ?: return
+
+        // 낱말 규칙이 못 맞히면 사용자가 예전에 그 이름을 어디에 넣었는지 본다.
+        // 수집함에서 «기록» 을 누를 때 카테고리가 이미 켜져 있어야 손이 덜 간다.
+        val category: String = candidate.category.ifBlank {
+            CategoryMemoryStore.recall(app, candidate.merchant, categories).orEmpty()
+        }
 
         val postedAt: Long = if (sbn.postTime > 0L) sbn.postTime else System.currentTimeMillis()
 
@@ -62,7 +68,7 @@ class PaymentNotificationListener : NotificationListenerService() {
                 id = sbn.key,
                 amount = candidate.amount,
                 merchant = candidate.merchant,
-                category = candidate.category,
+                category = category,
                 packageName = sbn.packageName,
                 sender = sender,
                 postedAt = postedAt,
