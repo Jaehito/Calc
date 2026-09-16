@@ -323,7 +323,12 @@ class HomeActivity : ComponentActivity() {
             } catch (e: Exception) {
                 RecordResult(ok = false, lines = StatusText.failed("오류: ${e.message ?: e.javaClass.simpleName}", now))
             }
-            if (result.ok) PendingPaymentStore.remove(app, item.id)
+            if (result.ok) {
+                PendingPaymentStore.remove(app, item.id)
+                // 알림이 읽은 이름을 사용자가 어떻게 고쳤는지 기억한다. 다음 결제 알림부터는
+                // 카드가 이 이름으로 떠서 같은 수정을 되풀이하지 않는다.
+                NameMemoryStore.remember(app, item.merchant, name)
+            }
 
             runOnUiThread {
                 if (isFinishing || isDestroyed) return@runOnUiThread

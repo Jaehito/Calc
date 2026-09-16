@@ -52,6 +52,7 @@ object AccountScope {
         PendingPaymentStore.clear(context)
         PaymentLogStore.clear(context)
         CategoryMemoryStore.clear(context)
+        NameMemoryStore.clear(context)
         PaymentBlocklist.clear(context)
         ReminderState.clearAccountState(context)
         CycleGradeStore.clear(context)

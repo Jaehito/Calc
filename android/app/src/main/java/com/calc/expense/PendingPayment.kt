@@ -13,6 +13,8 @@ import org.json.JSONObject
  * @param sender 알림 제목(문자 발신번호·카드사 이름). «이 발신자 안 보기» 의 단위다
  * @param packageName 알림을 낸 앱. «이 앱 안 보기» 의 단위다
  * @param issuer 내용에서 읽은 은행·카드사 이름. [sender] 가 발신번호일 때 화면에 대신 보인다
+ * @param renamed [merchant] 가 사용자가 예전에 고쳐 둔 이름인가([NameMemories]).
+ *   중복을 합칠 때 이 이름이 이겨야 한다 — 아래 [PendingPayments.merge] 참고
  */
 data class PendingPayment(
     val id: String,
@@ -23,6 +25,7 @@ data class PendingPayment(
     val sender: String,
     val postedAt: Long,
     val issuer: String = "",
+    val renamed: Boolean = false,
 ) {
     /**
      * 어디서 온 결제인지 사람이 읽을 수 있는 한 마디.
@@ -98,9 +101,21 @@ object PendingPayments {
         )
     }
 
-    /** 이름을 얼마나 읽어냈나. 빈 이름은 0, 길수록 많이 안 것으로 본다. */
-    private fun nameScore(item: PendingPayment): Int =
-        if (item.merchant.isBlank()) 0 else item.merchant.length
+    /**
+     * 이름을 얼마나 읽어냈나. 빈 이름은 0, 길수록 많이 안 것으로 본다.
+     *
+     * **사용자가 고쳐 둔 이름은 길이와 무관하게 이긴다.** 「우리카드 우아한형제들」을 「배달」로
+     * 고쳐 뒀는데 짧다는 이유로 지면, 두 알림이 함께 오는 결제에서만 수정이 조용히 되돌아간다 —
+     * 짧게 고친 것 자체가 사용자의 선택이다.
+     */
+    private fun nameScore(item: PendingPayment): Int {
+        if (item.merchant.isBlank()) return 0
+        if (item.renamed) return RENAMED_SCORE
+        return item.merchant.length
+    }
+
+    /** 고쳐 둔 이름의 점수. 어떤 길이의 이름보다도 크다. */
+    private const val RENAMED_SCORE: Int = Int.MAX_VALUE
 
     /** id 로 하나를 뺀다. 기록했거나 사용자가 무시했을 때 부른다. */
     fun remove(items: List<PendingPayment>, id: String): List<PendingPayment> =
@@ -165,7 +180,8 @@ object PendingPaymentCodec {
                     .put("package", item.packageName)
                     .put("sender", item.sender)
                     .put("postedAt", item.postedAt)
-                    .put("issuer", item.issuer),
+                    .put("issuer", item.issuer)
+                    .put("renamed", item.renamed),
             )
         }
         return array.toString()
@@ -198,6 +214,7 @@ object PendingPaymentCodec {
                     sender = obj.optString("sender", ""),
                     postedAt = obj.optLong("postedAt", 0L),
                     issuer = obj.optString("issuer", ""),
+                    renamed = obj.optBoolean("renamed", false),
                 ),
             )
         }

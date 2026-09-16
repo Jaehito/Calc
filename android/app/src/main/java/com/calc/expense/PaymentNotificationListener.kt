@@ -54,11 +54,16 @@ class PaymentNotificationListener : NotificationListenerService() {
         val categories: List<String> = CategoryStore.load(app)
         val candidate: PaymentCandidate = PaymentParse.parse(title, text, categories) ?: return
 
-        // 낱말 규칙이 못 맞히면 사용자가 예전에 그 이름을 어디에 넣었는지 본다.
-        // 수집함에서 «기록» 을 누를 때 카테고리가 이미 켜져 있어야 손이 덜 간다.
-        val category: String = candidate.category.ifBlank {
-            CategoryMemoryStore.recall(app, candidate.merchant, categories).orEmpty()
-        }
+        // 예전에 이 이름을 고쳐서 기록했으면 그 이름으로 띄운다. 같은 가게를 볼 때마다
+        // 같은 수정을 되풀이하게 두지 않는다([NameMemories]).
+        val remembered: String? = NameMemoryStore.recall(app, candidate.merchant)
+        val merchant: String = remembered ?: candidate.merchant
+
+        // 카테고리도 «사용자의 이름»으로 찾는다 — 카테고리 기억은 사용자가 적은 이름에
+        // 붙어 있어서 알림의 원래 이름으로는 찾지 못한다. 기억이 낱말 규칙을 이기는 것은
+        // 기록 화면([QuickInputActivity.applyAutoCategory])과 같은 순서다.
+        val category: String =
+            CategoryMemoryStore.recall(app, merchant, categories) ?: candidate.category
 
         val postedAt: Long = if (sbn.postTime > 0L) sbn.postTime else System.currentTimeMillis()
 
@@ -67,18 +72,19 @@ class PaymentNotificationListener : NotificationListenerService() {
             PendingPayment(
                 id = sbn.key,
                 amount = candidate.amount,
-                merchant = candidate.merchant,
+                merchant = merchant,
                 category = category,
                 packageName = sbn.packageName,
                 sender = sender,
                 postedAt = postedAt,
                 issuer = candidate.issuer,
+                renamed = remembered != null,
             ),
         )
 
         PaymentLogStore.add(
             app,
-            PaymentLogEntry(name = candidate.merchant, amount = candidate.amount, at = postedAt),
+            PaymentLogEntry(name = merchant, amount = candidate.amount, at = postedAt),
         )
     }
 }

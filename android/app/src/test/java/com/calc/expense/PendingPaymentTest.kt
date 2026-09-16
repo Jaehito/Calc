@@ -18,6 +18,7 @@ class PendingPaymentTest {
         merchant: String = "스타벅스",
         category: String = "카페",
         issuer: String = "",
+        renamed: Boolean = false,
     ) = PendingPayment(
         id = id,
         amount = amount,
@@ -27,7 +28,47 @@ class PendingPaymentTest {
         sender = sender,
         postedAt = postedAt,
         issuer = issuer,
+        renamed = renamed,
     )
+
+    @Test
+    fun `고쳐 둔 이름은 짧아도 중복 합치기에서 이긴다`() {
+        // 「우리카드 우아한형제들」을 「배달」로 고쳐 뒀는데 짧다는 이유로 지면,
+        // 두 알림이 함께 오는 결제에서만 수정이 조용히 되돌아간다.
+        val mine: List<PendingPayment> = PendingPayments.add(
+            emptyList(),
+            item("sms", amount = 16_900L, merchant = "배달", renamed = true),
+            now,
+        )
+        val both: List<PendingPayment> = PendingPayments.add(
+            mine,
+            item("push", amount = 16_900L, merchant = "우리카드 우아한형제들"),
+            now,
+        )
+
+        assertEquals(1, both.size)
+        assertEquals("배달", both[0].merchant)
+    }
+
+    @Test
+    fun `고쳐 둔 이름이 없으면 길게 읽은 쪽이 이긴다`() {
+        val short: List<PendingPayment> =
+            PendingPayments.add(emptyList(), item("sms", amount = 16_900L, merchant = "우리카드"), now)
+        val both: List<PendingPayment> = PendingPayments.add(
+            short,
+            item("push", amount = 16_900L, merchant = "우리카드 우아한형제들"),
+            now,
+        )
+
+        assertEquals("우리카드 우아한형제들", both[0].merchant)
+    }
+
+    @Test
+    fun `고쳐 둔 이름 표시는 저장했다 읽어도 남는다`() {
+        val items: List<PendingPayment> = listOf(item("a", merchant = "배달", renamed = true))
+
+        assertEquals(items, PendingPaymentCodec.decode(PendingPaymentCodec.encode(items)))
+    }
 
     @Test
     fun `같은 알림이 갱신돼도 한 건만 남는다`() {
