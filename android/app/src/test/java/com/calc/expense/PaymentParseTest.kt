@@ -14,12 +14,39 @@ class PaymentParseTest {
 
     private val categories: List<String> = Categories.DEFAULT
 
+    // ── 폰에 실제로 온 문구 ────────────────────────────────────────────────────
+
+    @Test
+    fun `우리카드 승인 문자 — 카드사와 가맹점을 함께 읽는다`() {
+        val found = PaymentParse.parse(
+            "1588-9955",
+            "[Web발신]\n우리카드(5052) 승인\n최*호님\n16,900원 일시불 \n09/16 16:05\n총누적4,546,923원\n우아한형제들",
+            categories,
+        )
+
+        assertEquals(16_900L, found?.amount)
+        assertEquals("우리카드 우아한형제들", found?.merchant)
+        assertEquals("우리카드", found?.issuer)
+    }
+
+    @Test
+    fun `신한은행 출금 문자 — 괄호 안 두 낱말이 잘리지 않는다`() {
+        val found = PaymentParse.parse(
+            "1577-8000",
+            "[신한은행]09/11\n14:27:38\n[110-***-409112]\n출금\n35,656원\n(HUAMAN CAR)",
+            categories,
+        )
+
+        assertEquals(35_656L, found?.amount)
+        assertEquals("신한은행 HUAMAN CAR", found?.merchant)
+    }
+
     @Test
     fun `신한 카드 문자 — 결제액과 누적액을 가른다`() {
         val text = "[Web발신]\n신한체크(1234)승인\n홍길동\n12,000원\n09/05 14:23\n스타벅스코엑스점\n누적1,234,567원"
         val found = PaymentParse.parse(null, text, categories)
         assertEquals(12_000L, found?.amount)
-        assertEquals("스타벅스코엑스점", found?.merchant)
+        assertEquals("신한 스타벅스코엑스점", found?.merchant)
         assertEquals("카페", found?.category)
     }
 
@@ -27,7 +54,7 @@ class PaymentParseTest {
     fun `NH 체크카드 한 줄 형식`() {
         val found = PaymentParse.parse("NH농협", "NH체크카드 승인 12,000원 09/05 14:23 스타벅스", categories)
         assertEquals(12_000L, found?.amount)
-        assertEquals("스타벅스", found?.merchant)
+        assertEquals("NH농협 스타벅스", found?.merchant)
         assertEquals("카페", found?.category)
     }
 
@@ -35,21 +62,21 @@ class PaymentParseTest {
     fun `카카오페이 — 조사를 떼어 가맹점만 남긴다`() {
         val found = PaymentParse.parse("카카오페이", "스타벅스에서 12,000원을 결제했어요", categories)
         assertEquals(12_000L, found?.amount)
-        assertEquals("스타벅스", found?.merchant)
+        assertEquals("카카오페이 스타벅스", found?.merchant)
     }
 
     @Test
     fun `토스 — 제목이 앱 이름이어도 본문에서 가맹점을 찾는다`() {
         val found = PaymentParse.parse("토스", "스타벅스 12,000원 결제", categories)
         assertEquals(12_000L, found?.amount)
-        assertEquals("스타벅스", found?.merchant)
+        assertEquals("토스 스타벅스", found?.merchant)
     }
 
     @Test
     fun `마트 결제 — 카테고리까지 짐작한다`() {
         val found = PaymentParse.parse(null, "KB국민카드 45,000원 일시불 승인 09/05 이마트성수점", categories)
         assertEquals(45_000L, found?.amount)
-        assertEquals("이마트성수점", found?.merchant)
+        assertEquals("국민카드 이마트성수점", found?.merchant)
         assertEquals("마트", found?.category)
     }
 
@@ -57,7 +84,7 @@ class PaymentParseTest {
     fun `약국 결제 — 건강으로 짐작한다`() {
         val found = PaymentParse.parse(null, "삼성카드 승인 8,500원 09/05 다나약국", categories)
         assertEquals(8_500L, found?.amount)
-        assertEquals("다나약국", found?.merchant)
+        assertEquals("삼성카드 다나약국", found?.merchant)
         assertEquals("건강", found?.category)
     }
 
@@ -65,7 +92,7 @@ class PaymentParseTest {
     fun `규칙에 없는 가맹점은 카테고리를 비워 둔다`() {
         val found = PaymentParse.parse(null, "우리카드 승인 30,000원 09/05 성수철물점", categories)
         assertEquals(30_000L, found?.amount)
-        assertEquals("성수철물점", found?.merchant)
+        assertEquals("우리카드 성수철물점", found?.merchant)
         assertEquals("", found?.category)
     }
 
@@ -120,7 +147,7 @@ class PaymentParseTest {
             categories,
         )
         assertEquals(43_000L, found?.amount)
-        assertEquals("배달의민족", found?.merchant)
+        assertEquals("국민 배달의민족", found?.merchant)
     }
 
     @Test
@@ -131,14 +158,14 @@ class PaymentParseTest {
             categories,
         )
         assertEquals(3_000L, found?.amount)
-        assertEquals("메가커피", found?.merchant)
+        assertEquals("우리 메가커피", found?.merchant)
     }
 
     @Test
     fun `현대카드 푸시 — 한 줄에 뒷자리와 가맹점이 함께 와도 자리로 고른다`() {
         val found = PaymentParse.parse("현대카드", "현대2580 승인 32,400원\n09/07 20:15 이마트", categories)
         assertEquals(32_400L, found?.amount)
-        assertEquals("이마트", found?.merchant)
+        assertEquals("현대카드 이마트", found?.merchant)
     }
 
     @Test
@@ -157,7 +184,7 @@ class PaymentParseTest {
             categories,
         )
         assertEquals(18_700L, found?.amount)
-        assertEquals("올리브영", found?.merchant)
+        assertEquals("카카오페이 올리브영", found?.merchant)
     }
 
     @Test
@@ -168,7 +195,7 @@ class PaymentParseTest {
             categories,
         )
         assertEquals(5_500L, found?.amount)
-        assertEquals("스타벅스커피코리아", found?.merchant)
+        assertEquals("삼성카드 스타벅스커피코리아", found?.merchant)
     }
 
     @Test
@@ -179,7 +206,7 @@ class PaymentParseTest {
             categories,
         )
         assertEquals(300_000L, found?.amount)
-        assertEquals("관리비", found?.merchant)
+        assertEquals("NH농협 관리비", found?.merchant)
     }
 
     @Test
@@ -206,21 +233,11 @@ class PaymentParseTest {
     }
 
     @Test
-    fun `카드 승인에는 은행명을 붙이지 않는다`() {
-        // «신한 이마트» 는 이름을 더 나쁘게 만든다. 은행명은 계좌 거래에서만 뜻이 있다.
+    fun `카드 승인에도 카드사를 붙인다`() {
+        // 예전에는 계좌 이체일 때만 붙였다. 그랬더니 카드 승인이 «이마트» 로만 남아
+        // 어느 카드에서 나간 돈인지 알 수 없었다.
         val found = PaymentParse.parse("신한카드", "신한1234 승인 32,400원 09/07 20:15 이마트", categories)
-        assertEquals("이마트", found?.merchant)
-    }
-
-    @Test
-    fun `이체라도 사람 이름이 아니면 그대로 둔다`() {
-        // «관리비»·«임대료» 같은 적요에 은행명을 붙일 이유가 없다.
-        val found = PaymentParse.parse(
-            "NH농협",
-            "NH농협 09/07 15:23\n출금 300,000원\n잔액 1,234,567원\n관리비",
-            categories,
-        )
-        assertEquals("관리비", found?.merchant)
+        assertEquals("신한카드 이마트", found?.merchant)
     }
 
     @Test
@@ -234,22 +251,22 @@ class PaymentParseTest {
     @Test
     fun `은행 이름 자체가 가맹점을 밀어내지 않는다`() {
         val found = PaymentParse.parse(null, "카카오뱅크 승인 12,000원 09/05 14:23 메가커피", categories)
-        assertEquals("메가커피", found?.merchant)
+        assertEquals("카카오뱅크 메가커피", found?.merchant)
     }
 
     @Test
     fun `이미 은행명으로 시작하면 두 번 붙이지 않는다`() {
-        assertEquals("신한은행 최재호", PaymentParse.nameFor("신한은행 최재호", "신한은행", "이체 1원"))
+        assertEquals("신한은행 최재호", PaymentParse.nameFor("신한은행 최재호", "신한은행"))
     }
 
     @Test
-    fun `사람 이름 판정 — 성으로 시작하는 2~4글자만`() {
-        assertTrue(PaymentParse.looksLikePerson("최재호"))
-        assertTrue(PaymentParse.looksLikePerson("홍*동"))
-        assertFalse(PaymentParse.looksLikePerson("관리비"))
-        assertFalse(PaymentParse.looksLikePerson("임대료"))
-        assertFalse(PaymentParse.looksLikePerson("스타벅스코엑스점"))
-        assertFalse(PaymentParse.looksLikePerson("GS25"))
+    fun `괄호 안 덩어리를 통째로 읽는다`() {
+        // 띄어쓰기로 자르면 «HUAMAN» 만 남는다.
+        assertEquals("HUAMAN CAR", PaymentParse.readBracketed("출금\n35,656원\n(HUAMAN CAR)"))
+        // 카드 뒷자리는 숫자뿐이라 이름이 아니다.
+        assertEquals("", PaymentParse.readBracketed("우리카드(5052) 승인"))
+        // 괄호가 여럿이면 뒤엣것 — 가맹점·적요는 문구 끝에 붙는다.
+        assertEquals("서울주유소", PaymentParse.readBracketed("신한(1234) 승인 (서울주유소)"))
     }
 
     @Test
