@@ -249,6 +249,9 @@ class MainActivity : ComponentActivity() {
      * 전까지는 어떤 앱도 읽지 못한다.
      *
      * 저장소를 읽으므로 백그라운드에서 만든다. 지출이 많으면 몇 초 걸릴 수 있어 먼저 알린다.
+     *
+     * 안드로이드 10 이상이면 폰의 «다운로드» 폴더에 바로 들어간다. 그 아래 버전에서는
+     * 저장 권한 없이 넣을 수 없어 공유 시트로 넘긴다([ExpenseExportRepository]).
      */
     private fun exportExpenses() {
         setStatus("지출을 모으는 중…")
@@ -264,8 +267,14 @@ class MainActivity : ComponentActivity() {
                 when (result) {
                     is ExportResult.Err -> setStatus(result.message, isError = true)
                     is ExportResult.Ok -> {
-                        setStatus("지출 ${result.count}건을 파일로 만들었습니다. 보낼 곳을 고르세요.")
-                        share(result)
+                        val savedTo: String? = result.savedTo
+                        if (savedTo != null) {
+                            setStatus("지출 ${result.count}건을 «$savedTo» 에 저장했습니다.")
+                        } else {
+                            // 옛 기기라 내려받지 못했다. 공유 시트가 남은 길이다.
+                            setStatus("지출 ${result.count}건을 파일로 만들었습니다. 보낼 곳을 고르세요.")
+                            share(result)
+                        }
                     }
                 }
             }
