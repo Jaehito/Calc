@@ -6,12 +6,27 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <LinearLayout
-        android:id="@+id/sheet"
+    <!--
+        시트를 스크롤 안에 둔다. 칩 개수는 사용자가 정하는데(최대 20개) 여기에 키보드까지
+        올라오면 내용이 화면보다 길어진다. 예전에는 그냥 잘려서 곳간 고르는 버튼이 키보드
+        뒤로 숨었다 — 스크롤이면 개수가 몇이든, 화면이 작든, 키보드가 있든 끝까지 닿는다.
+
+        높이는 wrap_content 라 내용이 짧으면 예전처럼 아래에 붙은 낮은 시트로 보이고,
+        길어질 때만 화면을 채우며 스크롤이 생긴다.
+    -->
+    <ScrollView
+        android:id="@+id/sheetScroll"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:background="@drawable/bg_sheet"
+        android:clipToPadding="false"
+        android:fillViewport="false">
+
+    <LinearLayout
+        android:id="@+id/sheet"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingStart="20dp"
         android:paddingTop="20dp"
@@ -131,4 +146,5 @@
             android:layout_marginTop="4dp"
             android:orientation="vertical" />
     </LinearLayout>
+    </ScrollView>
 </FrameLayout>

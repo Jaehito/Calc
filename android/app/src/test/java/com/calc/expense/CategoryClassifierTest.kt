@@ -1,6 +1,7 @@
 package com.calc.expense
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -115,6 +116,36 @@ class CategoryClassifierTest {
         assertEquals("과일", CategoryClassifier.classify("바나나", listOf("과일", "간식", "마트")))
         assertEquals("간식", CategoryClassifier.classify("초코바", all))
         assertEquals("간식", CategoryClassifier.classify("아이스크림", all))
+    }
+
+    @Test
+    fun `술은 술 이름과 마시러 가는 곳으로 잡는다`() {
+        val withSul: List<String> = all + "술"
+
+        assertEquals("술", CategoryClassifier.classify("소주 2병", withSul))
+        assertEquals("술", CategoryClassifier.classify("맥주", withSul))
+        assertEquals("술", CategoryClassifier.classify("퇴근 후 술집", withSul))
+        assertEquals("술", CategoryClassifier.classify("이자카야", withSul))
+        assertEquals("술", CategoryClassifier.classify("노래방", withSul))
+    }
+
+    @Test
+    fun `술이 든 다른 낱말은 술로 보지 않는다`() {
+        // 「술」을 낱말 하나로 두면 기술·미술·수술·예술이 전부 걸린다.
+        // 그래서 술 이름과 장소 이름으로만 잡는다.
+        val withSul: List<String> = all + "술"
+
+        assertNotEquals("술", CategoryClassifier.classify("미술관", withSul))
+        assertNotEquals("술", CategoryClassifier.classify("수술비", withSul))
+        assertNotEquals("술", CategoryClassifier.classify("예술의전당", withSul))
+        assertNotEquals("술", CategoryClassifier.classify("기술서적", withSul))
+    }
+
+    @Test
+    fun `술 칩이 없으면 식비나 문화로 내려간다`() {
+        assertEquals("식비", CategoryClassifier.classify("소주", all))
+        assertEquals("식비", CategoryClassifier.classify("이자카야", all))
+        assertEquals("문화", CategoryClassifier.classify("노래방", all))
     }
 
     @Test
