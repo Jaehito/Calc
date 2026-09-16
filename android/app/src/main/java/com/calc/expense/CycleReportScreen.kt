@@ -175,8 +175,13 @@ private fun CandidateCard(
     CardBox {
         Text("고정비로 보이는 것", color = HomePalette.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(4.dp))
+        // 근거가 다르면 안내 문구도 달라야 한다. 「되풀이를 찾았다」와 「아직 못 찾아서 큰 것만
+        // 늘어놨다」를 같은 말로 소개하면, 사용자가 뒤쪽을 앞쪽만큼 믿어 버린다.
+        val confirmed: Boolean = report.candidates.any { it.repeated }
         Text(
-            text = "손으로 적은 기록과 결제 알림에서 달마다 되풀이된 것들이에요. 아닌 건 체크를 빼 주세요.",
+            text =
+                if (confirmed) "손으로 적은 기록과 결제 알림에서 달마다 되풀이된 것들이에요. 아닌 건 체크를 빼 주세요."
+                else "아직 한 주기뿐이라 되풀이는 확인하지 못했어요. 큰 금액부터 늘어놨으니 고정비인 것만 골라 주세요.",
             color = HomePalette.Ink2,
             fontSize = 12.sp,
         )
@@ -184,7 +189,7 @@ private fun CandidateCard(
 
         if (!report.hasCandidates) {
             Text(
-                text = "아직 되풀이되는 걸 못 찾았어요. 한 주기를 더 지나면 찾을 수 있어요.",
+                text = "아직 찾을 만한 게 없어요. 지출을 적거나 결제 알림이 쌓이면 여기에 나옵니다.",
                 color = HomePalette.Muted,
                 fontSize = 13.sp,
             )
@@ -327,7 +332,8 @@ private fun CandidateRow(candidate: FixedCostCandidate, checked: Boolean, onTogg
             Text(
                 // 출처와 «평균인가»를 함께 밝힌다. 평균이라는 말이 없으면 사용자는 그 숫자를
                 // 지난달에 실제로 나간 돈으로 읽고, 다르다고 생각해 그 줄을 빼 버린다.
-                text = "최근 ${RecurringCosts.LOOK_BACK_CYCLES}주기 중 ${candidate.cycles}번" +
+                // 되풀이를 확인하지 못한 줄은 그 사실을 앞세운다 — 근거가 다르면 말도 달라야 한다.
+                text = (if (candidate.repeated) "${candidate.cycles}번 나갔어요" else "아직 한 번") +
                     (if (candidate.fromRecord) " · 기록" else " · 알림") +
                     (if (candidate.averaged) " · 평균" else ""),
                 color = HomePalette.Muted,

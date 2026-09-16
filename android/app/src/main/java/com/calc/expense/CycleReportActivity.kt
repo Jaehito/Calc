@@ -23,7 +23,14 @@ class CycleReportActivity : ComponentActivity() {
 
     private var report: CycleReport? by mutableStateOf(null)
 
-    /** 고른 후보의 이름 키([RecurringCosts.normalize]). 처음에는 모두 골라져 있다. */
+    /**
+     * 고른 후보의 이름 키([RecurringCosts.normalize]).
+     *
+     * **되풀이를 확인한 것만** 처음부터 골라져 있다. 틀린 것을 빼는 편이 맞는 것을 고르는 편보다
+     * 빠르다는 원칙은 그대로지만, 그건 앱에게 근거가 있을 때의 이야기다. 한 주기밖에 못 본
+     * 목록을 전부 체크해 두면 사용자가 그대로 «적용»을 눌렀을 때 외식 한 번이 고정비가 되어
+     * 다음 달 예산이 통째로 어긋난다.
+     */
     private var selected: Set<String> by mutableStateOf(emptySet())
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,7 +67,10 @@ class CycleReportActivity : ComponentActivity() {
             val built: CycleReport = CycleReportRepository.build(this, LocalDate.now())
             runOnUiThread {
                 report = built
-                selected = built.candidates.map { RecurringCosts.normalize(it.name) }.toSet()
+                selected = built.candidates
+                    .filter { it.repeated }
+                    .map { RecurringCosts.normalize(it.name) }
+                    .toSet()
             }
         }
     }

@@ -41,8 +41,10 @@ object CycleReportRepository {
             if (cycles.size < 2) 0L
             else purses.sumOf { Ledger.spentInCycle(context, it, cycles[1]) }
 
-        val oldest: BudgetCycle = cycles.last()
-        val rows: List<ExpenseRow>? = readRows(context, purses, oldest.start, ended.lastDay)
+        // 되풀이를 찾을 때는 **진행 중인 주기까지** 본다. 그러지 않으면 이달에 적은 것이
+        // 통째로 버려져, 이달 중순에 깔고 한 달 쓴 사람은 아무것도 못 찾는다.
+        val lookback: List<BudgetCycle> = RecurringCosts.lookback(today, settings.payDay)
+        val rows: List<ExpenseRow>? = readRows(context, purses, lookback.last().start, today)
 
         val plan: FixedCostPlan = FixedCostStore.load(context)
         val events: List<MoneyEvent> =
@@ -54,7 +56,7 @@ object CycleReportRepository {
             budget = budget,
             prevSpent = prevSpent,
             categories = categoriesOf(rows, ended),
-            candidates = RecurringCosts.of(events, cycles, known = plan.items.map { it.name }),
+            candidates = RecurringCosts.of(events, lookback, known = plan.items.map { it.name }),
             plan = plan,
             loading = false,
             error = if (rows == null) "기록을 불러오지 못해 결제 알림만 봤어요" else null,

@@ -14,6 +14,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -94,6 +95,7 @@ class MainActivity : ComponentActivity() {
                 onOpenReminderAccessSettings = { openNotificationAccessSettings() },
                 onExport = { exportSettings() },
                 onImport = { importSettings() },
+                onExportExpenses = { exportExpenses() },
                 onSignOut = { signOut() },
                 onHouseholdJoinInputChange = { householdJoinInput = it },
                 onCreateHousehold = { createHousehold() },
@@ -237,6 +239,49 @@ class MainActivity : ComponentActivity() {
         val clipboard = getSystemService(ClipboardManager::class.java)
         clipboard.setPrimaryClip(ClipData.newPlainText("expense-settings", code))
         setStatus("설정 코드를 클립보드에 복사했습니다. 메모 등에 붙여 보관하세요. 코드에는 토큰이 들어 있으니 남에게 주지 마세요.")
+    }
+
+    /**
+     * 지출 전부를 CSV 파일로 만들어 공유 시트로 넘긴다.
+     *
+     * 클립보드를 쓰지 않는 이유는 분량이다 — 몇 백 줄짜리 표를 클립보드로 옮기면 붙여 넣는
+     * 쪽에서 잘린다. 파일은 앱 전용 캐시에 두고 [FileProvider] 로만 건네므로, 공유를 누르기
+     * 전까지는 어떤 앱도 읽지 못한다.
+     *
+     * 저장소를 읽으므로 백그라운드에서 만든다. 지출이 많으면 몇 초 걸릴 수 있어 먼저 알린다.
+     */
+    private fun exportExpenses() {
+        setStatus("지출을 모으는 중…")
+        io.execute {
+            val result: ExportResult = try {
+                ExpenseExportRepository.write(this)
+            } catch (e: Exception) {
+                ExportResult.Err("오류: ${e.message ?: e.javaClass.simpleName}")
+            }
+
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                when (result) {
+                    is ExportResult.Err -> setStatus(result.message, isError = true)
+                    is ExportResult.Ok -> {
+                        setStatus("지출 ${result.count}건을 파일로 만들었습니다. 보낼 곳을 고르세요.")
+                        share(result)
+                    }
+                }
+            }
+        }
+    }
+
+    /** 만든 파일을 공유 시트에 올린다. 받는 앱에만 읽기 권한을 잠깐 준다. */
+    private fun share(result: ExportResult.Ok) {
+        val uri: Uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", result.file)
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "text/csv"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            putExtra(Intent.EXTRA_SUBJECT, result.file.name)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        startActivity(Intent.createChooser(send, "지출 내보내기"))
     }
 
     /** 클립보드의 코드를 읽어 설정을 복원한다. 코드가 아니면 그대로 두고 알린다. */

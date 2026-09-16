@@ -10,6 +10,9 @@ import java.time.LocalDate
  * @param cycles 최근 세 주기 중 몇 번 보였나. 화면에 «3개월 중 2번»으로 보인다
  * @param fromRecord 손으로 적은 기록에서도 보였나. 알림에서만 보였으면 false
  * @param averaged 금액이 달마다 달라 평균을 냈나. 화면이 «평균»이라고 밝혀야 하는 값이다
+ * @param repeated 여러 주기에서 되풀이되는 것을 **실제로 확인했나**. false 면 아직 한 주기밖에
+ *   못 봐서 «큰 금액»만 보고 고른 것이다 — 화면이 그 차이를 숨기면 안 되고, 기본으로
+ *   체크해 두어서도 안 된다
  */
 data class FixedCostCandidate(
     val name: String,
@@ -17,6 +20,7 @@ data class FixedCostCandidate(
     val cycles: Int,
     val fromRecord: Boolean,
     val averaged: Boolean = false,
+    val repeated: Boolean = true,
 )
 
 /**
@@ -67,14 +71,36 @@ object RecurringCosts {
     /** 이보다 작으면 제안하지 않는다. 몇천 원짜리까지 늘어놓으면 목록이 쓸모를 잃는다. */
     const val MIN_AMOUNT = 5_000L
 
+    /**
+     * **되풀이를 아직 확인 못 했을 때**의 최소 금액. 보통보다 훨씬 높다.
+     *
+     * 한 주기밖에 없으면 「같은 것이 또 나갔다」를 볼 방법이 없다. 그때도 빈 화면을 주느니
+     * 큰 금액부터 늘어놓고 사람이 고르게 하는 편이 낫다 — 자기 월세가 무엇인지는 사용자가
+     * 안다. 다만 「한 번 나간 17,000원」을 고정비 후보라고 내미는 것은 외식 한 번과 구별이
+     * 안 되므로, 이 모드에서는 문턱을 높여 큰 것만 보여 준다.
+     */
+    const val SINGLE_MIN_AMOUNT = 30_000L
+
     /** 한 번에 제안하는 최대 줄 수. 넘치면 큰 것부터. */
     const val MAX_CANDIDATES = 12
 
     /**
-     * [today] 가 속한 주기를 뺀, 바로 앞 [LOOK_BACK_CYCLES] 개의 **끝난 주기**.
+     * 되풀이를 찾을 때 보는 주기들 — **진행 중인 주기 + 끝난 주기 [LOOK_BACK_CYCLES] 개.**
      *
-     * 진행 중인 주기를 넣지 않는 이유는 아직 이번 달 월세가 안 나갔을 수 있어서다. 반쯤 지난
-     * 주기를 한 칸으로 세면 «3개월 중 2번»이 «아직 안 나갔을 뿐»과 구별되지 않는다.
+     * 진행 중인 주기를 함께 보는 이유는 그러지 않으면 **이번 달에 적은 것이 통째로 버려지기**
+     * 때문이다. 이달 중순에 앱을 깔고 한 달을 쓴 사람은 데이터의 절반이 진행 중인 주기에 있는데,
+     * 그걸 빼면 「한 주기뿐」이 되어 아무것도 못 찾는다.
+     *
+     * 진행 중인 주기를 넣어도 판정이 느슨해지지는 않는다. 칸이 하나 늘 뿐이고 «서로 다른 주기에
+     * 두 번»이라는 조건은 그대로다 — 이번 달 월세가 아직 안 나갔으면 그 칸이 비어 있을 뿐,
+     * 앞 주기들로 여전히 걸린다.
+     */
+    fun lookback(today: LocalDate, payDay: Int): List<BudgetCycle> =
+        listOf(Payday.cycleOf(today, payDay)) + recentCycles(today, payDay)
+
+    /**
+     * [today] 가 속한 주기를 뺀, 바로 앞 [count] 개의 **끝난 주기**.
+     * 결산·리포트가 «막 끝난 주기»를 가리킬 때 쓴다.
      */
     fun recentCycles(today: LocalDate, payDay: Int, count: Int = LOOK_BACK_CYCLES): List<BudgetCycle> {
         val cycles = ArrayList<BudgetCycle>(count)
@@ -112,9 +138,25 @@ object RecurringCosts {
             placed.add(index to event)
         }
 
-        return placed
-            .groupBy { normalize(it.second.name) }
-            .mapNotNull { (_, entries) -> candidateOf(entries) }
+        val grouped: Map<String, List<Pair<Int, MoneyEvent>>> =
+            placed.groupBy { normalize(it.second.name) }
+
+        // **자료가 몇 주기에 걸쳐 있나**로 갈린다. 「되풀이를 못 찾았다」와 「되풀이를 볼 수가
+        // 없었다」는 다른 말이다. 두 주기 이상 있었는데 못 찾았다면 그건 진짜 답이므로
+        // 짐작을 대신 내밀지 않는다 — 근거 있는 목록에 짐작을 섞으면 사용자가 둘을 구별하지
+        // 못하고, 그러면 근거 있는 쪽까지 못 믿게 된다.
+        val cyclesWithData: Int = placed.map { it.first }.distinct().size
+        if (cyclesWithData >= MIN_CYCLES) {
+            return grouped
+                .mapNotNull { (_, entries) -> candidateOf(entries) }
+                .sortedByDescending { it.amount }
+                .take(MAX_CANDIDATES)
+        }
+
+        // 한 주기뿐이라 되풀이를 볼 방법이 없었다. 빈 화면을 주느니 큰 금액부터 늘어놓고
+        // 사람이 고르게 한다 — 자기 월세가 무엇인지는 사용자가 안다.
+        return grouped
+            .mapNotNull { (_, entries) -> singleOf(entries) }
             .sortedByDescending { it.amount }
             .take(MAX_CANDIDATES)
     }
@@ -150,6 +192,29 @@ object RecurringCosts {
             cycles = cycleCount,
             fromRecord = fromRecord,
             averaged = !steady,
+        )
+    }
+
+    /**
+     * 되풀이를 확인하지 못한 한 줄. **큰 금액**이라는 것 말고는 근거가 없다.
+     *
+     * 한 주기에 여러 번 나오는 것은 여기서도 뺀다 — 자주 가는 가게는 금액이 커도 고정비가
+     * 아니고, 그 조건이 이 느슨한 모드에서 목록을 지키는 유일한 줄이다.
+     */
+    private fun singleOf(entries: List<Pair<Int, MoneyEvent>>): FixedCostCandidate? {
+        val perCycle: Map<Int, Int> = entries.groupingBy { it.first }.eachCount()
+        if (perCycle.values.any { it > MAX_PER_CYCLE }) return null
+
+        val latest: MoneyEvent = entries.maxByOrNull { it.second.date }?.second ?: return null
+        if (latest.amount < SINGLE_MIN_AMOUNT) return null
+
+        return FixedCostCandidate(
+            name = latest.name.trim(),
+            amount = latest.amount,
+            cycles = entries.map { it.first }.distinct().size,
+            fromRecord = entries.any { it.second.fromRecord },
+            averaged = false,
+            repeated = false,
         )
     }
 

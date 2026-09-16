@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    내보내기 파일을 공유 시트로 건네기 위한 경로. 앱 전용 캐시의 export/ 폴더 하나만 연다 —
+    넓게 열면 앱이 가진 다른 파일까지 건넬 수 있게 된다.
+-->
+<paths>
+    <cache-path name="export" path="export/" />
+</paths>

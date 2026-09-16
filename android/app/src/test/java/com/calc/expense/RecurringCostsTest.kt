@@ -64,14 +64,20 @@ class RecurringCostsTest {
     }
 
     @Test
-    fun `한 주기에만 있으면 고정비가 아니다`() {
-        // 한 번 산 노트북은 되풀이가 아니다.
+    fun `자료가 여러 주기에 있으면 한 번뿐인 건 빠진다`() {
+        // 한 번 산 노트북은 되풀이가 아니다. 다른 주기에 자료가 있어 「되풀이를 볼 수 있었는데
+        // 안 보였다」가 성립하므로, 금액이 커도 목록에 넣지 않는다.
         val found: List<FixedCostCandidate> = RecurringCosts.of(
-            listOf(event("애플스토어", 1_800_000L, "2026-07-05")),
+            listOf(
+                event("애플스토어", 1_800_000L, "2026-07-05"),
+                event("행복주택 월세", 550_000L, "2026-07-05"),
+                event("행복주택 월세", 550_000L, "2026-08-05"),
+            ),
             cycles,
         )
 
-        assertTrue(found.isEmpty())
+        assertEquals(listOf("행복주택 월세"), found.map { it.name })
+        assertTrue(found[0].repeated)
     }
 
     @Test
@@ -338,6 +344,76 @@ class RecurringCostsTest {
 
         assertEquals(1, found.size)
         assertEquals(285_000L, found[0].amount)
+    }
+
+    @Test
+    fun `되풀이를 찾을 때는 진행 중인 주기도 본다`() {
+        // 이달 중순에 깔고 한 달 쓴 사람은 데이터의 절반이 진행 중인 주기에 있다.
+        // 그걸 빼면 「한 주기뿐」이 되어 아무것도 못 찾는다.
+        val lookback: List<BudgetCycle> = RecurringCosts.lookback(LocalDate.of(2026, 9, 16), payDay)
+
+        assertEquals(4, lookback.size)
+        assertEquals(LocalDate.of(2026, 9, 1), lookback[0].start)
+        assertEquals(LocalDate.of(2026, 8, 1), lookback[1].start)
+    }
+
+    @Test
+    fun `진행 중인 주기와 앞 주기에 걸치면 되풀이로 본다`() {
+        // 8월에 적고 9월에 또 적었다. 9월이 아직 안 끝났다고 이걸 못 본 척할 이유가 없다.
+        val lookback: List<BudgetCycle> = RecurringCosts.lookback(LocalDate.of(2026, 9, 16), payDay)
+        val found: List<FixedCostCandidate> = RecurringCosts.of(
+            listOf(
+                event("행복주택 월세", 550_000L, "2026-08-05", fromRecord = true),
+                event("행복주택 월세", 550_000L, "2026-09-05", fromRecord = true),
+            ),
+            lookback,
+        )
+
+        assertEquals(1, found.size)
+        assertTrue(found[0].repeated)
+    }
+
+    @Test
+    fun `한 주기뿐이면 큰 금액부터 보여준다`() {
+        // 빈 화면을 주느니 큰 것부터 늘어놓고 사람이 고르게 한다 —
+        // 자기 월세가 무엇인지는 사용자가 안다.
+        val found: List<FixedCostCandidate> = RecurringCosts.of(
+            listOf(
+                event("행복주택 월세", 550_000L, "2026-08-05", fromRecord = true),
+                event("KT 통신비", 68_900L, "2026-08-25", fromRecord = true),
+                event("점심", 9_000L, "2026-08-11", fromRecord = true),
+            ),
+            cycles,
+        )
+
+        assertEquals(listOf("행복주택 월세", "KT 통신비"), found.map { it.name })
+        assertTrue(found.none { it.repeated })
+    }
+
+    @Test
+    fun `한 주기뿐일 때는 작은 금액을 빼고 본다`() {
+        // 「한 번 나간 17,000원」은 외식 한 번과 구별이 안 된다.
+        val found: List<FixedCostCandidate> = RecurringCosts.of(
+            listOf(event("넷플릭스", 17_000L, "2026-08-11", fromRecord = true)),
+            cycles,
+        )
+
+        assertTrue(found.isEmpty())
+    }
+
+    @Test
+    fun `한 주기뿐이어도 자주 가는 가게는 빼고 본다`() {
+        // 느슨해진 모드에서 목록을 지키는 유일한 줄이다.
+        val found: List<FixedCostCandidate> = RecurringCosts.of(
+            listOf(
+                event("한우식당", 90_000L, "2026-08-03", fromRecord = true),
+                event("한우식당", 85_000L, "2026-08-14", fromRecord = true),
+                event("한우식당", 95_000L, "2026-08-27", fromRecord = true),
+            ),
+            cycles,
+        )
+
+        assertTrue(found.isEmpty())
     }
 
     @Test

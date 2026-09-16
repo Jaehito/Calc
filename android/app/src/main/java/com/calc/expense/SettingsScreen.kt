@@ -87,6 +87,7 @@ fun SettingsScreen(
     onToggleReminder: () -> Unit,
     onOpenReminderAccessSettings: () -> Unit,
     onExport: () -> Unit,
+    onExportExpenses: () -> Unit,
     onImport: () -> Unit,
     onSignOut: () -> Unit,
     onHouseholdJoinInputChange: (String) -> Unit,
@@ -273,6 +274,11 @@ fun SettingsScreen(
         }
         Spacer(Modifier.height(6.dp))
         HelperText("«내보내기»는 지금 설정을 코드로 만들어 클립보드에 복사합니다. 그 코드를 메모에 붙여 두면, 새 기기·새 설치에서 «불러오기»로 한 번에 복원됩니다. 코드에는 토큰이 들어 있으니 남에게 주지 마세요.")
+
+        Spacer(Modifier.height(10.dp))
+        OutlinedPillButton("지출 내보내기 (CSV)", onExportExpenses, modifier = Modifier.fillMaxWidth())
+        Spacer(Modifier.height(6.dp))
+        HelperText("적어 둔 지출 전부를 표 파일로 만들어 메일·드라이브 등으로 보냅니다. 지금 지출 기록은 계정 안에만 있어 백업이 없으니, 가끔 한 번씩 받아 두면 계정 사고가 나도 남습니다.")
 
         if (ui.showStorageNotice) {
             Spacer(Modifier.height(10.dp))

@@ -39,6 +39,21 @@
             android:exported="false"
             android:label="@string/app_name" />
 
+        <!--
+            내보낸 CSV 를 공유 시트로 건네기 위한 창구. 앱 전용 캐시의 export/ 폴더만 연다
+            (res/xml/file_paths.xml). exported=false 라 다른 앱이 스스로 열 수 없고,
+            공유할 때 우리가 준 권한으로만 읽힌다.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
         <!-- 주기 리포트. 결산 팝업과 통계 탭 두 곳에서 들어온다. -->
         <activity
             android:name=".CycleReportActivity"
