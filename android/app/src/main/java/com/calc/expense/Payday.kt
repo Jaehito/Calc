@@ -51,6 +51,22 @@ object Payday {
         return ym.atDay(minOf(normalize(payDay), ym.lengthOfMonth()))
     }
 
+    /**
+     * [day] 가 속한 주기에서 [back] 만큼 거슬러 올라간 주기. [back] 이 0 이면 그 주기 자체.
+     *
+     * 달을 빼서 구하지 않는다 — 월급날이 31일이면 2월에 28일로 줄었다가 3월에 31일로 돌아오므로
+     * 「한 달 전」이 주기 경계와 어긋난다. 한 주기씩 실제로 거슬러 올라가야 맞는다.
+     */
+    fun cycleBefore(day: LocalDate, payDay: Int, back: Int): BudgetCycle {
+        var cycle: BudgetCycle = cycleOf(day, payDay)
+        var left: Int = maxOf(0, back)
+        while (left > 0) {
+            cycle = cycleOf(cycle.start.minusDays(1), payDay)
+            left--
+        }
+        return cycle
+    }
+
     /** [day] 가 속한 주기. */
     fun cycleOf(day: LocalDate, payDay: Int): BudgetCycle {
         val p: Int = normalize(payDay)

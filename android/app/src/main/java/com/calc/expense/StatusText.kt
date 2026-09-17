@@ -26,6 +26,15 @@ object StatusText {
 
     fun won(amount: Long): String = format(amount) + "원"
 
+    /**
+     * 주기를 사람이 읽는 한 줄로 — «9월 15일 ~ 10월 14일».
+     *
+     * 월급날이 달 중간이면 「이번 주기」가 달력 달과 어긋난다. 어느 날짜부터 어느 날짜까지인지
+     * 화면이 말해 주지 않으면, 사용자는 그 숫자가 무엇을 센 것인지 알 수 없다.
+     */
+    fun cycleRange(cycle: BudgetCycle): String =
+        cycle.start.format(DAY_FORMAT) + " ~ " + cycle.lastDay.format(DAY_FORMAT)
+
     /** 원을 붙이지 않은 쉼표 숫자. 히어로 숫자처럼 «원» 단위를 따로 붙이는 곳에서 쓴다. */
     fun figure(amount: Long): String = format(amount)
 

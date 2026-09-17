@@ -226,15 +226,26 @@ private fun Gauge(percent: Int) {
 private fun CategoryCard(data: StatsData, onToggle: () -> Unit, onOpenCategory: (String) -> Unit) {
     CardBox {
         Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "카테고리 · ${data.categoryCycleLabel}",
+                    color = HomePalette.Ink,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+                // 월급날이 달 중간이면 「이번 주기」가 달력 달과 어긋난다. 어느 날부터
+                // 어느 날까지인지 밝히지 않으면 이 숫자가 무엇을 센 것인지 알 수 없다.
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    text = data.categoryCycleRange,
+                    color = HomePalette.Muted,
+                    fontSize = 11.5f.sp,
+                    style = Figures,
+                )
+            }
+            Spacer(Modifier.width(10.dp))
             Text(
-                text = "카테고리 · ${data.categoryMonthLabel}",
-                color = HomePalette.Ink,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f),
-            )
-            Text(
-                text = if (data.categoryMonthLabel == "이번 달") "지난 달 보기" else "이번 달 보기",
+                text = if (data.categoryCycleLabel == "이번 주기") "지난 주기 보기" else "이번 주기 보기",
                 color = HomePalette.Accent,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -254,7 +265,7 @@ private fun CategoryCard(data: StatsData, onToggle: () -> Unit, onOpenCategory: 
                 Text(text = "불러오는 중…", color = HomePalette.Muted, fontSize = 13.sp)
             data.categories.isEmpty() ->
                 Text(
-                    text = "이 달에는 카테고리 지출이 없습니다. 기록할 때 카테고리 칩을 고르면 여기에 나옵니다.",
+                    text = "이 주기에는 기록이 없습니다. 지출을 적으면 여기에 나옵니다.",
                     color = HomePalette.Ink2,
                     fontSize = 13.sp,
                 )
@@ -302,7 +313,7 @@ private fun DonutAndLegend(data: StatsData, onOpenCategory: (String) -> Unit) {
     Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(HomePalette.Line))
     Spacer(Modifier.height(14.dp))
     Text(
-        text = "이 달 합계 ${StatusText.won(data.categoryTotal)}",
+        text = "이 주기 합계 ${StatusText.won(data.categoryTotal)}",
         color = HomePalette.Ink2,
         fontSize = 12.5f.sp,
         style = Figures,

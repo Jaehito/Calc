@@ -119,4 +119,32 @@ class PaydayTest {
             day = day.plusDays(1)
         }
     }
+
+    @Test
+    fun `주기를 거슬러 올라간다`() {
+        // 월급날 15일. 9월 17일은 「9/15 ~ 10/14」 주기 안이다.
+        val today: LocalDate = LocalDate.of(2026, 9, 17)
+
+        assertEquals(LocalDate.of(2026, 9, 15), Payday.cycleBefore(today, 15, 0).start)
+        assertEquals(LocalDate.of(2026, 8, 15), Payday.cycleBefore(today, 15, 1).start)
+        assertEquals(LocalDate.of(2026, 7, 15), Payday.cycleBefore(today, 15, 2).start)
+    }
+
+    @Test
+    fun `거슬러 올라가도 없는 날짜를 만들지 않는다`() {
+        // 월급날 31일이면 2월에는 28일로 줄었다가 3월에 31일로 돌아온다.
+        // 달을 빼서 구하면 여기서 경계가 어긋난다.
+        val today: LocalDate = LocalDate.of(2026, 4, 10)
+
+        assertEquals(LocalDate.of(2026, 3, 31), Payday.cycleBefore(today, 31, 0).start)
+        assertEquals(LocalDate.of(2026, 2, 28), Payday.cycleBefore(today, 31, 1).start)
+        assertEquals(LocalDate.of(2026, 1, 31), Payday.cycleBefore(today, 31, 2).start)
+    }
+
+    @Test
+    fun `0보다 작으면 지금 주기를 준다`() {
+        val today: LocalDate = LocalDate.of(2026, 9, 17)
+
+        assertEquals(Payday.cycleOf(today, 15), Payday.cycleBefore(today, 15, -1))
+    }
 }

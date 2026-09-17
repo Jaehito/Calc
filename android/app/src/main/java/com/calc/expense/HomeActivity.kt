@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.LocalDate
 import java.time.LocalTime
-import java.time.YearMonth
 import java.util.concurrent.Executors
 
 /**
@@ -45,8 +44,8 @@ class HomeActivity : ComponentActivity() {
     private var notice: String? by mutableStateOf(null)
 
     private var stats: StatsData? by mutableStateOf(null)
-    /** 카테고리 막대가 보는 달. 0 = 이번 달, 1 = 지난 달. */
-    private var categoryMonthBack: Int by mutableStateOf(0)
+    /** 카테고리 막대가 보는 주기. 0 = 이번 주기, 1 = 지난 주기. 달력 달이 아니라 월급날 기준이다. */
+    private var categoryCycleBack: Int by mutableStateOf(0)
 
     private val challenge: ChallengeRepository by lazy { FirestoreChallengeRepository(this) }
     private var challengeUi: ChallengeUi by mutableStateOf(ChallengeUi())
@@ -259,16 +258,16 @@ class HomeActivity : ComponentActivity() {
     }
 
     /**
-     * 도넛 조각 하나를 이름별로 펼친다. 범위는 **지금 도넛이 보고 있는 달**과 같아야 한다 —
-     * 화면에 「이번 달 620,000원」이라 써 놓고 펼쳤더니 다른 합계가 나오면 숫자를 못 믿는다.
+     * 도넛 조각 하나를 이름별로 펼친다. 범위는 **지금 도넛이 보고 있는 주기**와 같아야 한다 —
+     * 화면에 「이번 주기 620,000원」이라 써 놓고 펼쳤더니 다른 합계가 나오면 숫자를 못 믿는다.
      *
      * 도넛의 «미분류»는 저장된 값이 빈 문자열이다([CategoryBreakdown.UNCATEGORIZED]).
      */
     private fun openCategoryDetail(sliceName: String) {
-        val month: YearMonth = YearMonth.from(LocalDate.now()).minusMonths(categoryMonthBack.toLong())
+        val cycle: BudgetCycle = categoryCycle()
         val category: String = if (sliceName == CategoryBreakdown.UNCATEGORIZED) "" else sliceName
         startActivity(
-            CategoryDetailActivity.intent(this, category, month.atDay(1), month.atEndOfMonth()),
+            CategoryDetailActivity.intent(this, category, cycle.start, cycle.lastDay),
         )
     }
 
@@ -405,22 +404,36 @@ class HomeActivity : ComponentActivity() {
     }
 
     private fun toggleCategoryMonth() {
-        categoryMonthBack = if (categoryMonthBack == 0) 1 else 0
+        categoryCycleBack = if (categoryCycleBack == 0) 1 else 0
         loadStats()
     }
+
+    /**
+     * 카테고리 도넛이 보고 있는 주기. 달력 달이 아니라 **월급날 기준**이다 — 곳간·챌린지·등급이
+     * 전부 월급날부터 다음 월급날 전날까지를 한 덩어리로 보는데 카테고리만 1일부터 세면
+     * 같은 화면의 숫자들이 서로 다른 기간을 말하게 된다.
+     */
+    private fun categoryCycle(today: LocalDate = LocalDate.now()): BudgetCycle =
+        Payday.cycleBefore(today, SettingsStore.load(this).payDay, categoryCycleBack)
 
     private fun loadStats() {
         val today: LocalDate = LocalDate.now()
         val base: StatsData = StatsRepository.localOnly(this, today)
-        val month: YearMonth = YearMonth.from(today).minusMonths(categoryMonthBack.toLong())
-        val label: String = if (categoryMonthBack == 0) "이번 달" else "지난 달"
-        stats = base.copy(categoryMonthLabel = label, loadingCategories = true, error = null)
+        val cycle: BudgetCycle = categoryCycle(today)
+        val label: String = if (categoryCycleBack == 0) "이번 주기" else "지난 주기"
+        val range: String = StatusText.cycleRange(cycle)
+        stats = base.copy(
+            categoryCycleLabel = label,
+            categoryCycleRange = range,
+            loadingCategories = true,
+            error = null,
+        )
 
         val app = applicationContext
         io.execute {
             val (totals: Map<String, Long>, error: String?) =
                 try {
-                    StatsRepository.fetchCategories(app, month)
+                    StatsRepository.fetchCategories(app, cycle)
                 } catch (e: Exception) {
                     emptyMap<String, Long>() to "오류: ${e.message ?: e.javaClass.simpleName}"
                 }
@@ -428,7 +441,8 @@ class HomeActivity : ComponentActivity() {
             runOnUiThread {
                 if (isFinishing || isDestroyed) return@runOnUiThread
                 stats = base.copy(
-                    categoryMonthLabel = label,
+                    categoryCycleLabel = label,
+                    categoryCycleRange = range,
                     categories = CategoryBreakdown.of(totals),
                     categoryTotal = CategoryBreakdown.total(totals),
                     loadingCategories = false,
