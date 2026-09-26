@@ -158,6 +158,16 @@ object PaymentParse {
         return ""
     }
 
+    /**
+     * 은행·카드사·페이 이름 **그 자체**인가(띄어쓰기·대소문자 무시). 가맹점을 못 읽어
+     * [nameFor] 가 발급사 이름만 남긴 경우를 알아보는 데 쓴다.
+     */
+    fun isIssuerName(name: String): Boolean {
+        val key: String = name.filterNot { it.isWhitespace() }
+        if (key.isEmpty()) return false
+        return ISSUERS.any { key.equals(it.filterNot { c -> c.isWhitespace() }, ignoreCase = true) }
+    }
+
     /** 발신번호·계좌번호처럼 숫자뿐이라 이름 노릇을 못 하는 문자열인가. */
     fun looksLikeNumber(text: String): Boolean = NUMERIC_NAME.matches(text.trim())
 

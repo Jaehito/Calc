@@ -82,6 +82,8 @@ data class SettingsUi(
     /** 수집함에 담지 않는 발신자·앱. 해제할 수 있게 화면에 그대로 보여준다. */
     val blockedSenders: List<String> = emptyList(),
     val blockedPackages: List<String> = emptyList(),
+    /** 알림 이름 → 사용자가 고친 이름. 열쇠는 띄어쓰기를 뺀 알림 이름이다([NameMemories]). */
+    val nameMemories: List<Pair<String, String>> = emptyList(),
 )
 
 /**
@@ -116,6 +118,7 @@ fun SettingsScreen(
     onOpenFixedCosts: () -> Unit,
     onUnblockSender: (String) -> Unit,
     onUnblockPackage: (String) -> Unit,
+    onForgetName: (String) -> Unit,
     onToastShown: () -> Unit,
 ) {
     Box(modifier = Modifier.fillMaxSize().background(HomePalette.Ground)) {
@@ -148,6 +151,7 @@ fun SettingsScreen(
             RecordGroup(ui.form, onFormChange, onFieldDone)
             MoreGroup(
                 ui, onExportExpenses, onExport, onImport, onSignOut, onUnblockSender, onUnblockPackage,
+                onForgetName,
             )
 
             if (ui.showStorageNotice) {
@@ -418,9 +422,11 @@ private fun MoreGroup(
     onSignOut: () -> Unit,
     onUnblockSender: (String) -> Unit,
     onUnblockPackage: (String) -> Unit,
+    onForgetName: (String) -> Unit,
 ) {
     var open: Boolean by rememberSaveable { mutableStateOf(false) }
     var blockedOpen: Boolean by rememberSaveable { mutableStateOf(false) }
+    var namesOpen: Boolean by rememberSaveable { mutableStateOf(false) }
     var backupOpen: Boolean by rememberSaveable { mutableStateOf(false) }
 
     Row(
@@ -461,6 +467,22 @@ private fun MoreGroup(
         }
         Divider()
         LinkRow(
+            title = "결제 알림 이름 바꿔 띄우기",
+            sub = "수집함에서 고쳐 적은 이름을 다음 알림부터 대신 띄워요",
+            trailing = if (ui.nameMemories.isNotEmpty()) "${ui.nameMemories.size}" else "없음",
+            onClick = { namesOpen = !namesOpen },
+        )
+        if (namesOpen) {
+            if (ui.nameMemories.isEmpty()) {
+                HelperText("수집함에서 알림 이름을 고쳐 기록하면 여기에 생깁니다. 쿠팡 같은 쇼핑몰과 카드사 이름만 읽힌 결제는 기억하지 않아요.")
+            }
+            for ((from, to) in ui.nameMemories) {
+                BlockedRow(label = "$from → $to", action = "지우기") { onForgetName(from) }
+            }
+            Spacer(Modifier.height(6.dp))
+        }
+        Divider()
+        LinkRow(
             title = "지출 내보내기 (CSV)",
             sub = "적은 지출 전부를 «다운로드» 폴더에 표 파일로 저장해요",
             onClick = onExportExpenses,
@@ -490,13 +512,13 @@ private fun MoreGroup(
     }
 }
 
-/** 막아 둔 출처 한 줄. 이름과 «해제». */
+/** 지울 수 있는 한 줄. 막아 둔 출처(«해제»)와 이름 기억(«지우기»)이 같이 쓴다. */
 @Composable
-private fun BlockedRow(label: String, onUnblock: () -> Unit) {
+private fun BlockedRow(label: String, action: String = "해제", onUnblock: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
         Text(text = label, color = HomePalette.Ink2, fontSize = 13.sp, modifier = Modifier.weight(1f))
         Text(
-            text = "해제",
+            text = action,
             color = HomePalette.Accent,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,

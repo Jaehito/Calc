@@ -19,6 +19,7 @@ class PendingPaymentTest {
         category: String = "카페",
         issuer: String = "",
         renamed: Boolean = false,
+        parsedName: String = "",
     ) = PendingPayment(
         id = id,
         amount = amount,
@@ -29,6 +30,7 @@ class PendingPaymentTest {
         postedAt = postedAt,
         issuer = issuer,
         renamed = renamed,
+        parsedName = parsedName,
     )
 
     @Test
@@ -302,5 +304,24 @@ class PendingPaymentTest {
         assertEquals(emptyList<PendingPayment>(), PendingPaymentCodec.decode(null))
         assertEquals(emptyList<PendingPayment>(), PendingPaymentCodec.decode(""))
         assertEquals(emptyList<PendingPayment>(), PendingPaymentCodec.decode("{깨진"))
+    }
+
+    @Test
+    fun `다시 고칠 때는 바뀌기 전 알림 이름을 열쇠로 쓴다`() {
+        val renamed = item("a", merchant = "선호 칫솔", renamed = true, parsedName = "우리카드 이마트")
+        assertEquals("우리카드 이마트", renamed.memoryKey)
+
+        // 옛 버전이 담은 항목은 원래 이름을 잃었다. 바뀐 이름을 열쇠로 쓰느니 기억하지 않는다.
+        val legacy = item("b", merchant = "선호 칫솔", renamed = true)
+        assertEquals("", legacy.memoryKey)
+
+        val plain = item("c", merchant = "우리카드 이마트")
+        assertEquals("우리카드 이마트", plain.memoryKey)
+    }
+
+    @Test
+    fun `알림 원래 이름은 저장했다 읽어도 남는다`() {
+        val saved = listOf(item("a", merchant = "선호 칫솔", renamed = true, parsedName = "우리카드 이마트"))
+        assertEquals(saved, PendingPaymentCodec.decode(PendingPaymentCodec.encode(saved)))
     }
 }

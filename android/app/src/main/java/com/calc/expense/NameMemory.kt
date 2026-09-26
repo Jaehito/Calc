@@ -24,6 +24,37 @@ object NameMemories {
     fun normalize(raw: String): String = raw.filterNot { it.isWhitespace() }.lowercase()
 
     /**
+     * 한 곳에서 **매번 다른 것**을 사는 쇼핑몰·간편결제. 알림은 늘 같은 이름(「우리카드 쿠팡」)으로
+     * 오지만 산 물건은 매번 다르다. 여기서 이름을 기억하면 한 번 「선호 칫솔」로 고친 뒤로
+     * 쿠팡 결제가 전부 「선호 칫솔」이 된다(실제로 그랬다).
+     *
+     * [normalize] 한 열쇠에 이 낱말이 들어 있으면 기억하지 않는다.
+     */
+    private val MARKETPLACES = listOf(
+        "쿠팡", "쿠페이", "coupang", "포워드벤처스",
+        "네이버", "naver", "스마트스토어",
+        "11번가", "g마켓", "지마켓", "gmarket", "옥션", "auction",
+        "ssg", "쓱", "컬리", "kurly", "위메프", "티몬", "tmon",
+        "알리익스프레스", "aliexpress", "테무", "temu",
+        "무신사", "에이블리", "지그재그", "오늘의집",
+    )
+
+    /**
+     * 이 알림 이름을 기억해도 되는가.
+     *
+     * - 빈 이름은 안 된다.
+     * - **은행·카드사 이름만 남은 것**은 안 된다. 가맹점을 못 읽은 결제는 전부 같은 이름
+     *   (「우리카드」)이 되므로, 하나를 고치면 그 카드의 못 읽은 결제가 전부 그 이름이 된다.
+     * - **쇼핑몰**([MARKETPLACES])은 안 된다. 같은 이름 아래 매번 다른 물건이다.
+     */
+    fun isRememberable(parsed: String): Boolean {
+        val key: String = normalize(parsed)
+        if (key.isEmpty()) return false
+        if (PaymentParse.isIssuerName(parsed)) return false
+        return MARKETPLACES.none { key.contains(it) }
+    }
+
+    /**
      * [from](알림이 읽은 이름)을 [to](사용자가 고른 이름)로 기억한다.
      * 이미 있으면 새 값으로 덮고 **맨 뒤로 보낸다** — 최근에 쓴 것이 오래 남아야 한다.
      *
@@ -34,6 +65,7 @@ object NameMemories {
         val key: String = normalize(from)
         val value: String = to.trim()
         if (key.isEmpty() || value.isEmpty()) return memory
+        if (!isRememberable(from)) return memory
         if (key == normalize(value)) return memory
 
         val next = LinkedHashMap<String, String>(memory)
@@ -57,9 +89,22 @@ object NameMemories {
      * 정확한 일치만으로 실제 상황의 대부분이 걸린다.
      */
     fun lookup(memory: Map<String, String>, parsed: String): String? {
-        val key: String = normalize(parsed)
-        if (key.isEmpty()) return null
-        return memory[key]
+        if (!isRememberable(parsed)) return null
+        return memory[normalize(parsed)]
+    }
+
+    /**
+     * 잘못 쌓인 기억을 걷어 낸다. [isRememberable] 을 통과하지 못하는 열쇠(쇼핑몰·카드사
+     * 이름만)는 늘 버린다.
+     *
+     * [dropChains] 면 **사람이 붙인 이름이 열쇠가 된 줄**도 버린다. 예전에는 기억으로 바뀐
+     * 이름(「선호 칫솔」)을 다시 고치면 원래 알림 이름이 아니라 그 바뀐 이름을 열쇠로 적었다.
+     * 그 줄은 어떤 알림과도 맞지 않는다. 다만 드물게 진짜 알림 이름과 겹칠 수 있어 저장소가
+     * **한 번만** 이걸 켠다.
+     */
+    fun sanitize(memory: Map<String, String>, dropChains: Boolean = false): Map<String, String> {
+        val userNames: Set<String> = if (dropChains) memory.values.map { normalize(it) }.toSet() else emptySet()
+        return memory.filter { (key, _) -> isRememberable(key) && key !in userNames }
     }
 }
 

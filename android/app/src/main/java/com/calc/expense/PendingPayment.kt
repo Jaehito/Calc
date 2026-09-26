@@ -15,6 +15,9 @@ import org.json.JSONObject
  * @param issuer 내용에서 읽은 은행·카드사 이름. [sender] 가 발신번호일 때 화면에 대신 보인다
  * @param renamed [merchant] 가 사용자가 예전에 고쳐 둔 이름인가([NameMemories]).
  *   중복을 합칠 때 이 이름이 이겨야 한다 — 아래 [PendingPayments.merge] 참고
+ * @param parsedName 기억으로 바꾸기 **전** 알림이 읽은 이름. 사용자가 다시 고치면 이 이름을
+ *   열쇠로 기억한다 — 바뀐 이름을 열쇠로 적으면 원래 알림의 잘못된 기억이 영영 남는다.
+ *   옛 버전이 담은 항목은 비어 있다
  */
 data class PendingPayment(
     val id: String,
@@ -26,7 +29,15 @@ data class PendingPayment(
     val postedAt: Long,
     val issuer: String = "",
     val renamed: Boolean = false,
+    val parsedName: String = "",
 ) {
+    /**
+     * 사용자가 이 결제를 기록할 때 이름 기억의 열쇠로 쓸 이름. 모르면 빈 문자열 — 옛 버전이
+     * 담은 «바뀐 이름» 항목은 원래 이름을 잃었으니 기억하지 않는다.
+     */
+    val memoryKey: String
+        get() = parsedName.ifBlank { if (renamed) "" else merchant }
+
     /**
      * 어디서 온 결제인지 사람이 읽을 수 있는 한 마디.
      *
@@ -97,6 +108,7 @@ object PendingPayments {
         return winner.copy(
             category = winner.category.ifBlank { loser.category },
             issuer = winner.issuer.ifBlank { loser.issuer },
+            parsedName = winner.parsedName.ifBlank { loser.parsedName },
             postedAt = minOf(a.postedAt, b.postedAt),
         )
     }
@@ -181,7 +193,8 @@ object PendingPaymentCodec {
                     .put("sender", item.sender)
                     .put("postedAt", item.postedAt)
                     .put("issuer", item.issuer)
-                    .put("renamed", item.renamed),
+                    .put("renamed", item.renamed)
+                    .put("parsedName", item.parsedName),
             )
         }
         return array.toString()
@@ -215,6 +228,7 @@ object PendingPaymentCodec {
                     postedAt = obj.optLong("postedAt", 0L),
                     issuer = obj.optString("issuer", ""),
                     renamed = obj.optBoolean("renamed", false),
+                    parsedName = obj.optString("parsedName", ""),
                 ),
             )
         }

@@ -28,13 +28,56 @@ class NameMemoryTest {
 
     @Test
     fun `부분 일치는 쓰지 않는다`() {
-        // 카테고리 기억과 갈리는 지점이다. 「신한은행」을 「월세」로 기억해 둔 상태에서 부분
-        // 일치를 허용하면 신한은행에서 나간 모든 결제가 월세가 되고, 그 이름 그대로
+        // 카테고리 기억과 갈리는 지점이다. 「신한은행 관리비」를 「월세」로 기억해 둔 상태에서
+        // 부분 일치를 허용하면 그 이름으로 시작하는 결제가 전부 월세가 되고, 그 이름 그대로
         // 결제 기록에 쌓여 고정비 찾기까지 망가진다.
-        val memory: Map<String, String> = NameMemories.put(emptyMap(), "신한은행", "월세")
+        val memory: Map<String, String> = NameMemories.put(emptyMap(), "신한은행 관리비", "월세")
 
-        assertNull(NameMemories.lookup(memory, "신한은행 스타벅스"))
-        assertEquals("월세", NameMemories.lookup(memory, "신한은행"))
+        assertNull(NameMemories.lookup(memory, "신한은행 관리비 스타벅스"))
+        assertEquals("월세", NameMemories.lookup(memory, "신한은행 관리비"))
+    }
+
+    @Test
+    fun `카드사 이름만 읽힌 결제는 기억하지 않는다`() {
+        // 가맹점을 못 읽은 결제는 전부 「우리카드」가 된다. 하나를 고쳐 기억하면
+        // 그 카드의 못 읽은 결제가 전부 그 이름으로 뜬다.
+        assertTrue(NameMemories.put(emptyMap(), "우리카드", "선호 칫솔").isEmpty())
+        assertTrue(NameMemories.put(emptyMap(), "신한은행", "월세").isEmpty())
+        assertTrue(NameMemories.put(emptyMap(), "KB 국민", "점심").isEmpty())
+    }
+
+    @Test
+    fun `쇼핑몰은 기억하지 않는다`() {
+        // 「우리카드 쿠팡」을 한 번 「선호 칫솔」로 고쳤더니 쿠팡 결제가 전부 「선호 칫솔」이 됐다.
+        assertTrue(NameMemories.put(emptyMap(), "우리카드 쿠팡", "선호 칫솔").isEmpty())
+        assertTrue(NameMemories.put(emptyMap(), "신한카드 쿠페이", "기저귀").isEmpty())
+        assertTrue(NameMemories.put(emptyMap(), "네이버페이 스마트스토어", "양말").isEmpty())
+        assertTrue(NameMemories.put(emptyMap(), "현대카드 11번가", "충전기").isEmpty())
+    }
+
+    @Test
+    fun `이미 쌓인 쇼핑몰 기억은 찾아도 안 나오고 걷어 낸다`() {
+        // 옛 버전이 저장해 둔 줄. 읽는 쪽에서도 막아야 업데이트 즉시 멈춘다.
+        val old: Map<String, String> = mapOf("우리카드쿠팡" to "선호 칫솔", "우리카드우아한형제들" to "배달")
+
+        assertNull(NameMemories.lookup(old, "우리카드 쿠팡"))
+        assertEquals(mapOf("우리카드우아한형제들" to "배달"), NameMemories.sanitize(old))
+    }
+
+    @Test
+    fun `바뀐 이름이 열쇠가 된 줄은 한 번 걷어 낸다`() {
+        // 옛 버전은 「선호 칫솔」로 뜬 걸 「기저귀」로 고치면 「선호칫솔 → 기저귀」를 적었다.
+        val old: Map<String, String> = mapOf(
+            "우리카드이마트" to "선호 칫솔",
+            "선호칫솔" to "기저귀",
+            "우리카드우아한형제들" to "배달",
+        )
+
+        val cleaned: Map<String, String> = NameMemories.sanitize(old, dropChains = true)
+
+        assertEquals(setOf("우리카드이마트", "우리카드우아한형제들"), cleaned.keys)
+        // 평소에는 건드리지 않는다 — 진짜 알림 이름과 겹칠 수 있어서다.
+        assertEquals(old, NameMemories.sanitize(old))
     }
 
     @Test

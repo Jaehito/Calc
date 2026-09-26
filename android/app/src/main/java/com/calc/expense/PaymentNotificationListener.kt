@@ -78,6 +78,7 @@ class PaymentNotificationListener : NotificationListenerService() {
                 postedAt = postedAt,
                 issuer = candidate.issuer,
                 renamed = remembered != null,
+                parsedName = candidate.merchant,
             ),
         )
 

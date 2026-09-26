@@ -44,6 +44,7 @@ class MainActivity : ComponentActivity() {
     private var householdMessageIsError: Boolean by mutableStateOf(false)
     private var blockedSenders: List<String> by mutableStateOf(emptyList())
     private var blockedPackages: List<String> by mutableStateOf(emptyList())
+    private var nameMemories: List<Pair<String, String>> by mutableStateOf(emptyList())
 
     private val requestNotificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -76,6 +77,7 @@ class MainActivity : ComponentActivity() {
                     fixedTotal = fixedTotal,
                     blockedSenders = blockedSenders,
                     blockedPackages = blockedPackages,
+                    nameMemories = nameMemories,
                 ),
                 onBack = { finish() },
                 onFormChange = { form = it },
@@ -109,6 +111,11 @@ class MainActivity : ComponentActivity() {
                     PaymentBlocklist.unblockPackage(this, packageName)
                     refreshBlocklist()
                 },
+                onForgetName = { key ->
+                    NameMemoryStore.forget(this, key)
+                    refreshBlocklist()
+                    setStatus("지웠어요. 다음 알림부터 원래 이름으로 떠요.")
+                },
                 onToastShown = { toast = null },
             )
         }
@@ -120,6 +127,8 @@ class MainActivity : ComponentActivity() {
     private fun refreshBlocklist() {
         blockedSenders = PaymentBlocklist.blockedSenders(this).sorted()
         blockedPackages = PaymentBlocklist.blockedPackages(this).sorted()
+        // 최근에 고친 것이 위로 온다(기억은 오래된 것부터 쌓인다).
+        nameMemories = NameMemoryStore.load(this).toList().asReversed()
     }
 
     /**
