@@ -80,15 +80,18 @@ jobs:
             --prerelease \
             "expense-$SAFE_BRANCH-$SHORT.apk"
 
-      # 테스터에게는 올릴 때마다 새 버전 알림이 간다. 커밋마다 가지 않게 손으로 돌릴 때만 올린다
-      # (Actions › APK 빌드 › Run workflow › «보내기» 체크).
+      # 테스터에게는 올릴 때마다 새 버전 알림이 간다. 커밋마다 가지 않게 둘 중 하나일 때만 올린다.
+      #   - 푸시한 마지막 커밋 메시지에 [배포] 가 있을 때 (폰의 Claude 세션에서 «배포해줘»)
+      #   - 손으로 돌릴 때 (Actions › APK 빌드 › Run workflow › «보내기» 체크)
       # 필요한 것: 저장소 시크릿 FIREBASE_SERVICE_ACCOUNT (App Distribution 관리자 권한의 서비스
       # 계정 키 JSON 전체). 앱 ID 는 google-services.json 에 있어 따로 넣지 않는다.
       - name: App Distribution 으로 보내기
-        if: github.event_name == 'workflow_dispatch' && inputs.distribute
+        if: >-
+          (github.event_name == 'workflow_dispatch' && inputs.distribute) ||
+          (github.event_name == 'push' && contains(github.event.head_commit.message, '[배포]'))
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          GROUPS: ${{ inputs.groups }}
+          GROUPS: ${{ inputs.groups || 'family' }}
         run: |
           if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
             echo "::error::시크릿 FIREBASE_SERVICE_ACCOUNT 가 없어 보내지 못했습니다."
