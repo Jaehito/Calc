@@ -104,7 +104,73 @@ class DogamTest {
 
     @Test
     fun `10건 넘게 적은 주기에 미분류가 없으면 민트가 오늘 핀다`() {
-        assertEquals(day(21), steadyMonth().blooms[Plant.MINT])
+        val result: DogamResult = steadyMonth()
+
+        assertEquals(day(21), result.blooms[Plant.MINT])
+        assertEquals(1, result.tallies.tidyCycles)
+        assertFalse(Plant.BABYS_BREATH in result.blooms)
+    }
+
+    @Test
+    fun `하루치를 넘긴 바로 다음 날 지키면 캐모마일이 핀다`() {
+        val rows = ArrayList<PursedRow>()
+        for (d in 1..20) {
+            val amount: Long = when (d) {
+                10, 15, 16 -> 15_000L // 넘긴 날. 16일은 이틀째 넘김이라 17일만 다시 지킨 날이다
+                else -> 3_000L
+            }
+            rows.add(row(Purse.PERSONAL, d, amount))
+        }
+        val result: DogamResult = personalOnly(rows, today = 21)
+
+        assertEquals(day(11), result.blooms[Plant.CHAMOMILE])
+        assertEquals(2, result.tallies.comebacks)
+        assertFalse(Plant.SNOWDROP in result.blooms)
+    }
+
+    @Test
+    fun `넘긴 다음 날이 짧은 틈이면 0원으로 쳐서 다시 지킨 날이다`() {
+        val rows = ArrayList<PursedRow>()
+        for (d in 1..20) rows.add(row(Purse.PERSONAL, d, if (d == 10) 15_000L else 3_000L))
+        rows.removeAll { it.row.date == day(11) }
+        val result: DogamResult = personalOnly(rows, today = 21)
+
+        // 11일은 앞뒤로 적은 날 사이의 짧은 틈이라 0원으로 센다 — 그날이 바로 다음 날이다.
+        assertEquals(1, result.tallies.comebacks)
+        assertEquals(day(11), result.blooms[Plant.CHAMOMILE])
+    }
+
+    @Test
+    fun `넘긴 날 뒤로 긴 틈이 있으면 다시 지킨 날로 치지 않는다`() {
+        val rows = ArrayList<PursedRow>()
+        for (d in 1..10) rows.add(row(Purse.PERSONAL, d, if (d == 10) 15_000L else 3_000L))
+        rows.add(row(Purse.PERSONAL, 16, 3_000L)) // 11~15일 다섯 날 틈
+        val result: DogamResult = personalOnly(rows, today = 21)
+
+        assertEquals(0, result.tallies.comebacks)
+        assertFalse(Plant.CHAMOMILE in result.blooms)
+    }
+
+    @Test
+    fun `적은 날은 끊겨도 이어서 세어 30일째에 제비꽃이 핀다`() {
+        val rows = ArrayList<PursedRow>()
+        for (d in 1..20) rows.add(row(Purse.PERSONAL, d, 3_000L))
+        for (d in 1..10) rows.add(PursedRow(Purse.PERSONAL, ExpenseRow("o$d", "점심", 3_000L, LocalDate.of(2026, 10, d), "식비")))
+        val result: DogamResult = Dogam.evaluate(
+            DogamInput(
+                today = LocalDate.of(2026, 10, 11),
+                rows = rows,
+                purses = listOf(Purse.PERSONAL),
+                monthlyBudgets = mapOf(Purse.PERSONAL to 300_000L),
+                payDay = 1,
+                hasFixedCosts = false,
+            ),
+        )
+
+        // 9/21~9/30 은 적지 않았다. 이어 적기는 끊겼지만 누적은 10월 10일에 30일이 된다.
+        assertEquals(30, result.tallies.recordedDays)
+        assertEquals(LocalDate.of(2026, 10, 10), result.blooms[Plant.VIOLET])
+        assertEquals(20L, result.bests.recordRun?.value)
     }
 
     @Test
@@ -178,7 +244,7 @@ class DogamTest {
                 cheapestWeek = Best(21_000L, day(14), day(20)),
                 keepRun = Best(13L, day(8), day(20)),
             ),
-            tallies = Tallies(sDays = 13, noSpendDays = 2, keptDays = 13, keptWeeks = 1),
+            tallies = Tallies(sDays = 13, noSpendDays = 2, keptDays = 13, keptWeeks = 1, recordedDays = 20, comebacks = 1),
         )
 
         val merged: DogamResult = Dogam.merge(stored, fresh)
@@ -188,7 +254,10 @@ class DogamTest {
         assertEquals(9_000L, merged.bests.savedDay?.value)
         assertEquals(10_000L, merged.bests.cheapestWeek?.value)
         assertEquals(13L, merged.bests.keepRun?.value)
-        assertEquals(Tallies(sDays = 30, noSpendDays = 2, keptDays = 13, keptWeeks = 1), merged.tallies)
+        assertEquals(
+            Tallies(sDays = 30, noSpendDays = 2, keptDays = 13, keptWeeks = 1, recordedDays = 20, comebacks = 1),
+            merged.tallies,
+        )
     }
 
     @Test
@@ -236,8 +305,8 @@ class DogamTest {
     }
 
     @Test
-    fun `꽃 열여섯 송이, 저장 키가 겹치지 않고 선반마다 셋 이하다`() {
-        assertEquals(16, Plant.entries.size)
+    fun `꽃 스물네 송이, 저장 키가 겹치지 않고 선반마다 셋 이하다`() {
+        assertEquals(24, Plant.entries.size)
         assertEquals(Plant.entries.size, Plant.entries.map { it.key }.toSet().size)
         for (shelf in Shelf.entries) assertTrue(Plant.on(shelf).size in 1..3)
     }

@@ -39,11 +39,17 @@ data class Tallies(
     val noSpendDays: Int = 0,
     val keptDays: Int = 0,
     val keptWeeks: Int = 0,
+    val recordedDays: Int = 0,
+    val comebacks: Int = 0,
+    val tidyCycles: Int = 0,
 ) {
     fun of(tally: Tally): Int = when (tally) {
         Tally.S_DAYS -> sDays
         Tally.NO_SPEND_DAYS -> noSpendDays
         Tally.KEPT_WEEKS -> keptWeeks
+        Tally.RECORDED_DAYS -> recordedDays
+        Tally.COMEBACKS -> comebacks
+        Tally.TIDY_CYCLES -> tidyCycles
     }
 }
 
@@ -84,6 +90,7 @@ data class DogamInput(
  *   안 그러면 한동안 잊고 지낸 날들이 전부 「무지출」「하루치 지킴」으로 쌓인다.
  * - 하루치는 **지금 예산**으로 거슬러 계산한다. 예산 이력은 저장돼 있지 않다.
  * - S 등급은 적은 날만 매긴다([GradeRepository.day] 와 같다).
+ * - 다시 일어서기는 하루치를 넘긴 **바로 다음 날**만 본다. 그 사이에 기록 없는 긴 틈이 있으면 치지 않는다.
  */
 object Dogam {
 
@@ -113,11 +120,14 @@ object Dogam {
 
         bloom(Plant.SPROUT, first)
 
-        // 적는 습관 — 첫날부터 오늘까지.
+        // 적는 습관 — 첫날부터 오늘까지. 이어진 날과, 끊겨도 이어서 세는 누적 날을 함께 센다.
         val recordStreak = Streak()
+        var recordedDays = 0
         var day: LocalDate = first
         while (!day.isAfter(today)) {
             if (day in recorded) {
+                recordedDays++
+                bloomTally(Tally.RECORDED_DAYS, recordedDays, day, ::bloom)
                 recordStreak.hit(day)
                 if (recordStreak.length == 7) bloom(Plant.ROSEMARY, day)
                 if (recordStreak.length == 30) bloom(Plant.FORGET_ME_NOT, day)
@@ -140,6 +150,8 @@ object Dogam {
         var sDays = 0
         var noSpendDays = 0
         var keptDays = 0
+        var comebacks = 0
+        var overYesterday = false
         val keep = Streak()
         val quiet: Map<Purse, Streak> = input.purses.associateWith { Streak(it) }
 
@@ -147,6 +159,7 @@ object Dogam {
         while (!day.isAfter(end)) {
             val budget: Long = budgetOn(day)
             if (day !in active || budget <= 0L) {
+                overYesterday = false
                 keep.miss()
                 quiet.values.forEach { it.miss() }
                 day = day.plusDays(1)
@@ -165,6 +178,12 @@ object Dogam {
                 sDays++
                 bloomTally(Tally.S_DAYS, sDays, day, ::bloom)
             }
+
+            if (total <= budget && overYesterday) {
+                comebacks++
+                bloomTally(Tally.COMEBACKS, comebacks, day, ::bloom)
+            }
+            overYesterday = total > budget
 
             if (total <= budget) {
                 keptDays++
@@ -226,11 +245,13 @@ object Dogam {
         }
 
         // 정리. 이번 주기도 오늘까지 본다 — 정리는 지금 해 두면 지금 핀다.
+        var tidyCycles = 0
         cycle = Payday.cycleOf(first, input.payDay)
         while (!cycle.start.isAfter(today)) {
             val inCycle: List<PursedRow> = rows.filter { cycle.contains(it.row.date) }
             if (inCycle.size >= TIDY_MIN_ROWS && inCycle.all { it.row.category.isNotBlank() }) {
-                bloom(Plant.MINT, if (cycle.lastDay.isAfter(today)) today else cycle.lastDay)
+                tidyCycles++
+                bloomTally(Tally.TIDY_CYCLES, tidyCycles, if (cycle.lastDay.isAfter(today)) today else cycle.lastDay, ::bloom)
             }
             cycle = Payday.cycleOf(cycle.endExclusive, input.payDay)
         }
@@ -250,7 +271,15 @@ object Dogam {
                 cheapestWeek = cheapestWeek,
                 recordRun = recordStreak.best,
             ),
-            tallies = Tallies(sDays = sDays, noSpendDays = noSpendDays, keptDays = keptDays, keptWeeks = keptWeeks),
+            tallies = Tallies(
+                sDays = sDays,
+                noSpendDays = noSpendDays,
+                keptDays = keptDays,
+                keptWeeks = keptWeeks,
+                recordedDays = recordedDays,
+                comebacks = comebacks,
+                tidyCycles = tidyCycles,
+            ),
         )
     }
 
@@ -287,6 +316,9 @@ object Dogam {
                 noSpendDays = maxOf(stored.tallies.noSpendDays, fresh.tallies.noSpendDays),
                 keptDays = maxOf(stored.tallies.keptDays, fresh.tallies.keptDays),
                 keptWeeks = maxOf(stored.tallies.keptWeeks, fresh.tallies.keptWeeks),
+                recordedDays = maxOf(stored.tallies.recordedDays, fresh.tallies.recordedDays),
+                comebacks = maxOf(stored.tallies.comebacks, fresh.tallies.comebacks),
+                tidyCycles = maxOf(stored.tallies.tidyCycles, fresh.tallies.tidyCycles),
             ),
         )
     }

@@ -39,6 +39,9 @@ object DogamStore {
     private const val KEY_NO_SPEND_DAYS = "count.noSpendDays"
     private const val KEY_KEPT_DAYS = "count.keptDays"
     private const val KEY_KEPT_WEEKS = "count.keptWeeks"
+    private const val KEY_RECORDED_DAYS = "count.recordedDays"
+    private const val KEY_COMEBACKS = "count.comebacks"
+    private const val KEY_TIDY_CYCLES = "count.tidyCycles"
 
     /** 버전이 다르면 비우고 연다. 어디서 읽든 옛 기준의 꽃이 한 번도 보이지 않게. */
     private fun prefs(context: Context): SharedPreferences {
@@ -68,6 +71,9 @@ object DogamStore {
                 noSpendDays = p.getInt(KEY_NO_SPEND_DAYS, 0),
                 keptDays = p.getInt(KEY_KEPT_DAYS, 0),
                 keptWeeks = p.getInt(KEY_KEPT_WEEKS, 0),
+                recordedDays = p.getInt(KEY_RECORDED_DAYS, 0),
+                comebacks = p.getInt(KEY_COMEBACKS, 0),
+                tidyCycles = p.getInt(KEY_TIDY_CYCLES, 0),
             ),
         )
     }
@@ -76,7 +82,7 @@ object DogamStore {
      * 새로 계산한 도감을 덧대 저장하고, 덧댄 결과를 돌려준다.
      *
      * **처음 채울 때**(한 번도 계산한 적 없을 때) 핀 꽃은 전부 알린 것·본 것으로 둔다. 지난 기록으로
-     * 한꺼번에 채운 여덟 송이를 「어제 핀 꽃」처럼 팝업에 붙이거나 NEW 를 여덟 개 다는 건 소음이다.
+     * 한꺼번에 채운 여러 송이를 「어제 핀 꽃」처럼 팝업에 붙이거나 NEW 를 줄줄이 다는 건 소음이다.
      */
     fun update(context: Context, fresh: DogamResult, today: LocalDate): DogamResult {
         val firstTime: Boolean = evaluatedOn(context) == null
@@ -93,6 +99,9 @@ object DogamStore {
         edit.putInt(KEY_NO_SPEND_DAYS, merged.tallies.noSpendDays)
         edit.putInt(KEY_KEPT_DAYS, merged.tallies.keptDays)
         edit.putInt(KEY_KEPT_WEEKS, merged.tallies.keptWeeks)
+        edit.putInt(KEY_RECORDED_DAYS, merged.tallies.recordedDays)
+        edit.putInt(KEY_COMEBACKS, merged.tallies.comebacks)
+        edit.putInt(KEY_TIDY_CYCLES, merged.tallies.tidyCycles)
         edit.putString(KEY_EVALUATED, today.toString())
         if (firstTime) {
             val keys: Set<String> = merged.blooms.keys.map { it.key }.toSet()

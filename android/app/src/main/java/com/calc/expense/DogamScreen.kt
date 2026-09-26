@@ -249,8 +249,8 @@ private fun NextPlant(next: Plant, result: DogamResult) {
                     Bar(fraction = count.toFloat() / next.target)
                     Spacer(Modifier.height(5.dp))
                     Row {
-                        Text("지금 ${count}번", color = HomePalette.Ink2, fontSize = 12.sp, style = Figures, modifier = Modifier.weight(1f))
-                        Text("${next.target - count}번 더", color = HomePalette.Accent, fontSize = 12.sp, fontWeight = FontWeight.Bold, style = Figures)
+                        Text("지금 ${count}${tally.unit}", color = HomePalette.Ink2, fontSize = 12.sp, style = Figures, modifier = Modifier.weight(1f))
+                        Text("${next.target - count}${tally.unit} 더", color = HomePalette.Accent, fontSize = 12.sp, fontWeight = FontWeight.Bold, style = Figures)
                     }
                 }
             }
@@ -425,7 +425,7 @@ private fun PlantSheet(plant: Plant, result: DogamResult, onClose: () -> Unit) {
                 Fact("조건", plant.condition)
                 val tally: Tally? = plant.tally
                 if (tally != null && plant.target > 1) {
-                    Fact("지금", "${minOf(result.tallies.of(tally), plant.target)} / ${plant.target}번")
+                    Fact("지금", "${minOf(result.tallies.of(tally), plant.target)} / ${plant.target}${tally.unit}")
                 }
             }
             Fact("화분", "${plant.shelf.potName} · ${plant.shelf.title} 선반")
@@ -555,7 +555,7 @@ private fun RecordRow(
     }
 }
 
-/** 더해지기만 하는 횟수 셋. */
+/** 더해지기만 하는 횟수 넷. 「다시 지킨 날」은 많이 쓴 다음 날을 칭찬하는 숫자다. */
 @Composable
 private fun TalliesCard(tallies: Tallies) {
     CardColumn {
@@ -564,7 +564,11 @@ private fun TalliesCard(tallies: Tallies) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TallyBox(tallies.sDays, "S 등급", Modifier.weight(1f))
             TallyBox(tallies.noSpendDays, "무지출의 날", Modifier.weight(1f))
-            TallyBox(tallies.keptDays, "하루치 지킴", Modifier.weight(1f))
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TallyBox(tallies.keptDays, "하루치 지킨 날", Modifier.weight(1f))
+            TallyBox(tallies.comebacks, "다시 지킨 날", Modifier.weight(1f))
         }
     }
 }

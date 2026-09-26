@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 도감 화분. 무늬는 업적 종류, 차오른 정도는 단계다. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+    <path android:pathData="M17,61 a15,2.2 0 1,0 30,0 a15,2.2 0 1,0 -30,0 Z" android:fillColor="#000000" android:fillAlpha="0.08"/>
+    <path android:pathData="M19 45 h26 v12.5 q0 3 -3 3 h-20 q-3 0 -3 -3z" android:fillColor="#DDEFF5" android:strokeColor="#B9D9E4" android:strokeWidth="1"/>
+    <path android:pathData="M19.5,40 h25 a2,2 0 0,1 2,2 v2 a2,2 0 0,1 -2,2 h-25 a2,2 0 0,1 -2,-2 v-2 a2,2 0 0,1 2,-2 Z" android:fillColor="#E9B43E"/>
+    <path android:pathData="M19.5,40 h25 a2,2 0 0,1 2,2 v2 a2,2 0 0,1 -2,2 h-25 a2,2 0 0,1 -2,-2 v-2 a2,2 0 0,1 2,-2 Z" android:strokeColor="#D39A2A" android:strokeWidth="0.8"/>
+    <path android:pathData="M20,41.6 a12,1.4 0 1,0 24,0 a12,1.4 0 1,0 -24,0 Z" android:fillColor="#6B4A3A" android:fillAlpha="0.85"/>
+    <path android:pathData="M23.6,48.5 h16.8 a1.6,1.6 0 0,1 1.6,1.6 v6.3 a1.6,1.6 0 0,1 -1.6,1.6 h-16.8 a1.6,1.6 0 0,1 -1.6,-1.6 v-6.3 a1.6,1.6 0 0,1 1.6,-1.6 Z" android:fillColor="#FFFFFF"/>
+    <path android:pathData="M24.5 51.3 l1.2 1.2 l2.2 -2.4 M24.5 55.1 l1.2 1.2 l2.2 -2.4 M30.5 51 h8 M30.5 54.8 h6.5" android:strokeColor="#18A873" android:strokeWidth="1.1" android:strokeLineCap="round" android:strokeLineJoin="round"/>
+    <path android:pathData="M21 47 v9" android:fillColor="#000000" android:fillAlpha="0.7" android:strokeColor="#FFFFFF" android:strokeWidth="1.4" android:strokeAlpha="0.7" android:strokeLineCap="round"/>
+</vector>

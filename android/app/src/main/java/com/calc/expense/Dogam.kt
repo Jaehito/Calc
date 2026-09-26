@@ -6,8 +6,10 @@ package com.calc.expense
  */
 enum class Shelf(val title: String, val potName: String) {
     RECORD("적는 습관", "공책 화분"),
+    PILE("쌓인 날", "벽돌 화분"),
     GRADE_S("S 등급", "별 화분"),
     KEEP("하루치 지킴", "달력 화분"),
+    COMEBACK("다시 일어서기", "비 갠 하늘 화분"),
     NO_SPEND("무지출", "밤하늘 화분"),
     PERIOD("한 주 · 한 주기", "무지개 띠 · 동전 화분"),
     TIDY("정리", "유리병 · 저금통"),
@@ -17,7 +19,20 @@ enum class Shelf(val title: String, val potName: String) {
  * 진척 막대로 보여주는 횟수. **더해지기만 하는 것만** 여기에 둔다 — 「연속 며칠」처럼 끊기면
  * 0 으로 돌아가는 숫자를 막대로 보여주면 끊긴 날 막대가 비면서 또 하나의 상실이 된다.
  */
-enum class Tally { S_DAYS, NO_SPEND_DAYS, KEPT_WEEKS }
+enum class Tally(val unit: String) {
+    S_DAYS("번"),
+    NO_SPEND_DAYS("번"),
+    KEPT_WEEKS("번"),
+
+    /** 적은 날을 모두 합친 수. 중간에 끊겨도 이어서 센다. */
+    RECORDED_DAYS("일"),
+
+    /** 하루치를 넘긴 바로 다음 날, 다시 하루치 안에서 마친 횟수. */
+    COMEBACKS("번"),
+
+    /** 10건 넘게 적고 미분류가 0건인 주기의 수. */
+    TIDY_CYCLES("번"),
+}
 
 /**
  * 도감의 꽃 하나 = 업적 하나. **꽃말이 그 업적의 뜻**이다.
@@ -64,6 +79,27 @@ enum class Plant(
         story = "한 달 동안 하루도 안 잊었어요",
         condition = "30일 이어서 하루도 빠짐없이 적기", short = "30일 이어 적기",
     ),
+    VIOLET(
+        key = "violet", label = "제비꽃", shelf = Shelf.PILE,
+        meaning = "성실", isFlowerLanguage = true,
+        story = "하루하루 성실하게 쌓였어요",
+        condition = "적은 날이 모두 30일 (끊겨도 이어서 셈)", short = "적은 날 30일",
+        tally = Tally.RECORDED_DAYS, target = 30,
+    ),
+    COSMOS(
+        key = "cosmos", label = "코스모스", shelf = Shelf.PILE,
+        meaning = "조화", isFlowerLanguage = true,
+        story = "쓰고 적는 게 몸에 붙었어요",
+        condition = "적은 날이 모두 100일 (끊겨도 이어서 셈)", short = "적은 날 100일",
+        tally = Tally.RECORDED_DAYS, target = 100,
+    ),
+    EDELWEISS(
+        key = "edelweiss", label = "에델바이스", shelf = Shelf.PILE,
+        meaning = "소중한 추억", isFlowerLanguage = true,
+        story = "1년치 기록은 그 자체로 추억이에요",
+        condition = "적은 날이 모두 365일 (끊겨도 이어서 셈)", short = "적은 날 365일",
+        tally = Tally.RECORDED_DAYS, target = 365,
+    ),
     DAISY(
         key = "daisy", label = "데이지", shelf = Shelf.GRADE_S,
         meaning = "희망", isFlowerLanguage = true,
@@ -103,6 +139,27 @@ enum class Plant(
         story = "2주를 꺾이지 않고 버텼어요",
         condition = "하루치 안에서 14일 이어 쓰기", short = "14일 이어 지킴",
     ),
+    CHAMOMILE(
+        key = "chamomile", label = "캐모마일", shelf = Shelf.COMEBACK,
+        meaning = "역경에 굴하지 않는 강인함", isFlowerLanguage = true,
+        story = "많이 쓴 다음 날, 다시 지켰어요",
+        condition = "하루치를 넘긴 바로 다음 날 하루치 안에서 쓰기", short = "넘긴 다음 날 지킴",
+        tally = Tally.COMEBACKS, target = 1,
+    ),
+    SNOWDROP(
+        key = "snowdrop", label = "설강화", shelf = Shelf.COMEBACK,
+        meaning = "희망", isFlowerLanguage = true,
+        story = "눈 속에서도 피는 꽃이에요",
+        condition = "넘긴 다음 날 다시 지키기 5번", short = "다시 지킴 5번",
+        tally = Tally.COMEBACKS, target = 5,
+    ),
+    HIBISCUS(
+        key = "hibiscus", label = "무궁화", shelf = Shelf.COMEBACK,
+        meaning = "끈기", isFlowerLanguage = true,
+        story = "피고 지고 또 피는 꽃이에요",
+        condition = "넘긴 다음 날 다시 지키기 15번", short = "다시 지킴 15번",
+        tally = Tally.COMEBACKS, target = 15,
+    ),
     LAVENDER(
         key = "lavender", label = "라벤더", shelf = Shelf.NO_SPEND,
         meaning = "침묵", isFlowerLanguage = true,
@@ -116,6 +173,13 @@ enum class Plant(
         story = "조용한 날이 다섯 번 쌓였어요",
         condition = "무지출의 날 5번", short = "무지출 5번",
         tally = Tally.NO_SPEND_DAYS, target = 5,
+    ),
+    EVENING_PRIMROSE(
+        key = "evening_primrose", label = "달맞이꽃", shelf = Shelf.NO_SPEND,
+        meaning = "기다림", isFlowerLanguage = true,
+        story = "조용한 밤이 스무 번 쌓였어요",
+        condition = "무지출의 날 20번", short = "무지출 20번",
+        tally = Tally.NO_SPEND_DAYS, target = 20,
     ),
     MARIGOLD(
         key = "marigold", label = "메리골드", shelf = Shelf.PERIOD,
@@ -142,12 +206,20 @@ enum class Plant(
         meaning = "상쾌함", isFlowerLanguage = false,
         story = "미분류 없이 깔끔하게 정리했어요",
         condition = "10건 넘게 적은 한 주기에 미분류 0건", short = "미분류 0건",
+        tally = Tally.TIDY_CYCLES, target = 1,
     ),
     MONSTERA(
         key = "monstera", label = "몬스테라", shelf = Shelf.TIDY,
         meaning = "구멍 난 잎", isFlowerLanguage = false,
         story = "잎의 구멍처럼, 새는 돈(고정비)을 찾아냈어요",
         condition = "고정비를 정해 두기", short = "고정비 정하기",
+    ),
+    BABYS_BREATH(
+        key = "babys_breath", label = "안개꽃", shelf = Shelf.TIDY,
+        meaning = "맑은 마음", isFlowerLanguage = true,
+        story = "세 주기 내내 깔끔하게 정리했어요",
+        condition = "10건 넘게 적고 미분류가 0건인 주기 3번", short = "미분류 0건 3번",
+        tally = Tally.TIDY_CYCLES, target = 3,
     );
 
     /** 「꽃말 「침묵」」. 꽃말이 아니라 모습에서 붙인 뜻이면 「뜻」이라 쓴다. */
