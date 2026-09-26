@@ -14,7 +14,7 @@ on:
       groups:
         description: "받을 테스터 그룹 (Firebase 콘솔의 그룹 별칭, 쉼표로 여러 개)"
         type: string
-        default: "family"
+        default: "vip"
 
 permissions:
   contents: write
@@ -91,7 +91,7 @@ jobs:
           (github.event_name == 'push' && contains(github.event.head_commit.message, '[배포]'))
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          GROUPS: ${{ inputs.groups || 'family' }}
+          GROUPS: ${{ inputs.groups || 'vip' }}
         run: |
           if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
             echo "::error::시크릿 FIREBASE_SERVICE_ACCOUNT 가 없어 보내지 못했습니다."
