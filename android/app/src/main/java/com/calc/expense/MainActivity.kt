@@ -22,7 +22,7 @@ import com.google.firebase.auth.FirebaseAuth
 import java.util.concurrent.Executors
 
 /**
- * 설정 화면. 홈·통계·챌린지·내역과 같은 Compose 화면군으로 맞춰(뱅크샐러드 톤) [SettingsScreen] 을 그린다.
+ * 설정 화면. 홈·통계·도감·내역과 같은 Compose 화면군으로 맞춰(뱅크샐러드 톤) [SettingsScreen] 을 그린다.
  *
  * 폼 상태는 [SettingsFormUi] 한 덩어리로 들고, 네트워크·SharedPreferences 를 만지는 부수효과는
  * 전부 이 Activity 의 메서드로 남는다 — Compose 쪽은 순수하게 그리기만 한다.

@@ -6,8 +6,8 @@ import android.content.Context
  * 로그인한 계정이 바뀌면 **앞사람의 돈 이야기를 지운다.**
  *
  * 지출은 Firestore 의 계정 아래에 있어 로그인만 바꾸면 저절로 갈리지만, 예산·고정비·곳간
- * 잔액·수집함처럼 폰에만 사는 것들은 그대로 남는다. 그래서 다른 계정으로 들어와도 앞사람의
- * 챌린지 금액과 고정비를 그대로 물려받고, 온보딩도 «이미 물어봤다»로 건너뛰어졌다.
+ * 잔액·수집함·도감처럼 폰에만 사는 것들은 그대로 남는다. 그래서 다른 계정으로 들어와도 앞사람의
+ * 곳간 금액과 고정비를 그대로 물려받고, 온보딩도 «이미 물어봤다»로 건너뛰어졌다.
  *
  * **처음 로그인은 지우지 않는다.** 저장된 uid 가 없다는 건 이 기능이 생기기 전부터 쓰던
  * 사람이라는 뜻이고, 그 사람의 예산을 업데이트했다고 날려 버리면 안 된다.
@@ -56,7 +56,7 @@ object AccountScope {
         PaymentBlocklist.clear(context)
         CycleGradeStore.clear(context)
         DailyGradeStore.clear(context)
-        ChallengeStore.clear(context)
+        DogamStore.clear(context)
         HouseholdStore.setHouseholdId(context, null)
     }
 }

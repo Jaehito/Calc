@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 도감 꽃. 화분(dogam_pot_*) 뒤에 겹쳐 그린다. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+    <path android:pathData="M32 43 V30" android:strokeColor="#4E9E55" android:strokeWidth="2" android:strokeLineCap="round"/>
+    <path android:pathData="M32 32 C26 32 20.5 28 20.5 23 C27 22.5 31 26 32 32Z" android:fillColor="#8BD37A"/>
+    <path android:pathData="M32 30 C33 23 38 18.5 45 19 C45 25.5 39 30 32 30Z" android:fillColor="#6DBE6A"/>
+    <path android:pathData="M32 30 C35 25.5 38.5 22.5 42 21" android:strokeColor="#5AA95A" android:strokeWidth="1"/>
+</vector>

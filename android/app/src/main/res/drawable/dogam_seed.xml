@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 아직 안 핀 자리의 팻말. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+    <path android:pathData="M32 41 v-9" android:fillColor="#000000" android:strokeColor="#B89468" android:strokeWidth="2" android:strokeLineCap="round"/>
+    <path android:pathData="M27.5,23 h9 a2.5,2.5 0 0,1 2.5,2.5 v5 a2.5,2.5 0 0,1 -2.5,2.5 h-9 a2.5,2.5 0 0,1 -2.5,-2.5 v-5 a2.5,2.5 0 0,1 2.5,-2.5 Z" android:fillColor="#F4E6CF" android:strokeColor="#D9C3A0" android:strokeWidth="1"/>
+    <path android:pathData="M29.9 26.3 q0 -1.9 2.1 -1.9 q2.1 0 2.1 1.8 q0 1.2 -1.2 1.8 q-.9 .45 -.9 1.4" android:strokeColor="#A88A62" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round"/>
+    <path android:pathData="M31.25,31.1 a0.85,0.85 0 1,0 1.7,0 a0.85,0.85 0 1,0 -1.7,0 Z" android:fillColor="#A88A62"/>
+</vector>

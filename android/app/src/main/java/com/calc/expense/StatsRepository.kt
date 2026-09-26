@@ -61,7 +61,7 @@ object StatsRepository {
      *
      * 기준은 그 주기의 하루치 기본값([Budget.baseRate])이다 — 초과로 줄어든 오늘의 실제
      * dailyRate 가 아니다. 흔들리지 않는 기준이라야 주끼리 견줄 수 있다.
-     * [ChallengeWeek.myWeek] 과 [GradeRepository] 도 같은 기준을 쓴다.
+     * [GradeRepository] 도 같은 기준을 쓴다.
      */
     fun dailyBudget(context: Context, today: LocalDate): Long {
         val settings: Settings = SettingsStore.load(context)
