@@ -45,6 +45,7 @@ fun StatsScreen(
     onToggleCategoryMonth: () -> Unit,
     onOpenReport: () -> Unit = {},
     onOpenCategory: (String) -> Unit = {},
+    onOpenSettings: () -> Unit = {},
 ) {
     Column(
         modifier = Modifier
@@ -53,7 +54,16 @@ fun StatsScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 24.dp),
     ) {
-        Text(text = "통계", color = HomePalette.Ink, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "통계",
+                color = HomePalette.Ink,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f),
+            )
+            SettingsGear(onOpenSettings)
+        }
         Spacer(Modifier.height(16.dp))
 
         TrendCard(data)

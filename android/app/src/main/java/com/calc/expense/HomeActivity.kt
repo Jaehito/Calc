@@ -96,15 +96,16 @@ class HomeActivity : ComponentActivity() {
                             onToggleCategoryMonth = { toggleCategoryMonth() },
                             onOpenReport = { openCycleReport() },
                             onOpenCategory = { name -> openCategoryDetail(name) },
+                            onOpenSettings = { openSettings() },
                         )
-                        2 -> DogamScreen(ui = dogam, today = LocalDate.now())
+                        2 -> DogamScreen(ui = dogam, today = LocalDate.now(), onOpenSettings = { openSettings() })
                         else -> HomeScreen(
                             today = LocalDate.now(),
                             snapshots = snapshots,
                             notice = notice,
                             fixedTotal = fixedTotal,
                             onSetBudget = { startActivity(Intent(this@HomeActivity, OnboardingActivity::class.java)) },
-                            onOpenSettings = { startActivity(Intent(this@HomeActivity, MainActivity::class.java)) },
+                            onOpenSettings = { openSettings() },
                             onOpenHistory = { purse -> openHistory(purse) },
                             onRecord = {
                                 startActivity(
@@ -226,6 +227,20 @@ class HomeActivity : ComponentActivity() {
         if (tab == 1) loadStats()
         newBlooms = DogamStore.unannounced(this)
         refreshDogam(force = tab == 2)
+        pullHouseholdSettings()
+    }
+
+    /**
+     * 배우자가 공용 예산·월급날을 바꿨으면 받아 온다([HouseholdSync]). 바뀌었으면 홈 카드·잠금화면
+     * 카드가 새 예산을 보도록 다시 그리고, 월급날이 옮겨졌을 수 있으니 주기 캐시도 다시 맞춘다.
+     */
+    private fun pullHouseholdSettings() {
+        HouseholdSync.pull(this) { result ->
+            if (result != HouseholdPull.CHANGED || isFinishing || isDestroyed) return@pull
+            refresh()
+            republishNotification()
+            resyncInBackground()
+        }
     }
 
     /**
@@ -405,6 +420,10 @@ class HomeActivity : ComponentActivity() {
     }
 
     /** 곳간 카드를 누르면 그 곳간의 내역 화면을 연다. */
+    private fun openSettings() {
+        startActivity(Intent(this, MainActivity::class.java))
+    }
+
     private fun openHistory(purse: Purse) {
         startActivity(
             Intent(this, PurseHistoryActivity::class.java)

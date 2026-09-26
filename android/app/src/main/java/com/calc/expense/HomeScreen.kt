@@ -82,17 +82,7 @@ fun HomeScreen(
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.weight(1f),
                 )
-                Text(
-                    text = "설정",
-                    color = HomePalette.Accent,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(999.dp))
-                        .background(HomePalette.Soft)
-                        .clickable(onClick = onOpenSettings)
-                        .padding(horizontal = 14.dp, vertical = 7.dp),
-                )
+                SettingsGear(onOpenSettings)
             }
 
             Spacer(Modifier.height(16.dp))

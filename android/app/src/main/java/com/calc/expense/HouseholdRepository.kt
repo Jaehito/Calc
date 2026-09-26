@@ -67,6 +67,34 @@ object HouseholdRepository {
             .addOnFailureListener { onDone(Result.failure(it)) }
     }
 
+    /** 가정 코드. 묶인 뒤에도 다시 보내 줄 수 있게 필요할 때마다 읽는다. */
+    fun code(householdId: String, onReady: (String?) -> Unit) {
+        db.collection("households").document(householdId).get()
+            .addOnSuccessListener { onReady(it.getString("code")) }
+            .addOnFailureListener { onReady(null) }
+    }
+
+    /**
+     * 가정 문서에 올려 둔 같이 쓰는 설정. 아직 아무도 올리지 않았으면 null 이 성공으로 온다
+     * ([HouseholdSettings.fromFields]). 읽기 자체가 실패하면 실패로 온다 — 둘을 섞으면
+     * «비어 있다»로 오해해 누군가 옛 값으로 덮어쓴다.
+     */
+    fun readSettings(householdId: String, onDone: (Result<SharedSettings?>) -> Unit) {
+        db.collection("households").document(householdId).get()
+            .addOnSuccessListener { onDone(Result.success(HouseholdSettings.fromFields(it.data.orEmpty()))) }
+            .addOnFailureListener { onDone(Result.failure(it)) }
+    }
+
+    /** 같이 쓰는 설정을 가정 문서에 덮는다. 코드는 건드리지 않는다(merge). */
+    fun writeSettings(householdId: String, shared: SharedSettings, onDone: (Result<Unit>) -> Unit = {}) {
+        val fields: HashMap<String, Any> = HashMap(HouseholdSettings.toFields(shared))
+        fields["settingsUpdatedAt"] = FieldValue.serverTimestamp()
+        db.collection("households").document(householdId)
+            .set(fields, SetOptions.merge())
+            .addOnSuccessListener { onDone(Result.success(Unit)) }
+            .addOnFailureListener { onDone(Result.failure(it)) }
+    }
+
     /** 가정 연결을 끊는다(내 쪽만 — 배우자는 그대로 묶여 있다). 잘못 묶었을 때 되돌리는 용도. */
     fun leave(uid: String, onDone: (Result<Unit>) -> Unit) {
         db.collection("users").document(uid)

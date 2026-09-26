@@ -24,8 +24,11 @@ android {
         applicationId = "com.calc.expense"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        // CI 실행 번호를 버전으로 쓴다. App Distribution·설치 관리자가 «새 버전»을 알아보려면
+        // 빌드마다 올라가야 한다. 로컬 빌드는 1 — 이 앱은 CI 에서만 빌드한다.
+        val run: Int = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
+        versionCode = run
+        versionName = "1.0.$run"
     }
 
     buildTypes {

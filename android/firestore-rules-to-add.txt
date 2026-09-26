@@ -44,6 +44,10 @@ match /users/{uid} {
 
 match /households/{householdId} {
   allow read, create: if request.auth != null;
+  // 같이 쓰는 설정(월급날·공용 예산·공용 이름)은 그 가정 사람만 고친다. 코드는 못 바꾼다.
+  allow update: if request.auth != null
+    && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.householdId == householdId
+    && request.resource.data.code == resource.data.code;
 
   match /expenses/{expenseId} {
     allow read, write: if request.auth != null
@@ -55,6 +59,9 @@ match /households/{householdId} {
 - users/{uid}: 자기 uid 문서만 읽고 쓸 수 있다 (개인 곳간 지출 + householdId 필드).
 - households/{id}: 로그인한 누구나 읽고 만들 수 있다 (코드로 방을 찾는 조회에 필요 —
   코드가 6자리 랜덤이라 브루트포스 걱정은 없다).
+- households/{id} 수정: 그 가정에 묶인 사람만, 코드는 그대로 둔 채 월급날·공용 예산·공용
+  이름(payDay · sharedBudget · sharedName · settingsUpdatedAt)을 고칠 수 있다. 두 폰이
+  같은 공용 설정을 쓰게 하는 규칙이다. 이게 없으면 설정은 각 폰에만 남고 서로 따라오지 않는다.
 - households/{id}/expenses: 내 users/{uid}.householdId 가 그 가정과 일치할 때만
   읽고 쓸 수 있다.
 

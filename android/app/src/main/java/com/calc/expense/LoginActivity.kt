@@ -123,8 +123,7 @@ class LoginActivity : ComponentActivity() {
             wasAsked = FixedCostStore.wasAsked(this),
             hasBudget = SettingsStore.load(this).personal.hasBudget,
         )
-        val target: Class<*> = if (show) OnboardingActivity::class.java else HomeActivity::class.java
-        startActivity(Intent(this, target))
+        startActivity(if (show) OnboardingActivity.firstRun(this) else Intent(this, HomeActivity::class.java))
         finish()
     }
 }

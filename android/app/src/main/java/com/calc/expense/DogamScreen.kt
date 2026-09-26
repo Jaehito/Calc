@@ -79,7 +79,7 @@ private val ShortDayFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("M/d
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DogamScreen(ui: DogamUi, today: LocalDate) {
+fun DogamScreen(ui: DogamUi, today: LocalDate, onOpenSettings: () -> Unit = {}) {
     var page: Int by rememberSaveable { mutableIntStateOf(0) }
     var opened: Plant? by remember { mutableStateOf(null) }
 
@@ -90,7 +90,16 @@ fun DogamScreen(ui: DogamUi, today: LocalDate) {
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 24.dp),
     ) {
-        Text(text = "도감", color = HomePalette.Ink, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "도감",
+                color = HomePalette.Ink,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f),
+            )
+            SettingsGear(onOpenSettings)
+        }
         Spacer(Modifier.height(14.dp))
         Segments(page = page, bloomed = ui.result.blooms.size, onSelect = { page = it })
         Spacer(Modifier.height(12.dp))
