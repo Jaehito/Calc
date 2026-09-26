@@ -8,8 +8,6 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.app.Person
-import androidx.core.content.LocusIdCompat
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
@@ -31,7 +29,7 @@ object NotificationHelper {
      * id 를 바꿔야 기존 설치에도 적용된다 — [ensureChannel] 이 옛 v1·v2 채널을 지운다.
      * 그래도 제조사(삼성 등) 정책에 따라 «항상 맨 위»가 100% 보장되진 않는다. 그래서 지금은
      * **[CardRefreshWorker] 가 한 시간에 한 번 카드를 조용히 다시 올리는 쪽**이 정렬의 본체이고,
-     * 채널 중요도·대화 승격은 그 사이를 버티는 보조다 — «억지로 위에 붙잡아 두기»를 그만두고
+     * 채널 중요도는 그 사이를 버티는 보조다 — «억지로 위에 붙잡아 두기»를 그만두고
      * «내려가면 한 시간 안에 되올라온다»로 문제를 옮겼다.
      */
     const val CHANNEL_ID = "expense_input_v3"
@@ -58,20 +56,11 @@ object NotificationHelper {
 
     private const val IDLE_TEXT = "눌러서 기록하세요 · 예: 커피 4500"
 
-    /**
-     * 상시 카드를 **«대화» 알림**으로 만들기 위한 바로가기 id.
-     *
-     * 안드로이드 11 부터 알림 목록 맨 위 칸은 «대화» 전용이고, 일반 알림은 중요도를 아무리
-     * 올려도 그 아래에서 시작한다. v3 에서 IMPORTANCE_HIGH 로 올려도 다른 앱 알림에 밀리던
-     * 이유가 이것이다. 대화로 인정받으려면 세 가지가 필요하다 —
-     * [NotificationCompat.MessagingStyle], 오래 사는 동적 바로가기, 그리고 둘을 잇는 이 id.
-     *
-     * 사용자가 이 알림을 길게 눌러 «우선 대화» 로 지정하면 그 칸 안에서도 맨 위에 고정된다.
-     */
+    /** 앱 아이콘을 길게 눌렀을 때 나오는 «지출 기록» 바로가기의 id. */
     private const val SHORTCUT_ID = "gotgan_record"
 
-    /** 대화 상대. 알림에 이 이름이 보인다 — 이 앱의 말로 «곳간» 이다. */
-    private const val SENDER_NAME = "곳간"
+    /** 카드 제목. 이 앱의 말로 «곳간» 이다. */
+    private const val CARD_TITLE = "곳간"
 
     private const val REQUEST_OPEN_INPUT = 1
     private const val REQUEST_DISMISSED = 2
@@ -80,7 +69,6 @@ object NotificationHelper {
 
     /**
      * IMPORTANCE_HIGH 로 잠금화면 상단(알림) 영역에 올린다 — 다른 앱의 새 알림에도 덜 밀린다.
-     * 정렬의 본체는 이제 [SHORTCUT_ID] 의 «대화» 승격이고, 중요도는 그 보조다.
      * 대신 소리·진동은 채널에서 꺼 둔다(setSound null·enableVibration false) — HIGH 라도 소리는
      * 나지 않는다. 다만 «알림» 영역 소속이라 처음 뜰 때 헤드업 배너가 한 번 뜰 수 있고, 이후
      * 갱신은 [show] 의 setOnlyAlertOnce 로 반복 배너를 막는다. 무음 유지를 위해 이전엔 붙였던
@@ -137,30 +125,18 @@ object NotificationHelper {
         )
     }
 
-    /** 알림에 보일 «곳간». 바로가기와 알림이 같은 사람을 가리켜야 대화로 묶인다. */
-    private fun sender(context: Context): Person = Person.Builder()
-        .setKey(SHORTCUT_ID)
-        .setName(SENDER_NAME)
-        .setIcon(IconCompat.createWithResource(context, R.drawable.ic_wallet))
-        .setBot(false)
-        // 우선 대화 후보로 올려 준다. 지정은 사용자가 한다.
-        .setImportant(true)
-        .build()
-
     /**
-     * 대화 알림이 붙을 **오래 사는 동적 바로가기**를 만든다(이미 있으면 갱신).
+     * 앱 아이콘을 길게 누르면 나오는 **«지출 기록» 바로가기**를 만든다(이미 있으면 갱신).
      *
-     * [ShortcutInfoCompat.Builder.setLongLived] 가 핵심이다 — 이게 없으면 시스템이 바로가기를
-     * 잠깐 쓰는 것으로 보고 대화로 묶지 않는다. 바로가기 자체도 홈 화면에 꺼내 쓸 수 있어
-     * «기록» 바로가기 노릇을 겸한다.
+     * 예전에는 상시 카드를 «대화» 알림으로 올리려고 이 바로가기에 사람·오래 삶 표시를 붙였다.
+     * 대화 알림은 One UI 가 목록의 별도 칸으로 떼어 내려서, 곳간이 다른 알림들과 따로 노는
+     * 것처럼 보였다. 이제 카드는 일반 알림이고, 바로가기는 바로가기 노릇만 한다.
      */
     private fun ensureShortcut(context: Context) {
         val shortcut = ShortcutInfoCompat.Builder(context, SHORTCUT_ID)
-            .setShortLabel(SENDER_NAME)
+            .setShortLabel(CARD_TITLE)
             .setLongLabel("지출 기록")
             .setIcon(IconCompat.createWithResource(context, R.drawable.ic_wallet))
-            .setPerson(sender(context))
-            .setLongLived(true)
             // 바로가기도 기록으로 간다 — [EntryRoutes] 의 OTHER 규칙과 같은 목적지다.
             .setIntent(
                 Intent(context, QuickInputActivity::class.java)
@@ -208,20 +184,16 @@ object NotificationHelper {
         )
 
         val now: Long = System.currentTimeMillis()
-        val who: Person = sender(context)
         val message: String = lines?.summary ?: IDLE_TEXT
 
+        // **일반 알림이다.** 대화 알림(MessagingStyle)이었을 때는 One UI 가 목록의 «대화» 칸으로
+        // 떼어 내려, 한 칸이어도 다른 알림들과 따로 노는 것처럼 보였다. 대신 펼쳤을 때의
+        // 본문(detail)을 되찾았다 — 대화 알림은 한 줄밖에 못 보였다.
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_wallet)
-            // 대화 알림은 MessagingStyle 이어야 한다. 그 대신 BigText 본문을 잃으므로
-            // 접힌 한 줄(summary)을 그대로 쓴다 — 어차피 대부분은 펼치지 않고, 자세한
-            // 숫자는 카드를 눌러 들어간 입력 화면에 다 있다.
-            .setStyle(
-                NotificationCompat.MessagingStyle(who)
-                    .addMessage(message, now, who),
-            )
-            .setShortcutId(SHORTCUT_ID)
-            .setLocusId(LocusIdCompat(SHORTCUT_ID))
+            .setContentTitle(CARD_TITLE)
+            .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(lines?.detail ?: message))
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             // setOngoing(true) 를 뺐다. One UI 는 «진행 중» 알림을 별도 묶음으로 내리므로,
             // 켜 두면 중요도를 올려도 그 묶음째 아래에 깔린다. 지워져도 DismissReceiver 가
