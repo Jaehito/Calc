@@ -17,10 +17,7 @@ enum class EntryDoor {
     /** 잠금화면 상시 카드. 가장 잦은 경로다. */
     LOCK_CARD,
 
-    /** 결제 뒤 «적었어?» 리마인더. */
-    PAYMENT_REMINDER,
-
-    /** 기록 안 한 결제 수집함 알림. */
+    /** 결제 배너. 누르면 수집함이 열린다. */
     PENDING_INBOX,
 
     /** 아직 이름 없는 문 — 위젯·바로가기·앞으로 생길 것. */
@@ -33,7 +30,7 @@ enum class EntryRoute { HOME, RECORD }
 /**
  * 진입 경로 → 도착 화면. **이 파일이 규칙의 유일한 근거다.**
  *
- * 규칙은 하나다 — **런처와 성과 알림만 홈이고, 나머지는 전부 기록 팝업이다.**
+ * 규칙은 하나다 — **홈에 있는 것을 보러 오는 문만 홈이고, 나머지는 전부 기록 팝업이다.**
  * 이 앱을 여는 이유는 대부분 «방금 쓴 돈을 적으려고» 이므로, 기록이 기본값이고 홈이 예외다.
  *
  * [EntryDoor.OTHER] 가 기록으로 가는 것이 중요하다 — 나중에 위젯이나 바로가기를 붙였을 때
@@ -45,15 +42,18 @@ enum class EntryRoute { HOME, RECORD }
 object EntryRoutes {
 
     /**
-     * 홈으로 보내는 문들. **성과를 알리는 것만 여기 있다.**
+     * 홈으로 보내는 문들. **홈 화면에 있는 것을 보러 오는 문만 여기 있다.**
      *
-     * 성과 알림은 «숫자를 보러» 여는 것이라 홈이 맞다. 기록하러 여는 게 아니다.
+     * 성과 알림은 «숫자를 보러» 여는 것이라 홈이 맞다. 수집함도 홈 위에 뜨는 팝업이라
+     * 홈으로 보낸다 — 기록 화면으로 보내면 빈 입력 칸이 열리고, 정작 확인해야 할 결제
+     * 목록은 어디에도 없다.
      */
     val HOME_DOORS: Set<EntryDoor> = setOf(
         EntryDoor.LAUNCHER,
         EntryDoor.DAILY_GRADE,
         EntryDoor.WEEKLY_REVIEW,
         EntryDoor.CYCLE_GRADE,
+        EntryDoor.PENDING_INBOX,
     )
 
     fun of(door: EntryDoor): EntryRoute =

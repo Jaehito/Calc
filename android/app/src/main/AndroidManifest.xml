@@ -34,9 +34,14 @@
             android:windowSoftInputMode="adjustResize" />
 
         <!-- 곳간 숫자를 보여주는 메인 화면. 로그인 뒤에만 들어온다 (Compose). -->
+        <!--
+            singleTop 인 이유: 결제 배너가 «수집함 열기» 표시를 실어 보내는데, 기본
+            launchMode 로는 이미 떠 있는 홈에 새 인텐트가 전달되지 않아 그 표시가 사라진다.
+        -->
         <activity
             android:name=".HomeActivity"
             android:exported="false"
+            android:launchMode="singleTop"
             android:label="@string/app_name" />
 
         <!--

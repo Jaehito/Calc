@@ -320,7 +320,7 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * 결제 리마인더를 켜고 끈다.
+     * 결제 알림 읽기를 켜고 끈다.
      *
      * 켤 때 «알림 접근» 권한이 없으면 먼저 그 설정으로 보낸다 — 권한 없이는 결제 알림을
      * 읽을 수 없다. 상시 알림 자체가 꺼져 있으면 그것부터 켜야 한다고 알린다.
@@ -328,20 +328,19 @@ class MainActivity : ComponentActivity() {
     private fun toggleReminder() {
         if (ReminderState.isEnabled(this)) {
             ReminderState.setEnabled(this, false)
-            ReminderScheduler.cancel(this)
             refreshReminderButton()
-            setStatus("결제 리마인더를 껐습니다.")
+            setStatus("결제 알림 읽기를 껐습니다.")
             return
         }
 
         if (!NotificationState.isOn(this)) {
-            setStatus("먼저 위에서 «알림 켜기» 를 눌러 주세요. 리마인더도 그 알림을 씁니다.", isError = true)
+            setStatus("먼저 위에서 «알림 켜기» 를 눌러 주세요. 결제 알림도 그 자리를 씁니다.", isError = true)
             return
         }
         if (!hasNotificationAccess()) {
             setStatus(
                 "결제 알림을 읽으려면 «알림 접근» 권한이 필요합니다. 아래 버튼으로 설정을 열어 " +
-                    "«지출 기록 리마인더» 를 켠 뒤, 다시 «결제 리마인더 켜기» 를 눌러 주세요."
+                    "«곳간» 을 켠 뒤, 다시 «결제 알림 읽기 켜기» 를 눌러 주세요."
             )
             openNotificationAccessSettings()
             return
@@ -350,8 +349,8 @@ class MainActivity : ComponentActivity() {
         ReminderState.setEnabled(this, true)
         refreshReminderButton()
         setStatus(
-            "결제 리마인더를 켰습니다.\n\n결제 알림이 온 뒤 10분 안에 기록이 없으면 한 번 알려줍니다. " +
-                "금액은 읽지 않고, 밤 10시~아침 8시는 무음, 하루 3번까지만."
+            "결제 알림 읽기를 켰습니다.\n\n결제를 보면 금액과 가게 이름을 잠깐 띄웁니다. " +
+                "몇 초 뒤 스스로 사라지고 알림 목록에는 남지 않습니다."
         )
     }
 

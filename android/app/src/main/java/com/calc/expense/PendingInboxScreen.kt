@@ -146,7 +146,8 @@ private fun PendingRow(
     var amountText: String by remember(item.id) { mutableStateOf(item.amount.toString()) }
     var category: String by remember(item.id) { mutableStateOf(item.category) }
     var purse: Purse by remember(item.id) { mutableStateOf(ui.purses.firstOrNull() ?: Purse.PERSONAL) }
-    var editing: Boolean by remember(item.id) { mutableStateOf(false) }
+    /** 「⋯」 을 눌렀을 때만 나오는 것들 — 차단. 이름·금액은 이제 늘 펼쳐져 있다. */
+    var moreOpen: Boolean by remember(item.id) { mutableStateOf(false) }
 
     val amount: Long? = ExpenseParser.parseAmount(amountText)
     val canRecord: Boolean = name.isNotBlank() && amount != null && amount > 0L && ui.busyId == null
@@ -159,27 +160,35 @@ private fun PendingRow(
             .background(HomePalette.Chip)
             .padding(14.dp),
     ) {
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(
-                text = StatusText.won(amount ?: item.amount),
-                color = HomePalette.Ink,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = name.ifBlank { "이름 없음" },
-                color = if (name.isBlank()) HomePalette.Muted else HomePalette.Ink2,
-                fontSize = 14.sp,
-                modifier = Modifier.padding(bottom = 2.dp),
-            )
-        }
-
-        Spacer(Modifier.height(4.dp))
         Text(
             text = sourceLine(item),
             color = HomePalette.Muted,
             fontSize = 11.sp,
+        )
+
+        // **이름·금액 칸이 처음부터 열려 있다.** 예전에는 글자로만 보이고 「이름·금액」을
+        // 눌러야 칸이 나왔는데, 알림에서 읽은 이름은 자주 틀려서 그 한 번이 거의 매번
+        // 필요했다. 기록 화면에서 바로 치는 것과 같은 손놀림이 되도록 펼쳐 둔다.
+        Spacer(Modifier.height(10.dp))
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("이름") },
+            singleLine = true,
+            shape = RoundedCornerShape(14.dp),
+            colors = mintFieldColors(),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(
+            value = amountText,
+            onValueChange = { amountText = it },
+            label = { Text("금액") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            shape = RoundedCornerShape(14.dp),
+            colors = mintFieldColors(),
+            modifier = Modifier.fillMaxWidth(),
         )
 
         // 곳간·카테고리는 **접힌 채로도 보이고 바로 눌린다.** 예전에는 «수정»을 눌러야
@@ -213,30 +222,9 @@ private fun PendingRow(
             }
         }
 
-        // 펼쳤을 때 나오는 것은 «짐작이 틀렸을 때만 필요한 것»뿐이다 — 이름·금액과 차단.
-        if (editing) {
-            Spacer(Modifier.height(12.dp))
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("이름") },
-                singleLine = true,
-                shape = RoundedCornerShape(14.dp),
-                colors = mintFieldColors(),
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(8.dp))
-            OutlinedTextField(
-                value = amountText,
-                onValueChange = { amountText = it },
-                label = { Text("금액") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                shape = RoundedCornerShape(14.dp),
-                colors = mintFieldColors(),
-                modifier = Modifier.fillMaxWidth(),
-            )
-
+        // 「⋯」 뒤에 남는 것은 차단뿐이다. 한 번 누르면 그 출처가 통째로 사라지는 동작이라
+        // 기록·무시와 나란히 두면 잘못 누르기 쉽다.
+        if (moreOpen) {
             Spacer(Modifier.height(12.dp))
             Row {
                 TextLink("이 발신자 안 보기") { onBlockSender(item) }
@@ -265,9 +253,9 @@ private fun PendingRow(
                 )
             }
             Spacer(Modifier.width(10.dp))
-            TextLink(if (editing) "접기" else "이름·금액") { editing = !editing }
-            Spacer(Modifier.width(14.dp))
             TextLink("무시") { onIgnore(item) }
+            Spacer(Modifier.width(14.dp))
+            TextLink(if (moreOpen) "접기" else "⋯") { moreOpen = !moreOpen }
         }
     }
 }

@@ -77,9 +77,7 @@ object RecordExpense {
             is FirestoreExpenseStore.Outcome.Ok -> {
                 // 저장이 받아들여진 뒤에만 로컬 사본에 더한다. 실패한 기록을 세면 숫자가 거짓말을 한다.
                 Ledger.record(context, purse, today, parsed.amount)
-                // 기록이 있었으니 결제 리마인더는 이 뒤로 보내지 않는다.
                 val at: Long = System.currentTimeMillis()
-                ReminderState.markRecorded(context, at)
                 // 방금 적은 것과 같은 결제로 보이는 수집함 후보를 치운다 — 같은 걸 두 번 묻지 않는다.
                 PendingPaymentStore.removeRecorded(context, parsed.amount, at)
                 // 이 이름을 어디에 넣었는지 기억한다. 다음에 같은 이름을 적으면 칩이 저절로 켜진다.

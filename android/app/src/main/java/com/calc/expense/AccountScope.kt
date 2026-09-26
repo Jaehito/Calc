@@ -54,7 +54,6 @@ object AccountScope {
         CategoryMemoryStore.clear(context)
         NameMemoryStore.clear(context)
         PaymentBlocklist.clear(context)
-        ReminderState.clearAccountState(context)
         CycleGradeStore.clear(context)
         DailyGradeStore.clear(context)
         ChallengeStore.clear(context)

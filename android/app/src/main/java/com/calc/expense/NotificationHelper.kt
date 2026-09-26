@@ -42,15 +42,19 @@ object NotificationHelper {
 
     /** 주 1회 돌아보기는 별도 채널·별도 알림이다. 상시 입력 알림과 섞이지 않는다. */
     private const val WEEKLY_CHANNEL_ID = "weekly_review"
-    private const val WEEKLY_NOTIF_ID = 1002
+    /** 결제 배너. 자리가 하나뿐이라 새 결제가 앞엣것을 덮는다. */
+    private const val BANNER_NOTIF_ID = 1005
+
+    /** 배너가 스스로 사라지기까지. 읽고 누를 만큼은 되고, 눈에 걸릴 만큼 길지는 않다. */
+    private const val BANNER_TIMEOUT_MS = 8_000L
+
+    private const val BANNER_CHANNEL_ID = "payment_banner"
 
     /** 결제 뒤 «적었어?» 리마인더. 또 다른 별도 채널·별도 알림. */
     private const val REMINDER_CHANNEL_ID = "payment_reminder"
-    private const val REMINDER_NOTIF_ID = 1003
 
     /** 저녁 9시 «오늘 등급». 또 다른 별도 채널·별도 알림 — 상시 카드와 섞이면 등급이 묻힌다. */
     private const val GRADE_CHANNEL_ID = "daily_grade"
-    private const val GRADE_NOTIF_ID = 1004
 
     private const val IDLE_TEXT = "눌러서 기록하세요 · 예: 커피 4500"
 
@@ -72,8 +76,7 @@ object NotificationHelper {
     private const val REQUEST_OPEN_INPUT = 1
     private const val REQUEST_DISMISSED = 2
     private const val REQUEST_OPEN_HOME = 3
-    private const val REQUEST_OPEN_INPUT_REMINDER = 4
-    private const val REQUEST_OPEN_HOME_GRADE = 5
+    private const val REQUEST_OPEN_INBOX = 4
 
     /**
      * IMPORTANCE_HIGH 로 잠금화면 상단(알림) 영역에 올린다 — 다른 앱의 새 알림에도 덜 밀린다.
@@ -85,8 +88,7 @@ object NotificationHelper {
      */
     fun ensureChannel(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java)
-        manager.deleteNotificationChannel(LEGACY_CHANNEL_ID)
-        manager.deleteNotificationChannel(LEGACY_CHANNEL_ID_V2)
+        removeOldChannels(manager)
 
         val channel = NotificationChannel(
             CHANNEL_ID,
@@ -113,10 +115,24 @@ object NotificationHelper {
             EntryRoute.HOME -> Intent(context, HomeActivity::class.java)
             EntryRoute.RECORD -> Intent(context, QuickInputActivity::class.java)
         }
+        // 배너로 들어오면 수집함을 반드시 연다. 홈은 앱을 켤 때 한 번만 수집함을 띄우므로,
+        // 이미 켜 둔 앱으로 돌아오는 경우에는 그냥 홈만 보이고 끝난다 — 배너를 누른 이유가
+        // 사라진다.
+        // CLEAR_TOP 까지 붙여야 이미 떠 있는 홈이 앞으로 나오면서 이 인텐트를 받는다.
+        // 위에 리포트나 카테고리 화면이 열려 있었다면 그것도 닫힌다 — 배너를 눌렀다는 건
+        // 지금 그 결제를 처리하겠다는 뜻이다.
+        val flags: Int =
+            if (door == EntryDoor.PENDING_INBOX) {
+                intent.putExtra(HomeActivity.EXTRA_OPEN_INBOX, true)
+                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            } else {
+                Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+
         return PendingIntent.getActivity(
             context,
             requestCode,
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            intent.addFlags(flags),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
     }
@@ -166,8 +182,10 @@ object NotificationHelper {
      *   [StatusLines.summary] 는 잠금화면에 접힌 채로 보이는 한 줄이고,
      *   [StatusLines.detail] 은 펼쳤을 때의 본문이다. 접힌 줄에 가장 중요한 숫자를 둔다 —
      *   대부분은 펼치지 않는다.
+     * @param alert 이번 한 번은 배너로 떠오르게 할지. 등급·주간 돌아보기처럼 **말할 것이 생긴
+     *   순간**에만 true 다. 기록할 때마다 떠오르면 그건 알림이 아니라 방해다.
      */
-    fun show(context: Context, lines: StatusLines? = null) {
+    fun show(context: Context, lines: StatusLines? = null, alert: Boolean = false) {
         ensureChannel(context)
         ensureShortcut(context)
 
@@ -214,8 +232,9 @@ object NotificationHelper {
             // «오전 6:54» 는 마지막 기록 시각으로 오해되기 쉽다.
             .setWhen(now)
             .setShowWhen(false)
-            // 처음 한 번만 알린다(배너). 이후 기록·앱 열기로 갱신될 때는 다시 튀지 않는다.
-            .setOnlyAlertOnce(true)
+            // 평소에는 처음 한 번만 알린다(배너) — 기록·앱 열기로 갱신될 때 다시 튀지 않는다.
+            // 등급·주간처럼 새로 말할 것이 생긴 순간에만 alert 로 한 번 더 떠오르게 한다.
+            .setOnlyAlertOnce(!alert)
             // setSilent 는 일부러 안 쓴다 — 무음 알림 묶음으로 내려가 상단 정렬을 깨기 때문.
             // 소리·진동은 채널(IMPORTANCE_HIGH + setSound null)에서 이미 꺼 둔다.
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -231,127 +250,93 @@ object NotificationHelper {
     }
 
     /**
-     * 주 1회 돌아보기 알림. 상시 입력 알림과 달리 지울 수 있고 되살리지 않는다 —
-     * 한 주에 한 번 툭 던지는 알림이라 스와이프로 넘기면 그만이다.
+     * 주 1회 돌아보기. [showGrade] 와 같은 이유로 **상시 카드의 문구를 바꾼다.**
      */
     fun showWeekly(context: Context, lines: StatusLines) {
-        ensureWeeklyChannel(context)
-
-        val openHome: PendingIntent = openFor(context, EntryDoor.WEEKLY_REVIEW, REQUEST_OPEN_HOME)
-
-        val notification = NotificationCompat.Builder(context, WEEKLY_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_wallet)
-            .setContentTitle("이번 주 돌아보기")
-            .setContentText(lines.summary)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(lines.detail))
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setAutoCancel(true)
-            .setContentIntent(openHome)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .build()
-
-        try {
-            NotificationManagerCompat.from(context).notify(WEEKLY_NOTIF_ID, notification)
-        } catch (_: SecurityException) {
-            // POST_NOTIFICATIONS 권한이 없는 경우.
-        }
+        show(context, lines, alert = true)
     }
 
     /**
-     * 저녁 9시 «오늘 등급» 알림. 주간 돌아보기처럼 지울 수 있고 되살리지 않는다 —
-     * 하루에 한 번 툭 던지는 알림이라 스와이프로 넘기면 그만이다.
+     * 저녁 9시 «오늘 등급». **따로 알림을 띄우지 않고 상시 카드의 문구를 바꾼다.**
+     *
+     * 예전에는 별도 알림이었고, 그래서 알림 목록에 곳간이 두 칸을 차지했다. 앱이 트레이에서
+     * 쓰는 자리는 하나여야 한다 — 두 칸이 되는 순간 사용자는 «이 앱이 시끄럽다»고 느끼고,
+     * 그러면 상시 카드까지 함께 꺼 버린다. 카드 하나가 때에 따라 다른 말을 하면 충분하다.
      */
     fun showGrade(context: Context, lines: StatusLines) {
-        ensureGradeChannel(context)
+        show(context, lines, alert = true)
+    }
 
-        val openHome: PendingIntent = openFor(context, EntryDoor.DAILY_GRADE, REQUEST_OPEN_HOME_GRADE)
+    /**
+     * 결제를 보면 **잠깐 떴다 스스로 사라지는 배너.**
+     *
+     * 바라신 것은 토스트였는데, 안드로이드는 앱이 꺼져 있을 때 토스트를 띄우지 못하게 막아
+     * 뒀다(11부터). 떠 있는 창을 쓰려면 «다른 앱 위에 표시» 권한을 따로 받아야 하고 제조사가
+     * 막기도 한다. 그래서 배너 알림에 [BANNER_TIMEOUT_MS] 자동 사라짐을 걸어 같은 모양을
+     * 만든다 — 뜨는 자리도 누르는 동작도 토스트와 같고 권한이 필요 없다.
+     *
+     * **트레이에 남지 않는다.** 그래서 «곳간이 쓰는 알림 자리는 하나»라는 약속을 깨지 않는다.
+     *
+     * 소리는 내지 않는다. 결제 문자가 이미 한 번 울렸고 그 위에 또 울리면, 하루에 열 번
+     * 결제하는 사람에게 이 앱은 그냥 시끄러운 앱이 된다. 눈에는 확실히 띄되 조용히 뜬다.
+     *
+     * id 가 하나뿐이라 결제가 잇따라 오면 뒤엣것이 앞엣것을 덮는다. 어차피 몇 초 뒤 사라질
+     * 배너이고, 놓친 건은 수집함에 그대로 쌓여 앱을 열 때 나온다.
+     */
+    fun showPaymentBanner(context: Context, amount: Long, merchant: String) {
+        ensureBannerChannel(context)
 
-        val notification = NotificationCompat.Builder(context, GRADE_CHANNEL_ID)
+        val openInbox: PendingIntent = openFor(context, EntryDoor.PENDING_INBOX, REQUEST_OPEN_INBOX)
+        val title: String =
+            if (merchant.isBlank()) StatusText.won(amount)
+            else StatusText.won(amount) + " · " + merchant
+
+        val notification = NotificationCompat.Builder(context, BANNER_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_wallet)
-            .setContentTitle("오늘 등급")
-            .setContentText(lines.summary)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(lines.detail))
+            .setContentTitle(title)
+            .setContentText("눌러서 기록하기")
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setAutoCancel(true)
-            .setContentIntent(openHome)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(openInbox)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            // 결제마다 떠올라야 한다. 이 알림은 «새 소식»이지 상태 표시가 아니다.
+            .setOnlyAlertOnce(false)
+            .setTimeoutAfter(BANNER_TIMEOUT_MS)
             .build()
 
         try {
-            NotificationManagerCompat.from(context).notify(GRADE_NOTIF_ID, notification)
+            NotificationManagerCompat.from(context).notify(BANNER_NOTIF_ID, notification)
         } catch (_: SecurityException) {
             // POST_NOTIFICATIONS 권한이 없는 경우.
         }
     }
 
-    private fun ensureGradeChannel(context: Context) {
+    private fun ensureBannerChannel(context: Context) {
         val channel = NotificationChannel(
-            GRADE_CHANNEL_ID,
-            "오늘 등급",
-            NotificationManager.IMPORTANCE_DEFAULT,
+            BANNER_CHANNEL_ID,
+            "결제 알림",
+            // HIGH 라야 화면 위로 떠오른다. 소리는 위 설명대로 꺼 둔다.
+            NotificationManager.IMPORTANCE_HIGH,
         ).apply {
-            description = "매일 저녁 9시, 오늘 지출을 예산 대비 등급으로 알려줌"
-            setShowBadge(true)
-        }
-        context.getSystemService(NotificationManager::class.java)
-            .createNotificationChannel(channel)
-    }
-
-    private fun ensureWeeklyChannel(context: Context) {
-        val channel = NotificationChannel(
-            WEEKLY_CHANNEL_ID,
-            "주간 돌아보기",
-            NotificationManager.IMPORTANCE_DEFAULT,
-        ).apply {
-            description = "주 1회 지난 7일 지출을 돌아보는 알림"
-            setShowBadge(true)
+            description = "결제를 보면 금액과 가게 이름을 잠깐 띄움 (몇 초 뒤 사라짐)"
+            setSound(null, null)
+            enableVibration(false)
+            setShowBadge(false)
         }
         context.getSystemService(NotificationManager::class.java)
             .createNotificationChannel(channel)
     }
 
     /**
-     * 결제 뒤 기록이 없을 때 한 번 띄우는 «적었어?» 리마인더.
-     *
-     * 금액도 개수도 말하지 않는다 — «방금 쓴 거 있으면 적어 둬요» 정도의 가벼운 찌름이다.
-     * 누르면 바로 입력 화면이 열린다. 스와이프로 넘기면 그만이고 되살리지 않는다.
-     *
-     * 잠금 여부와 무관하게 늘 입력 화면으로 간다 — 이 알림의 목적이 "방금 그 결제를 지금 적자"다.
+     * 예전에 쓰던 알림 채널을 지운다. 남겨 두면 설정 화면에 유령 항목이 보이고, 그 자체가
+     * «이 앱은 알림을 여러 개 쓴다»는 인상을 남긴다 — 줄인 뜻이 반쯤 사라진다.
      */
-    fun showReminder(context: Context) {
-        ensureReminderChannel(context)
-
-        val openInput: PendingIntent =
-            openFor(context, EntryDoor.PAYMENT_REMINDER, REQUEST_OPEN_INPUT_REMINDER)
-
-        val notification = NotificationCompat.Builder(context, REMINDER_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_wallet)
-            .setContentTitle("방금 쓴 거 있어요?")
-            .setContentText("있으면 눌러서 적어 두세요")
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setAutoCancel(true)
-            .setContentIntent(openInput)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .build()
-
-        try {
-            NotificationManagerCompat.from(context).notify(REMINDER_NOTIF_ID, notification)
-        } catch (_: SecurityException) {
-            // POST_NOTIFICATIONS 권한이 없는 경우.
-        }
-    }
-
-    private fun ensureReminderChannel(context: Context) {
-        val channel = NotificationChannel(
-            REMINDER_CHANNEL_ID,
-            "기록 리마인더",
-            NotificationManager.IMPORTANCE_DEFAULT,
-        ).apply {
-            description = "결제 알림 뒤 기록이 없으면 한 번 알려줌 (금액은 읽지 않음)"
-            setShowBadge(true)
-        }
-        context.getSystemService(NotificationManager::class.java)
-            .createNotificationChannel(channel)
+    private fun removeOldChannels(manager: NotificationManager) {
+        manager.deleteNotificationChannel(LEGACY_CHANNEL_ID)
+        manager.deleteNotificationChannel(LEGACY_CHANNEL_ID_V2)
+        manager.deleteNotificationChannel(GRADE_CHANNEL_ID)
+        manager.deleteNotificationChannel(WEEKLY_CHANNEL_ID)
+        manager.deleteNotificationChannel(REMINDER_CHANNEL_ID)
     }
 
     fun hide(context: Context) {

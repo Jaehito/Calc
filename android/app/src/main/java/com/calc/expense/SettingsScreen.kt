@@ -311,11 +311,11 @@ fun SettingsScreen(
         Spacer(Modifier.height(12.dp))
 
         CardBox {
-            SectionTitle("결제 리마인더")
-            HelperText("결제 알림이 온 뒤 10분 안에 기록이 없으면 «적었어요?» 를 한 번 알려줍니다. 금액은 읽지 않고, 밤 10시~아침 8시는 무음, 하루 3번까지만. 이 기능은 «알림 접근» 권한이 필요합니다.")
+            SectionTitle("결제 알림 읽기")
+            HelperText("카드·은행 알림을 읽어 금액과 가게 이름을 잠깐 띄웁니다. 몇 초 뒤 스스로 사라지고 알림 목록에는 남지 않습니다. 눌러서 바로 기록하거나, 넘겼다가 나중에 앱에서 «기록 안 한 결제»로 확인해도 됩니다. 이 기능은 «알림 접근» 권한이 필요합니다.")
             Spacer(Modifier.height(10.dp))
             PillButton(
-                text = if (ui.reminderOn) "결제 리마인더 끄기" else "결제 리마인더 켜기",
+                text = if (ui.reminderOn) "결제 알림 읽기 끄기" else "결제 알림 읽기 켜기",
                 onClick = onToggleReminder,
             )
             Spacer(Modifier.height(8.dp))

@@ -34,6 +34,11 @@ import java.util.concurrent.Executors
  */
 class HomeActivity : ComponentActivity() {
 
+    companion object {
+        /** 결제 배너로 들어왔다는 표시. 수집함을 반드시 한 번 연다([NotificationHelper]). */
+        const val EXTRA_OPEN_INBOX = "openInbox"
+    }
+
     private val io = Executors.newSingleThreadExecutor()
 
     private var tab: Int by mutableStateOf(0)
@@ -192,10 +197,19 @@ class HomeActivity : ComponentActivity() {
         unselectedTextColor = HomePalette.Muted,
     )
 
+    /** singleTop 이라 이미 떠 있으면 여기로 온다. 새 인텐트를 받아 둬야 수집함 표시가 살아난다. */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+    }
+
     override fun onResume() {
         super.onResume()
         refresh()
-        refreshInbox(show = !inboxAsked)
+        // 배너로 들어왔으면 이미 한 번 띄웠더라도 다시 연다. 그 배너를 누른 이유가 그것이다.
+        val fromBanner: Boolean = intent?.getBooleanExtra(EXTRA_OPEN_INBOX, false) == true
+        if (fromBanner) intent.removeExtra(EXTRA_OPEN_INBOX)
+        refreshInbox(show = fromBanner || !inboxAsked)
         republishNotification()
         resyncInBackground()
         checkCycleGrade()

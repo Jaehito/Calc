@@ -6,7 +6,7 @@ import android.service.notification.StatusBarNotification
 /**
  * 기기에 올라오는 알림을 읽어 «결제»로 보이면 두 가지를 한다.
  *
- * 1. 금액·가맹점을 짐작해 **수집함**([PendingPaymentStore])에 담는다 — 앱을 열면 «이거 기록할까요?»
+ * 1. 금액·가맹점을 짐작해 **수집함**([PendingPaymentStore])에 담고, 잠깐 뜨는 배너로 알린다 — 앱을 열면 «이거 기록할까요?»
  *    로 물어보기 위해서다. **자동으로 기록하지 않는다.** 파싱은 짐작이라 틀릴 수 있고, 틀린 금액이
  *    조용히 곳간을 갉아먹으면 숫자를 믿을 수 없게 된다. 사람이 확인해야 기록이 된다.
  * 2. 기존대로 «적었어?» 리마인더를 예약한다.
@@ -32,7 +32,6 @@ class PaymentNotificationListener : NotificationListenerService() {
         if (!PaymentDetector.isPayment(title, text)) return
 
         collect(sbn, title, text)
-        ReminderScheduler.onPaymentDetected(applicationContext)
     }
 
     /**
@@ -86,5 +85,9 @@ class PaymentNotificationListener : NotificationListenerService() {
             app,
             PaymentLogEntry(name = merchant, amount = candidate.amount, at = postedAt),
         )
+
+        // 잠깐 떴다 사라지는 배너로 방금 그 결제를 알린다. 예전에는 10분 뒤 «방금 쓴 거
+        // 있어요?» 를 띄웠는데, 금액도 가게도 말해 주지 않아 결국 앱을 열어 찾아야 했다.
+        NotificationHelper.showPaymentBanner(app, candidate.amount, merchant)
     }
 }

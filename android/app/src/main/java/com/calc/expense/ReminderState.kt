@@ -1,25 +1,22 @@
 package com.calc.expense
 
 import android.content.Context
-import java.time.LocalDate
 
 /**
- * 결제 리마인더의 상태. 지출 데이터가 아니라 앱 상태라 암호화 저장소를 쓰지 않는다.
+ * **결제 알림을 읽을지 말지** 하나만 담는다. 지출 데이터가 아니라 기기 설정이라
+ * 암호화 저장소를 쓰지 않는다.
  *
- * 담는 것: 기능 켬/끔, 대기 중인 결제 감지 시각, 마지막 기록 시각, 오늘 보낸 리마인더 수.
- * 시각은 epoch millis 로 둔다 — 순수 규칙([ReminderPolicy])은 비교만 하므로 형식은 중요치 않다.
+ * 예전에는 «적었어?» 리마인더의 상태도 함께 들고 있었다 — 대기 중인 결제 시각, 마지막 기록
+ * 시각, 오늘 보낸 횟수. 그 알림이 결제 배너로 바뀌면서 전부 쓸 데가 없어졌다. 배너는 결제를
+ * 본 그 순간 뜨므로 «언제 물어볼지»를 기억할 이유가 없다.
+ *
+ * 계정이 바뀌어도 지우지 않는다. 이건 «이 폰에서 알림을 읽게 해 뒀나»이지 그 사람의 데이터가
+ * 아니다 — 계정을 바꿨다고 알림 접근을 다시 켜게 만들 이유가 없다([AccountScope] 와 같은 판단).
  */
 object ReminderState {
 
     private const val FILE = "expense_reminder"
     private const val KEY_ENABLED = "enabled"
-    private const val KEY_PENDING_AT = "pendingAt"
-    private const val KEY_LAST_RECORD_AT = "lastRecordAt"
-    private const val KEY_COUNT_DATE = "countDate"
-    private const val KEY_COUNT = "count"
-
-    /** 결제 감지가 오래 밀려 있으면(예: 워커가 못 돈 채로) 새 결제를 다시 예약하도록 푸는 한도. */
-    private const val STALE_PENDING_MS = 60L * 60L * 1000L
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -28,50 +25,5 @@ object ReminderState {
 
     fun setEnabled(context: Context, on: Boolean) {
         prefs(context).edit().putBoolean(KEY_ENABLED, on).apply()
-    }
-
-    /** 대기 중인 결제 감지가 있는지 (오래된 것은 없는 것으로 본다). */
-    fun hasFreshPending(context: Context, now: Long): Boolean {
-        val at: Long = prefs(context).getLong(KEY_PENDING_AT, 0L)
-        return at > 0L && now - at < STALE_PENDING_MS
-    }
-
-    fun pendingAt(context: Context): Long = prefs(context).getLong(KEY_PENDING_AT, 0L)
-
-    fun setPending(context: Context, at: Long) {
-        prefs(context).edit().putLong(KEY_PENDING_AT, at).apply()
-    }
-
-    fun clearPending(context: Context) {
-        prefs(context).edit().putLong(KEY_PENDING_AT, 0L).apply()
-    }
-
-    fun lastRecordAt(context: Context): Long = prefs(context).getLong(KEY_LAST_RECORD_AT, 0L)
-
-    /** 기록에 성공하면 부른다. 결제 감지 이후 기록이 있으면 리마인더를 보내지 않는다. */
-    fun markRecorded(context: Context, at: Long) {
-        prefs(context).edit().putLong(KEY_LAST_RECORD_AT, at).apply()
-    }
-
-    /** 오늘 보낸 리마인더 수. 날짜가 바뀌면 0 부터 다시 센다. */
-    fun todayCount(context: Context, today: LocalDate): Int {
-        val p = prefs(context)
-        return if (p.getString(KEY_COUNT_DATE, "") == today.toString()) p.getInt(KEY_COUNT, 0) else 0
-    }
-
-    fun incrementCount(context: Context, today: LocalDate) {
-        val p = prefs(context)
-        val count: Int = if (p.getString(KEY_COUNT_DATE, "") == today.toString()) p.getInt(KEY_COUNT, 0) else 0
-        p.edit().putString(KEY_COUNT_DATE, today.toString()).putInt(KEY_COUNT, count + 1).apply()
-    }
-
-    /** 계정이 바뀔 때. 기능 켬/끔은 기기 설정이라 남기고, 그 계정의 기록 시각·카운트만 지운다. */
-    fun clearAccountState(context: Context) {
-        prefs(context).edit()
-            .remove(KEY_PENDING_AT)
-            .remove(KEY_LAST_RECORD_AT)
-            .remove(KEY_COUNT_DATE)
-            .remove(KEY_COUNT)
-            .apply()
     }
 }
