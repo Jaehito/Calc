@@ -17,6 +17,15 @@ import java.time.LocalDate
 object DogamStore {
 
     private const val FILE = "dogam"
+
+    /**
+     * 세는 기준이 바뀌면 올린다. 저장된 버전이 다르면 도감을 비우고 처음부터 다시 센다 —
+     * 줄지 않게 덧대는 규칙([Dogam.merge]) 때문에, 옛 기준으로 핀 꽃과 기록이 새 기준 위에 남는다.
+     *
+     * 2: 개인+공용 합산에서 개인 곳간만으로 바꿈.
+     */
+    private const val VERSION = 2
+    private const val KEY_VERSION = "version"
     private const val BLOOM_PREFIX = "bloom."
     private const val KEY_ANNOUNCED = "announced"
     private const val KEY_SEEN = "seen"
@@ -31,8 +40,12 @@ object DogamStore {
     private const val KEY_KEPT_DAYS = "count.keptDays"
     private const val KEY_KEPT_WEEKS = "count.keptWeeks"
 
-    private fun prefs(context: Context): SharedPreferences =
-        context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+    /** 버전이 다르면 비우고 연다. 어디서 읽든 옛 기준의 꽃이 한 번도 보이지 않게. */
+    private fun prefs(context: Context): SharedPreferences {
+        val p: SharedPreferences = context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+        if (p.getInt(KEY_VERSION, 0) != VERSION) p.edit().clear().putInt(KEY_VERSION, VERSION).commit()
+        return p
+    }
 
     fun load(context: Context): DogamResult {
         val p: SharedPreferences = prefs(context)

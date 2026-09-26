@@ -107,7 +107,7 @@ enum class Plant(
         key = "lavender", label = "라벤더", shelf = Shelf.NO_SPEND,
         meaning = "침묵", isFlowerLanguage = true,
         story = "돈이 조용했던 하루에 피었어요",
-        condition = "곳간 하나라도 0원으로 마친 날", short = "무지출의 날",
+        condition = "개인 곳간을 0원으로 마친 날", short = "무지출의 날",
         tally = Tally.NO_SPEND_DAYS, target = 1,
     ),
     LILY_OF_THE_VALLEY(

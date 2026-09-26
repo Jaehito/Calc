@@ -25,7 +25,7 @@ data class PersonalBests(
     val savedDay: Best? = null,
     /** 하루치 안에서 이어 쓴 최장 일수. */
     val keepRun: Best? = null,
-    /** 곳간 하나를 0원으로 이어 둔 최장 일수. 곳간별로 세고 더 긴 쪽이다. */
+    /** 곳간을 0원으로 이어 둔 최장 일수. 곳간이 여럿이면 곳간별로 세고 더 긴 쪽이다. */
     val noSpendRun: Best? = null,
     /** 월~일 한 주 합계가 가장 적었던 주. **작을수록** 좋다. */
     val cheapestWeek: Best? = null,
@@ -58,7 +58,8 @@ data class DogamResult(
  * 도감 계산에 필요한 것. 전부 값이라 Android 없이 테스트한다.
  *
  * @param rows 처음부터 오늘까지의 지출 줄(연결된 곳간 전부)
- * @param purses 연결된 곳간. 무지출은 이 곳간마다 따로 센다
+ * @param purses 세는 곳간. 앱에서는 개인 곳간 하나만 넘긴다([DogamRepository]). 여럿이면
+ *   금액은 합쳐 세고, 무지출은 곳간마다 따로 센다
  * @param monthlyBudgets 곳간별 한 주기 예산. 하루치는 여기서 거꾸로 낸다
  */
 data class DogamInput(
