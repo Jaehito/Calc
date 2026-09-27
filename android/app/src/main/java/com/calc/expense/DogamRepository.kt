@@ -27,7 +27,7 @@ object DogamRepository {
         for (purse in purses) {
             val list: List<ExpenseRow> =
                 FirestoreExpenseReader.rowsBetween(context, purse, ExpenseExport.EARLIEST, today)
-                    ?: return DogamLoad(DogamStore.load(context), "기록을 불러오지 못했어요. 네트워크를 확인해 주세요.")
+                    ?: return DogamLoad(DogamStore.load(context), tr("기록을 불러오지 못했어요. 네트워크를 확인해 주세요.", "Couldn't load your entries. Check your connection.", "No se pudieron cargar tus gastos. Revisa la conexión."))
             list.mapTo(rows) { PursedRow(purse, it) }
         }
 

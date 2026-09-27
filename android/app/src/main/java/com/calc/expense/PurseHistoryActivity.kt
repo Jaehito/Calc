@@ -8,7 +8,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 import java.util.concurrent.Executors
 
 /**
@@ -28,7 +27,7 @@ class PurseHistoryActivity : ComponentActivity() {
     }
 
     private val io = Executors.newSingleThreadExecutor()
-    private val monthFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("M월", Locale.KOREA)
+    private val monthFormat: DateTimeFormatter = L10n.month()
 
     private lateinit var purse: Purse
     /** 0 = 이번 달, 1 = 지난 달. */
@@ -69,7 +68,7 @@ class PurseHistoryActivity : ComponentActivity() {
 
     private fun load() {
         val settings: Settings = SettingsStore.load(this)
-        val title: String = "${settings.labelOf(purse)} 내역"
+        val title: String = tr("${settings.labelOf(purse)} 내역", "${settings.labelOf(purse)} history", "Historial de ${settings.labelOf(purse)}")
         val month: YearMonth = YearMonth.now().minusMonths(monthBack.toLong())
         val monthName: String = month.atDay(1).format(monthFormat)
         val shared: Boolean = purse == Purse.SHARED
@@ -87,7 +86,7 @@ class PurseHistoryActivity : ComponentActivity() {
             val result: ExpenseHistory.Result = try {
                 ExpenseHistory.load(app, purse, month)
             } catch (e: Exception) {
-                ExpenseHistory.Result.Err("오류: ${e.message ?: e.javaClass.simpleName}")
+                ExpenseHistory.Result.Err(StatusText.error(e))
             }
 
             runOnUiThread {
@@ -126,7 +125,7 @@ class PurseHistoryActivity : ComponentActivity() {
             val result: EditResult = try {
                 RecordExpense.edit(app, purse, row.date, row.id, row.amount, newExpense)
             } catch (e: Exception) {
-                EditResult(ok = false, message = "오류: ${e.message ?: e.javaClass.simpleName}")
+                EditResult(ok = false, message = StatusText.error(e))
             }
 
             runOnUiThread {
@@ -145,7 +144,7 @@ class PurseHistoryActivity : ComponentActivity() {
             val result: DeleteResult = try {
                 RecordExpense.delete(app, row.id, purse.key, row.date, row.amount)
             } catch (e: Exception) {
-                DeleteResult(ok = false, message = "오류: ${e.message ?: e.javaClass.simpleName}")
+                DeleteResult(ok = false, message = StatusText.error(e))
             }
 
             runOnUiThread {

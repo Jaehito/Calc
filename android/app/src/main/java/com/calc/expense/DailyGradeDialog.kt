@@ -42,7 +42,7 @@ fun DailyGradeDialog(
         containerColor = HomePalette.Card,
         shape = RoundedCornerShape(24.dp),
         title = {
-            Text(text = "어제 등급", color = HomePalette.Ink, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text(text = tr("어제 등급", "Yesterday's grade", "Nota de ayer"), color = HomePalette.Ink, fontWeight = FontWeight.Bold, fontSize = 18.sp)
         },
         text = {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
@@ -54,7 +54,7 @@ fun DailyGradeDialog(
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "${StatusText.won(grade.spent)} / 하루치 ${StatusText.won(grade.budget)}",
+                    text = "${StatusText.won(grade.spent)} / " + tr("하루치 ", "daily ", "diario ") + StatusText.won(grade.budget),
                     color = HomePalette.Ink2,
                     fontSize = 14.sp,
                 )
@@ -63,7 +63,11 @@ fun DailyGradeDialog(
                 if (saved > 0L) {
                     Spacer(Modifier.height(14.dp))
                     Text(
-                        text = "${StatusText.won(saved)}이 곳간으로 갔어요",
+                        text = tr(
+                            "${StatusText.won(saved)}이 곳간으로 갔어요",
+                            "${StatusText.won(saved)} went into savings",
+                            "${StatusText.won(saved)} pasaron al ahorro",
+                        ),
                         color = HomePalette.Accent,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
@@ -81,7 +85,7 @@ fun DailyGradeDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("확인", color = HomePalette.Accent, fontWeight = FontWeight.SemiBold) }
+            TextButton(onClick = onDismiss) { Text(tr("확인", "OK", "Aceptar"), color = HomePalette.Accent, fontWeight = FontWeight.SemiBold) }
         },
     )
 }

@@ -54,13 +54,14 @@ object NotificationHelper {
     /** 저녁 9시 «오늘 등급». 또 다른 별도 채널·별도 알림 — 상시 카드와 섞이면 등급이 묻힌다. */
     private const val GRADE_CHANNEL_ID = "daily_grade"
 
-    private const val IDLE_TEXT = "눌러서 기록하세요 · 예: 커피 4500"
+    private val IDLE_TEXT: String
+        get() = tr("눌러서 기록하세요 · 예: 커피 4500", "Tap to log · e.g. coffee 4500", "Toca para anotar · p. ej. café 4500")
 
     /** 앱 아이콘을 길게 눌렀을 때 나오는 «지출 기록» 바로가기의 id. */
     private const val SHORTCUT_ID = "gotgan_record"
 
     /** 카드 제목. 이 앱의 말로 «곳간» 이다. */
-    private const val CARD_TITLE = "곳간"
+    private val CARD_TITLE: String get() = tr("곳간", "Wallet", "Cartera")
 
     private const val REQUEST_OPEN_INPUT = 1
     private const val REQUEST_DISMISSED = 2
@@ -80,10 +81,14 @@ object NotificationHelper {
 
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "지출 빠른 입력",
+            tr("지출 빠른 입력", "Quick expense entry", "Anotación rápida"),
             NotificationManager.IMPORTANCE_HIGH,
         ).apply {
-            description = "잠금화면에서 지출을 바로 기록하는 상시 알림"
+            description = tr(
+                "잠금화면에서 지출을 바로 기록하는 상시 알림",
+                "Always-on notification to log spending from the lock screen",
+                "Notificación fija para anotar gastos desde la pantalla de bloqueo",
+            )
             setShowBadge(false)
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             enableVibration(false)
@@ -135,7 +140,7 @@ object NotificationHelper {
     private fun ensureShortcut(context: Context) {
         val shortcut = ShortcutInfoCompat.Builder(context, SHORTCUT_ID)
             .setShortLabel(CARD_TITLE)
-            .setLongLabel("지출 기록")
+            .setLongLabel(tr("지출 기록", "Log spending", "Anotar gasto"))
             .setIcon(IconCompat.createWithResource(context, R.drawable.ic_wallet))
             // 바로가기도 기록으로 간다 — [EntryRoutes] 의 OTHER 규칙과 같은 목적지다.
             .setIntent(
@@ -266,7 +271,7 @@ object NotificationHelper {
         val notification = NotificationCompat.Builder(context, BANNER_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_wallet)
             .setContentTitle(title)
-            .setContentText("눌러서 기록하기")
+            .setContentText(tr("눌러서 기록하기", "Tap to log", "Toca para anotar"))
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setAutoCancel(true)
             .setContentIntent(openInbox)
@@ -286,11 +291,15 @@ object NotificationHelper {
     private fun ensureBannerChannel(context: Context) {
         val channel = NotificationChannel(
             BANNER_CHANNEL_ID,
-            "결제 알림",
+            tr("결제 알림", "Payment alerts", "Avisos de pago"),
             // HIGH 라야 화면 위로 떠오른다. 소리는 위 설명대로 꺼 둔다.
             NotificationManager.IMPORTANCE_HIGH,
         ).apply {
-            description = "결제를 보면 금액과 가게 이름을 잠깐 띄움 (몇 초 뒤 사라짐)"
+            description = tr(
+                "결제를 보면 금액과 가게 이름을 잠깐 띄움 (몇 초 뒤 사라짐)",
+                "Briefly shows the amount and store when a payment is seen (disappears after a few seconds)",
+                "Muestra brevemente el importe y la tienda al detectar un pago (desaparece en unos segundos)",
+            )
             setSound(null, null)
             enableVibration(false)
             setShowBadge(false)

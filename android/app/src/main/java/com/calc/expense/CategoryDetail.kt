@@ -39,7 +39,7 @@ data class CategoryDetail(
 
     /** 화면에 보일 카테고리 이름. [CategoryBreakdown] 이 도넛에 쓰는 말과 같아야 한다. */
     val label: String
-        get() = category.ifBlank { "미분류" }
+        get() = L10n.name(category.ifBlank { CategoryBreakdown.UNCATEGORIZED })
 
     val isEmpty: Boolean
         get() = groups.isEmpty()
@@ -79,6 +79,6 @@ object CategoryDetails {
     /** 한 덩어리를 대표하는 이름. 가장 최근에 적은 것 — 이름을 고쳤으면 새 이름이 보여야 한다. */
     private fun displayName(list: List<PursedRow>): String {
         val latest: PursedRow? = list.maxByOrNull { it.row.date }
-        return (latest ?: list.first()).row.name.trim().ifEmpty { "이름 없음" }
+        return (latest ?: list.first()).row.name.trim().ifEmpty { tr("이름 없음", "No name", "Sin nombre") }
     }
 }

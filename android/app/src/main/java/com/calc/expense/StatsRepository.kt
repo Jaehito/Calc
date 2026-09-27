@@ -46,7 +46,7 @@ object StatsRepository {
             recent7 = spentBetween(context, today.minusDays(6), today),
             prev7 = spentBetween(context, prev7End.minusDays(6), prev7End),
             week7Budget = dailyBudget(context, today) * 7L,
-            categoryCycleLabel = "이번 주기",
+            categoryCycleLabel = tr("이번 주기", "This cycle", "Este ciclo"),
             categoryCycleRange = StatusText.cycleRange(cycle),
             categories = emptyList(),
             categoryTotal = 0L,
@@ -105,7 +105,7 @@ object StatsRepository {
         for (purse in PurseAccess.linked(context)) {
             val rows: List<ExpenseRow> =
                 FirestoreExpenseReader.rowsBetween(context, purse, cycle.start, cycle.lastDay)
-                    ?: return emptyMap<String, Long>() to "카테고리를 불러오지 못했습니다"
+                    ?: return emptyMap<String, Long>() to tr("카테고리를 불러오지 못했습니다", "Couldn't load categories", "No se pudieron cargar las categorías")
             for (row in rows) {
                 merged[row.category] = (merged[row.category] ?: 0L) + row.amount
             }

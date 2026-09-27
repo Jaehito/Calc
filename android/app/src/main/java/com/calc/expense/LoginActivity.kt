@@ -76,7 +76,7 @@ class LoginActivity : ComponentActivity() {
                         signingIn = false
                         result
                             .onSuccess { goNext() }
-                            .onFailure { errorMessage = "로그인에 실패했어요. 다시 시도해 주세요." }
+                            .onFailure { errorMessage = tr("로그인에 실패했어요. 다시 시도해 주세요.", "Sign-in failed. Please try again.", "No se pudo iniciar sesión. Vuelve a intentarlo.") }
                     }
                 },
             )
@@ -97,7 +97,7 @@ class LoginActivity : ComponentActivity() {
             if (credential !is CustomCredential ||
                 credential.type != GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
             ) {
-                return Result.failure(IllegalStateException("지원하지 않는 로그인 방식이에요"))
+                return Result.failure(IllegalStateException(tr("지원하지 않는 로그인 방식이에요", "Unsupported sign-in method", "Método de inicio de sesión no compatible")))
             }
             val idToken: String = GoogleIdTokenCredential.createFrom(credential.data).idToken
             val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
@@ -143,14 +143,18 @@ private fun LoginScreen(
             verticalArrangement = Arrangement.Center,
         ) {
             Text(
-                text = "지출 기록",
+                text = tr("지출 기록", "Spending Log", "Registro de gastos"),
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = HomePalette.Ink,
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "구글 계정으로 로그인하면\n곳간 기록이 안전하게 보관돼요",
+                text = tr(
+                    "구글 계정으로 로그인하면\n곳간 기록이 안전하게 보관돼요",
+                    "Sign in with Google\nto keep your records safe",
+                    "Inicia sesión con Google\npara guardar tus gastos de forma segura",
+                ),
                 fontSize = 15.sp,
                 color = HomePalette.Ink2,
                 textAlign = TextAlign.Center,
@@ -175,7 +179,7 @@ private fun LoginScreen(
                         strokeWidth = 2.dp,
                     )
                 } else {
-                    Text(text = "구글로 로그인", fontSize = 16.sp, color = Color.White)
+                    Text(text = tr("구글로 로그인", "Sign in with Google", "Iniciar sesión con Google"), fontSize = 16.sp, color = Color.White)
                 }
             }
             if (errorMessage != null) {

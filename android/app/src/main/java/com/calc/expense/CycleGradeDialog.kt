@@ -59,7 +59,7 @@ fun CycleGradeDialog(
         containerColor = HomePalette.Card,
         shape = RoundedCornerShape(24.dp),
         title = {
-            Text(text = "지난 주기 결산", color = HomePalette.Ink, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text(text = tr("지난 주기 결산", "Last cycle", "Ciclo anterior"), color = HomePalette.Ink, fontWeight = FontWeight.Bold, fontSize = 18.sp)
         },
         text = {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
@@ -86,7 +86,7 @@ fun CycleGradeDialog(
                             .padding(14.dp),
                     ) {
                         Text(
-                            text = "이번 주기 챌린지 금액",
+                            text = tr("이번 주기 챌린지 금액", "This cycle's challenge amount", "Meta de este ciclo"),
                             color = HomePalette.Accent,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
@@ -100,7 +100,8 @@ fun CycleGradeDialog(
                         )
                         Spacer(Modifier.height(3.dp))
                         Text(
-                            text = "월급 ${StatusText.figure(monthlyIncome)} − 고정비 ${StatusText.figure(fixedTotal)}",
+                            text = tr("월급", "Income", "Sueldo") + " ${StatusText.figure(monthlyIncome)} − " +
+                                tr("고정비", "fixed costs", "gastos fijos") + " ${StatusText.figure(fixedTotal)}",
                             color = HomePalette.Ink2,
                             fontSize = 11.sp,
                         )
@@ -110,8 +111,8 @@ fun CycleGradeDialog(
                 Spacer(Modifier.height(if (recommended > 0L) 12.dp else 18.dp))
                 Text(
                     text =
-                        if (recommended > 0L) "고정비 다시 찾아보기 ›"
-                        else "고정비가 뭔지 모르겠어요 ›",
+                        if (recommended > 0L) tr("고정비 다시 찾아보기 ›", "Review fixed costs ›", "Revisar gastos fijos ›")
+                        else tr("고정비가 뭔지 모르겠어요 ›", "What are fixed costs? ›", "¿Qué son los gastos fijos? ›"),
                     color = HomePalette.Accent,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -125,11 +126,11 @@ fun CycleGradeDialog(
         confirmButton = {
             if (recommended > 0L) {
                 TextButton(onClick = onApply) {
-                    Text("적용", color = HomePalette.Accent, fontWeight = FontWeight.Bold)
+                    Text(tr("적용", "Apply", "Aplicar"), color = HomePalette.Accent, fontWeight = FontWeight.Bold)
                 }
             } else {
                 TextButton(onClick = onDismiss) {
-                    Text("확인", color = HomePalette.Accent, fontWeight = FontWeight.SemiBold)
+                    Text(tr("확인", "OK", "Aceptar"), color = HomePalette.Accent, fontWeight = FontWeight.SemiBold)
                 }
             }
         },
@@ -137,7 +138,7 @@ fun CycleGradeDialog(
         // 컴파일러 버전에 따라 흔들린다 — 아무것도 안 그리면 그 자리에 아무것도 안 나온다.
         dismissButton = {
             if (recommended > 0L) {
-                TextButton(onClick = onDismiss) { Text("그대로 둘래요", color = HomePalette.Ink2) }
+                TextButton(onClick = onDismiss) { Text(tr("그대로 둘래요", "Keep as is", "Dejar así"), color = HomePalette.Ink2) }
             }
         },
     )

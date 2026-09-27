@@ -82,7 +82,7 @@ fun PlantPot(plant: Plant, bloomed: Boolean, size: Dp, modifier: Modifier = Modi
     Box(modifier = modifier.size(size)) {
         Image(
             painter = painterResource(if (bloomed) DogamArt.plant(plant) else R.drawable.dogam_seed),
-            contentDescription = if (bloomed) plant.label else "아직 피지 않은 ${plant.label}",
+            contentDescription = if (bloomed) plant.label else tr("아직 피지 않은 ${plant.label}", "${plant.label}, not yet in bloom", "${plant.label}, aún sin florecer"),
             modifier = Modifier.fillMaxSize(),
         )
         Image(

@@ -69,18 +69,18 @@ fun CategoryDetailScreen(
                 Text(detail.label, color = HomePalette.Ink, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(3.dp))
                 Text(
-                    text = "${StatusText.won(detail.total)} · ${detail.count}건",
+                    text = "${StatusText.won(detail.total)} · ${L10n.items(detail.count)}",
                     color = HomePalette.Muted,
                     fontSize = 12.sp,
                     style = Figures,
                 )
             }
-            TextButton(onClick = onClose) { Text("닫기", color = HomePalette.Ink2) }
+            TextButton(onClick = onClose) { Text(tr("닫기", "Close", "Cerrar"), color = HomePalette.Ink2) }
         }
         Spacer(Modifier.height(16.dp))
 
         if (detail.loading) {
-            CardBox { Text("불러오는 중이에요", color = HomePalette.Ink2, fontSize = 14.sp) }
+            CardBox { Text(tr("불러오는 중이에요", "Loading…", "Cargando…"), color = HomePalette.Ink2, fontSize = 14.sp) }
             return@Column
         }
 
@@ -94,8 +94,12 @@ fun CategoryDetailScreen(
             CardBox {
                 Text(
                     text =
-                        if (detail.category.isBlank()) "분류 안 된 지출이 없어요. 전부 제자리에 있습니다."
-                        else "이 카테고리에 든 지출이 없어요.",
+                        if (detail.category.isBlank()) tr(
+                            "분류 안 된 지출이 없어요. 전부 제자리에 있습니다.",
+                            "No uncategorized spending. Everything is in place.",
+                            "No hay gastos sin categoría. Todo está en su sitio.",
+                        )
+                        else tr("이 카테고리에 든 지출이 없어요.", "No spending in this category.", "No hay gastos en esta categoría."),
                     color = HomePalette.Ink2,
                     fontSize = 14.sp,
                 )
@@ -105,13 +109,21 @@ fun CategoryDetailScreen(
 
         CardBox {
             Text(
-                text = "이름을 누르면 그 이름의 지출이 한꺼번에 옮겨 가요.",
+                text = tr(
+                    "이름을 누르면 그 이름의 지출이 한꺼번에 옮겨 가요.",
+                    "Tap a name to move all spending with that name at once.",
+                    "Toca un nombre para mover a la vez todos los gastos con ese nombre.",
+                ),
                 color = HomePalette.Ink2,
                 fontSize = 12.sp,
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "한 번 옮기면 다음에 같은 이름이 와도 다시 묻지 않아요.",
+                text = tr(
+                    "한 번 옮기면 다음에 같은 이름이 와도 다시 묻지 않아요.",
+                    "Once moved, the same name won't be asked about again.",
+                    "Una vez movido, no volverá a preguntar por ese nombre.",
+                ),
                 color = HomePalette.Muted,
                 fontSize = 11.5f.sp,
             )
@@ -170,7 +182,7 @@ private fun NameRow(
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    text = if (busy) "옮기는 중" else "${group.count}건",
+                    text = if (busy) tr("옮기는 중", "Moving…", "Moviendo…") else L10n.items(group.count),
                     color = HomePalette.Muted,
                     fontSize = 11.sp,
                     style = Figures,
@@ -212,7 +224,7 @@ private fun NameRow(
 @Composable
 private fun Chip(label: String, selected: Boolean, onClick: () -> Unit) {
     Text(
-        text = label,
+        text = L10n.name(label),
         color = if (selected) HomePalette.Card else HomePalette.Ink2,
         fontSize = 12.5f.sp,
         fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,

@@ -38,7 +38,6 @@ import androidx.compose.ui.unit.sp
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 /** 수집함 팝업이 그리는 상태 한 벌. */
 data class PendingInboxUi(
@@ -53,8 +52,7 @@ data class PendingInboxUi(
     val messageIsError: Boolean = false,
 )
 
-private val TimeFormat: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("M월 d일 a h:mm", Locale.KOREA)
+private val TimeFormat: DateTimeFormatter get() = L10n.dayTime()
 
 /**
  * 앱을 열었을 때 뜨는 «기록 안 한 결제» 수집함.
@@ -80,14 +78,22 @@ fun PendingInboxDialog(
         title = {
             Column {
                 Text(
-                    text = "기록 안 한 결제 ${ui.items.size}건",
+                    text = tr(
+                        "기록 안 한 결제 ${ui.items.size}건",
+                        "Unlogged payments: ${ui.items.size}",
+                        "Pagos sin anotar: ${ui.items.size}",
+                    ),
                     color = HomePalette.Ink,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "알림에서 읽은 값이라 맞는지 확인하고 기록하세요",
+                    text = tr(
+                        "알림에서 읽은 값이라 맞는지 확인하고 기록하세요",
+                        "Read from notifications — check before logging",
+                        "Leído de las notificaciones — revísalo antes de anotar",
+                    ),
                     color = HomePalette.Muted,
                     fontSize = 12.sp,
                 )
@@ -123,7 +129,7 @@ fun PendingInboxDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("나중에", color = HomePalette.Ink2, fontWeight = FontWeight.SemiBold)
+                Text(tr("나중에", "Later", "Más tarde"), color = HomePalette.Ink2, fontWeight = FontWeight.SemiBold)
             }
         },
     )
@@ -173,7 +179,7 @@ private fun PendingRow(
         OutlinedTextField(
             value = name,
             onValueChange = { name = it },
-            label = { Text("이름") },
+            label = { Text(tr("이름", "Name", "Nombre")) },
             singleLine = true,
             shape = RoundedCornerShape(14.dp),
             colors = mintFieldColors(),
@@ -183,7 +189,7 @@ private fun PendingRow(
         OutlinedTextField(
             value = amountText,
             onValueChange = { amountText = it },
-            label = { Text("금액") },
+            label = { Text(tr("금액", "Amount", "Importe")) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             shape = RoundedCornerShape(14.dp),
@@ -213,7 +219,7 @@ private fun PendingRow(
             Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
                 for ((index, catName) in ui.categories.withIndex()) {
                     Pill(
-                        text = catName,
+                        text = L10n.name(catName),
                         on = category == catName,
                         onClick = { category = if (category == catName) "" else catName },
                     )
@@ -227,9 +233,9 @@ private fun PendingRow(
         if (moreOpen) {
             Spacer(Modifier.height(12.dp))
             Row {
-                TextLink("이 발신자 안 보기") { onBlockSender(item) }
+                TextLink(tr("이 발신자 안 보기", "Hide this sender", "Ocultar remitente")) { onBlockSender(item) }
                 Spacer(Modifier.width(14.dp))
-                TextLink("이 앱 안 보기") { onBlockApp(item) }
+                TextLink(tr("이 앱 안 보기", "Hide this app", "Ocultar esta app")) { onBlockApp(item) }
             }
         }
 
@@ -246,16 +252,16 @@ private fun PendingRow(
                 contentPadding = PaddingValues(horizontal = 18.dp, vertical = 4.dp),
             ) {
                 Text(
-                    text = if (busy) "기록 중…" else "기록",
+                    text = if (busy) tr("기록 중…", "Logging…", "Anotando…") else tr("기록", "Log", "Anotar"),
                     color = if (canRecord) Color.White else HomePalette.Muted,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                 )
             }
             Spacer(Modifier.width(10.dp))
-            TextLink("무시") { onIgnore(item) }
+            TextLink(tr("무시", "Ignore", "Ignorar")) { onIgnore(item) }
             Spacer(Modifier.width(14.dp))
-            TextLink(if (moreOpen) "접기" else "⋯") { moreOpen = !moreOpen }
+            TextLink(if (moreOpen) tr("접기", "Less", "Menos") else "⋯") { moreOpen = !moreOpen }
         }
     }
 }

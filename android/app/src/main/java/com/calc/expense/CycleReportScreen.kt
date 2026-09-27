@@ -31,11 +31,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 private val Figures = TextStyle(fontFeatureSettings = "tnum")
 
-private val DayFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("M월 d일", Locale.KOREA)
+private val DayFormat: DateTimeFormatter get() = L10n.monthDay()
 
 /**
  * 주기 리포트 화면.
@@ -69,7 +68,7 @@ fun CycleReportScreen(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("지난 주기 리포트", color = HomePalette.Ink, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                Text(tr("지난 주기 리포트", "Last cycle report", "Informe del ciclo anterior"), color = HomePalette.Ink, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                 if (report != null) {
                     Spacer(Modifier.height(3.dp))
                     Text(
@@ -79,12 +78,12 @@ fun CycleReportScreen(
                     )
                 }
             }
-            TextButton(onClick = onClose) { Text("닫기", color = HomePalette.Ink2) }
+            TextButton(onClick = onClose) { Text(tr("닫기", "Close", "Cerrar"), color = HomePalette.Ink2) }
         }
         Spacer(Modifier.height(16.dp))
 
         if (report == null) {
-            CardBox { Text("불러오는 중이에요", color = HomePalette.Ink2, fontSize = 14.sp) }
+            CardBox { Text(tr("불러오는 중이에요", "Loading…", "Cargando…"), color = HomePalette.Ink2, fontSize = 14.sp) }
             return@Column
         }
 
@@ -110,7 +109,7 @@ fun CycleReportScreen(
 @Composable
 private fun SpentCard(report: CycleReport) {
     CardBox {
-        Text("쓴 돈", color = HomePalette.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Text(tr("쓴 돈", "Spent", "Gastado"), color = HomePalette.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(10.dp))
         Row(verticalAlignment = Alignment.Bottom) {
             Text(
@@ -123,7 +122,7 @@ private fun SpentCard(report: CycleReport) {
             )
             if (report.hasBudget) {
                 Text(
-                    text = "예산 " + StatusText.won(report.budget),
+                    text = tr("예산 ", "Budget ", "Presupuesto ") + StatusText.won(report.budget),
                     color = HomePalette.Muted,
                     fontSize = 12.sp,
                     style = Figures,
@@ -135,8 +134,12 @@ private fun SpentCard(report: CycleReport) {
             Spacer(Modifier.height(8.dp))
             Text(
                 text =
-                    if (report.left >= 0L) StatusText.won(report.left) + " 남기고 끝냈어요"
-                    else StatusText.won(-report.left) + " 넘겼어요",
+                    if (report.left >= 0L) tr(
+                        StatusText.won(report.left) + " 남기고 끝냈어요",
+                        "Ended with " + StatusText.won(report.left) + " left",
+                        "Terminó con " + StatusText.won(report.left) + " de sobra",
+                    )
+                    else StatusText.won(-report.left) + tr(" 넘겼어요", " over", " de más"),
                 color = if (report.left >= 0L) HomePalette.Accent else HomePalette.Over,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -148,8 +151,16 @@ private fun SpentCard(report: CycleReport) {
             Spacer(Modifier.height(6.dp))
             Text(
                 text =
-                    if (report.diff >= 0L) "앞 주기보다 " + StatusText.won(report.diff) + " 더"
-                    else "앞 주기보다 " + StatusText.won(-report.diff) + " 덜",
+                    if (report.diff >= 0L) tr(
+                        "앞 주기보다 " + StatusText.won(report.diff) + " 더",
+                        StatusText.won(report.diff) + " more than the cycle before",
+                        StatusText.won(report.diff) + " más que el ciclo previo",
+                    )
+                    else tr(
+                        "앞 주기보다 " + StatusText.won(-report.diff) + " 덜",
+                        StatusText.won(-report.diff) + " less than the cycle before",
+                        StatusText.won(-report.diff) + " menos que el ciclo previo",
+                    ),
                 color = HomePalette.Ink2,
                 fontSize = 12.5f.sp,
                 style = Figures,
@@ -173,15 +184,23 @@ private fun CandidateCard(
     onEditFixed: () -> Unit,
 ) {
     CardBox {
-        Text("고정비로 보이는 것", color = HomePalette.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Text(tr("고정비로 보이는 것", "Looks like fixed costs", "Parecen gastos fijos"), color = HomePalette.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(4.dp))
         // 근거가 다르면 안내 문구도 달라야 한다. 「되풀이를 찾았다」와 「아직 못 찾아서 큰 것만
         // 늘어놨다」를 같은 말로 소개하면, 사용자가 뒤쪽을 앞쪽만큼 믿어 버린다.
         val confirmed: Boolean = report.candidates.any { it.repeated }
         Text(
             text =
-                if (confirmed) "손으로 적은 기록과 결제 알림에서 달마다 되풀이된 것들이에요. 아닌 건 체크를 빼 주세요."
-                else "아직 한 주기뿐이라 되풀이는 확인하지 못했어요. 큰 금액부터 늘어놨으니 고정비인 것만 골라 주세요.",
+                if (confirmed) tr(
+                    "손으로 적은 기록과 결제 알림에서 달마다 되풀이된 것들이에요. 아닌 건 체크를 빼 주세요.",
+                    "These repeated every month in your entries and payment alerts. Uncheck any that aren't fixed costs.",
+                    "Se repitieron cada mes en tus gastos y avisos de pago. Desmarca los que no sean fijos.",
+                )
+                else tr(
+                    "아직 한 주기뿐이라 되풀이는 확인하지 못했어요. 큰 금액부터 늘어놨으니 고정비인 것만 골라 주세요.",
+                    "Only one cycle so far, so repeats can't be confirmed yet. Largest first — pick only the fixed costs.",
+                    "Solo hay un ciclo, así que aún no se pueden confirmar repeticiones. De mayor a menor: elige solo los fijos.",
+                ),
             color = HomePalette.Ink2,
             fontSize = 12.sp,
         )
@@ -189,13 +208,17 @@ private fun CandidateCard(
 
         if (!report.hasCandidates) {
             Text(
-                text = "아직 찾을 만한 게 없어요. 지출을 적거나 결제 알림이 쌓이면 여기에 나옵니다.",
+                text = tr(
+                    "아직 찾을 만한 게 없어요. 지출을 적거나 결제 알림이 쌓이면 여기에 나옵니다.",
+                    "Nothing to show yet. It will appear here as you log spending or payment alerts pile up.",
+                    "Aún no hay nada. Aparecerá aquí a medida que anotes gastos o lleguen avisos de pago.",
+                ),
                 color = HomePalette.Muted,
                 fontSize = 13.sp,
             )
             Spacer(Modifier.height(14.dp))
             TextButton(onClick = onEditFixed, modifier = Modifier.fillMaxWidth()) {
-                Text("고정비 직접 적기", color = HomePalette.Accent, fontWeight = FontWeight.SemiBold)
+                Text(tr("고정비 직접 적기", "Enter fixed costs yourself", "Anotar gastos fijos a mano"), color = HomePalette.Accent, fontWeight = FontWeight.SemiBold)
             }
             return@CardBox
         }
@@ -219,8 +242,14 @@ private fun CandidateCard(
         if (chosen.any { it.fromRecord }) {
             Spacer(Modifier.height(12.dp))
             Text(
-                text = "«기록»에서 온 건 고정비로 넣은 뒤부터 따로 안 적으셔도 돼요. " +
-                    "고정비는 지출이 아니라 쓸 수 있는 돈을 정하는 재료라, 둘 다 하면 두 번 빠져요.",
+                text = tr(
+                    "«기록»에서 온 건 고정비로 넣은 뒤부터 따로 안 적으셔도 돼요. " +
+                        "고정비는 지출이 아니라 쓸 수 있는 돈을 정하는 재료라, 둘 다 하면 두 번 빠져요.",
+                    "Once an «entry» item is a fixed cost, you don't need to log it anymore. " +
+                        "Fixed costs set how much you can spend, so doing both counts it twice.",
+                    "Cuando un «gasto» pasa a ser fijo, ya no hace falta anotarlo. " +
+                        "Los gastos fijos definen cuánto puedes gastar; si haces ambas cosas, se descuenta dos veces.",
+                ),
                 color = HomePalette.Muted,
                 fontSize = 11.5f.sp,
             )
@@ -231,7 +260,7 @@ private fun CandidateCard(
         Spacer(Modifier.height(14.dp))
 
         Row(verticalAlignment = Alignment.Bottom) {
-            Text("고른 고정비", color = HomePalette.Ink2, fontSize = 13.sp, modifier = Modifier.weight(1f))
+            Text(tr("고른 고정비", "Selected fixed costs", "Gastos fijos elegidos"), color = HomePalette.Ink2, fontSize = 13.sp, modifier = Modifier.weight(1f))
             Text(
                 text = StatusText.won(CycleReports.candidateTotal(chosen)),
                 color = HomePalette.Ink,
@@ -251,7 +280,7 @@ private fun CandidateCard(
                     .background(HomePalette.Soft)
                     .padding(14.dp),
             ) {
-                Text("이번 주기 챌린지 금액", color = HomePalette.Accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text(tr("이번 주기 챌린지 금액", "This cycle's challenge amount", "Meta de este ciclo"), color = HomePalette.Accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(3.dp))
                 Text(
                     text = StatusText.won(next),
@@ -262,7 +291,8 @@ private fun CandidateCard(
                 )
                 Spacer(Modifier.height(3.dp))
                 Text(
-                    text = "월급 ${StatusText.figure(report.plan.monthlyIncome)} − 고정비 " +
+                    text = tr("월급", "Income", "Sueldo") + " ${StatusText.figure(report.plan.monthlyIncome)} − " +
+                        tr("고정비", "fixed costs", "gastos fijos") + " " +
                         StatusText.figure(report.planWith(chosen).fixedTotal),
                     color = HomePalette.Ink2,
                     fontSize = 11.sp,
@@ -272,7 +302,11 @@ private fun CandidateCard(
         } else if (report.plan.monthlyIncome <= 0L) {
             Spacer(Modifier.height(10.dp))
             Text(
-                text = "월급을 적어 두면 여기서 바로 다음 주기 금액까지 정할 수 있어요.",
+                text = tr(
+                    "월급을 적어 두면 여기서 바로 다음 주기 금액까지 정할 수 있어요.",
+                    "Enter your income to set next cycle's amount right here.",
+                    "Anota tu sueldo para fijar aquí mismo la meta del próximo ciclo.",
+                ),
                 color = HomePalette.Muted,
                 fontSize = 12.sp,
             )
@@ -291,11 +325,11 @@ private fun CandidateCard(
                 disabledContentColor = HomePalette.Muted,
             ),
         ) {
-            Text("고정비에 넣기", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Text(tr("고정비에 넣기", "Add to fixed costs", "Añadir a gastos fijos"), fontSize = 15.sp, fontWeight = FontWeight.Bold)
         }
         Spacer(Modifier.height(4.dp))
         TextButton(onClick = onEditFixed, modifier = Modifier.fillMaxWidth()) {
-            Text("직접 더하거나 고치기", color = HomePalette.Ink2)
+            Text(tr("직접 더하거나 고치기", "Add or edit yourself", "Añadir o editar a mano"), color = HomePalette.Ink2)
         }
     }
 }
@@ -333,9 +367,12 @@ private fun CandidateRow(candidate: FixedCostCandidate, checked: Boolean, onTogg
                 // 출처와 «평균인가»를 함께 밝힌다. 평균이라는 말이 없으면 사용자는 그 숫자를
                 // 지난달에 실제로 나간 돈으로 읽고, 다르다고 생각해 그 줄을 빼 버린다.
                 // 되풀이를 확인하지 못한 줄은 그 사실을 앞세운다 — 근거가 다르면 말도 달라야 한다.
-                text = (if (candidate.repeated) "${candidate.cycles}번 나갔어요" else "아직 한 번") +
-                    (if (candidate.fromRecord) " · 기록" else " · 알림") +
-                    (if (candidate.averaged) " · 평균" else ""),
+                text = (
+                    if (candidate.repeated) tr("${candidate.cycles}번 나갔어요", "Paid ${candidate.cycles} times", "Pagado ${candidate.cycles} veces")
+                    else tr("아직 한 번", "Only once so far", "Solo una vez")
+                    ) +
+                    (if (candidate.fromRecord) tr(" · 기록", " · entry", " · gasto") else tr(" · 알림", " · alert", " · aviso")) +
+                    (if (candidate.averaged) tr(" · 평균", " · average", " · media") else ""),
                 color = HomePalette.Muted,
                 fontSize = 11.sp,
             )
@@ -355,7 +392,7 @@ private fun CandidateRow(candidate: FixedCostCandidate, checked: Boolean, onTogg
 @Composable
 private fun CategoryCard(report: CycleReport, onOpenCategory: (String) -> Unit) {
     CardBox {
-        Text("어디에 썼나", color = HomePalette.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Text(tr("어디에 썼나", "Where it went", "En qué se gastó"), color = HomePalette.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(14.dp))
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             report.categories.take(5).forEachIndexed { index, slice ->
@@ -375,7 +412,7 @@ private fun CategoryCard(report: CycleReport, onOpenCategory: (String) -> Unit) 
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            text = slice.name,
+                            text = L10n.name(slice.name),
                             color = HomePalette.Ink,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,

@@ -325,7 +325,7 @@ class MainActivity : ComponentActivity() {
             val result: ExportResult = try {
                 ExpenseExportRepository.write(this)
             } catch (e: Exception) {
-                ExportResult.Err("오류: ${e.message ?: e.javaClass.simpleName}")
+                ExportResult.Err(StatusText.error(e))
             }
 
             runOnUiThread {

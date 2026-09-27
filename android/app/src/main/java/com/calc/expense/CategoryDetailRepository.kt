@@ -28,7 +28,7 @@ object CategoryDetailRepository {
                 ?: return CategoryDetail(
                     category = category,
                     groups = emptyList(),
-                    error = "불러오지 못했습니다. 잠시 뒤 다시 열어 주세요",
+                    error = tr("불러오지 못했습니다. 잠시 뒤 다시 열어 주세요", "Couldn't load. Please try again in a moment", "No se pudo cargar. Vuelve a intentarlo en un momento"),
                 )
             for (row in read) rows.add(PursedRow(purse, row))
         }

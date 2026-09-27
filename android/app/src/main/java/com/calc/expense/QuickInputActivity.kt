@@ -88,6 +88,10 @@ class QuickInputActivity : AppCompatActivity() {
 
         ui = ActivityQuickInputBinding.inflate(layoutInflater)
         setContentView(ui.root)
+        // 레이아웃의 한국어는 미리보기용이다. 고른 언어로 여기서 덮는다.
+        ui.textCaption.text = tr("오늘 쓸 수 있는 돈", "Left to spend today", "Disponible hoy")
+        ui.inputExpense.hint = tr("예: 커피 4500", "e.g. coffee 4500", "p. ej. café 4500")
+        ui.textCategoryLabel.text = tr("카테고리 (선택)", "Category (optional)", "Categoría (opcional)")
 
         // 창은 화면 전체를 덮고, 카드는 레이아웃에서 아래에 붙는다.
         // setLayout 은 floating 창에서만 먹히므로 쓰지 않는다.
@@ -209,7 +213,9 @@ class QuickInputActivity : AppCompatActivity() {
             val chip: Chip =
                 layoutInflater.inflate(R.layout.item_category_chip, ui.groupCategory, false) as Chip
             chip.id = View.generateViewId()
-            chip.text = label
+            // 칩에 보이는 말은 번역하고, 저장할 값은 tag 에 원래 이름 그대로 둔다.
+            chip.text = L10n.name(label)
+            chip.tag = label
             chip.isChecked = label == CATEGORY_NONE
             ui.groupCategory.addView(chip)
         }
@@ -233,7 +239,7 @@ class QuickInputActivity : AppCompatActivity() {
     /** 체크된 칩 id 를 실제 카테고리 값으로. «없음» 이면 빈 문자열(카테고리 없음)이다. */
     private fun categoryValueOf(checkedId: Int?): String {
         if (checkedId == null) return ""
-        val label: String = ui.groupCategory.findViewById<Chip>(checkedId)?.text?.toString().orEmpty()
+        val label: String = (ui.groupCategory.findViewById<Chip>(checkedId)?.tag as? String).orEmpty()
         return if (label == CATEGORY_NONE) "" else label
     }
 
@@ -256,7 +262,7 @@ class QuickInputActivity : AppCompatActivity() {
     private fun selectChip(label: String) {
         for (i in 0 until ui.groupCategory.childCount) {
             val chip: Chip = ui.groupCategory.getChildAt(i) as? Chip ?: continue
-            if (chip.text.toString() != label) continue
+            if (chip.tag != label) continue
             suppressCategoryListener = true
             ui.groupCategory.check(chip.id)
             suppressCategoryListener = false
@@ -274,7 +280,7 @@ class QuickInputActivity : AppCompatActivity() {
         val snapshot: LedgerSnapshot? = Ledger.snapshot(this, selected)
 
         if (snapshot == null) {
-            ui.textCaption.text = "예산을 정하지 않은 곳간"
+            ui.textCaption.text = tr("예산을 정하지 않은 곳간", "No budget set for this wallet", "Esta cartera no tiene presupuesto")
             ui.textAvailable.text = "—"
             ui.textAvailable.setTextColor(colorOf(Tone.NEUTRAL))
             ui.textBreakdown.visibility = View.GONE
@@ -283,10 +289,10 @@ class QuickInputActivity : AppCompatActivity() {
 
         val available: Long = snapshot.available
         if (snapshot.isOver) {
-            ui.textCaption.text = "오늘 초과"
+            ui.textCaption.text = tr("오늘 초과", "Over today", "Exceso de hoy")
             ui.textAvailable.text = StatusText.won(-available)
         } else {
-            ui.textCaption.text = "오늘 쓸 수 있는 돈"
+            ui.textCaption.text = tr("오늘 쓸 수 있는 돈", "Left to spend today", "Disponible hoy")
             ui.textAvailable.text = StatusText.won(available)
         }
         ui.textAvailable.setTextColor(colorOf(if (snapshot.isOver) Tone.OVER else Tone.REMAINING))
@@ -303,7 +309,7 @@ class QuickInputActivity : AppCompatActivity() {
 
         submitting = true
         ui.inputExpense.isEnabled = false
-        showResult("기록 중…", Tone.NEUTRAL)
+        showResult(tr("기록 중…", "Logging…", "Anotando…"), Tone.NEUTRAL)
 
         val app = applicationContext
         val purse: Purse = selected
@@ -316,7 +322,7 @@ class QuickInputActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 RecordResult(
                     ok = false,
-                    lines = StatusText.failed("오류: ${e.message ?: e.javaClass.simpleName}", now),
+                    lines = StatusText.failed(StatusText.error(e), now),
                 )
             }
 
@@ -339,7 +345,7 @@ class QuickInputActivity : AppCompatActivity() {
                     val e: Expense? = result.expense
                     if (e != null) addEntryRow(e, result.rowId, purse, day)
                     showResult(
-                        if (e == null) "기록됨" else StatusText.entered(e.name, e.amount, recorded),
+                        if (e == null) tr("기록됨", "Logged", "Anotado") else StatusText.entered(e.name, e.amount, recorded),
                         Tone.of(ok = true, snapshot = after),
                     )
                 } else {
@@ -357,7 +363,7 @@ class QuickInputActivity : AppCompatActivity() {
         label.text = if (expense.category.isBlank()) {
             "${expense.name}  ${StatusText.won(expense.amount)}"
         } else {
-            "${expense.name} · ${expense.category}  ${StatusText.won(expense.amount)}"
+            "${expense.name} · ${L10n.name(expense.category)}  ${StatusText.won(expense.amount)}"
         }
 
         val entry = Entry(expense.name, expense.amount, rowId, purse, day, row)
@@ -377,7 +383,7 @@ class QuickInputActivity : AppCompatActivity() {
             val result: DeleteResult = try {
                 RecordExpense.delete(app, entry.rowId, entry.purse.key, entry.day, entry.amount)
             } catch (e: Exception) {
-                DeleteResult(ok = false, message = "오류: ${e.message ?: e.javaClass.simpleName}")
+                DeleteResult(ok = false, message = StatusText.error(e))
             }
 
             runOnUiThread {
@@ -388,7 +394,10 @@ class QuickInputActivity : AppCompatActivity() {
                     ui.listEntries.removeView(entry.row)
                     NotificationHelper.show(app)
                     refreshNumbers()
-                    showResult("✕ ${entry.name} ${StatusText.won(entry.amount)} 지웠어요", Tone.NEUTRAL)
+                    showResult(
+                        "✕ ${entry.name} ${StatusText.won(entry.amount)} " + tr("지웠어요", "deleted", "borrado"),
+                        Tone.NEUTRAL,
+                    )
                 } else {
                     remove.isEnabled = true
                     showResult(result.message, Tone.of(ok = false, snapshot = null))

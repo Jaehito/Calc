@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
+        android:name=".ExpenseApp"
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -63,28 +64,28 @@
         <activity
             android:name=".CycleReportActivity"
             android:exported="false"
-            android:label="지난 주기 리포트"
+            android:label="@string/label_cycle_report"
             android:parentActivityName=".HomeActivity" />
 
         <!-- 카테고리 하나를 이름별로 펼치고 다시 분류하는 화면. 통계 도넛과 리포트 막대에서 들어온다. -->
         <activity
             android:name=".CategoryDetailActivity"
             android:exported="false"
-            android:label="카테고리"
+            android:label="@string/label_category"
             android:parentActivityName=".HomeActivity" />
 
         <!-- 곳간 내역. 홈의 곳간 카드에서만 들어온다. -->
         <activity
             android:name=".PurseHistoryActivity"
             android:exported="false"
-            android:label="내역"
+            android:label="@string/label_history"
             android:parentActivityName=".HomeActivity" />
 
         <!-- 설정. 홈의 «설정» 에서만 들어온다. -->
         <activity
             android:name=".MainActivity"
             android:exported="false"
-            android:label="설정"
+            android:label="@string/label_settings"
             android:parentActivityName=".HomeActivity"
             android:windowSoftInputMode="adjustResize" />
 
@@ -118,7 +119,7 @@
         <service
             android:name=".PaymentNotificationListener"
             android:exported="false"
-            android:label="지출 기록 리마인더"
+            android:label="@string/label_reminder_service"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
             <intent-filter>
                 <action android:name="android.service.notification.NotificationListenerService" />

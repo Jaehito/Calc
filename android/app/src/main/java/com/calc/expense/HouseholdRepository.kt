@@ -46,7 +46,7 @@ object HouseholdRepository {
     fun join(uid: String, code: String, onDone: (Result<String>) -> Unit) {
         val normalized: String = HouseholdCode.normalize(code)
         if (!HouseholdCode.isValid(normalized)) {
-            onDone(Result.failure(IllegalArgumentException("코드는 6자리예요. 다시 확인해 주세요.")))
+            onDone(Result.failure(IllegalArgumentException(tr("코드는 6자리예요. 다시 확인해 주세요.", "The code has 6 characters. Please check it.", "El código tiene 6 caracteres. Revísalo."))))
             return
         }
         db.collection("households")
@@ -56,7 +56,7 @@ object HouseholdRepository {
             .addOnSuccessListener { snap ->
                 val doc = snap.documents.firstOrNull()
                 if (doc == null) {
-                    onDone(Result.failure(NoSuchElementException("그 코드의 가정을 찾을 수 없어요.")))
+                    onDone(Result.failure(NoSuchElementException(tr("그 코드의 가정을 찾을 수 없어요.", "No household found with that code.", "No hay ningún hogar con ese código."))))
                     return@addOnSuccessListener
                 }
                 db.collection("users").document(uid)

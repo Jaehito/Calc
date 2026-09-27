@@ -59,7 +59,7 @@ object CycleReportRepository {
             candidates = RecurringCosts.of(events, lookback, known = plan.items.map { it.name }),
             plan = plan,
             loading = false,
-            error = if (rows == null) "기록을 불러오지 못해 결제 알림만 봤어요" else null,
+            error = if (rows == null) tr("기록을 불러오지 못해 결제 알림만 봤어요", "Couldn't load your entries, so only payment alerts were used", "No se pudieron cargar tus gastos; solo se usaron los avisos de pago") else null,
         )
     }
 

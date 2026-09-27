@@ -110,9 +110,17 @@ class CategoryDetailActivity : ComponentActivity() {
                 busyName = null
                 detail = reloaded
                 message = when {
-                    moved <= 0 -> "옮기지 못했습니다"
-                    chosen.isBlank() -> "${group.name} ${moved}건을 미분류로 뒀어요"
-                    else -> "${group.name} ${moved}건을 ${chosen}으로 옮겼어요"
+                    moved <= 0 -> tr("옮기지 못했습니다", "Couldn't move", "No se pudo mover")
+                    chosen.isBlank() -> tr(
+                        "${group.name} ${moved}건을 미분류로 뒀어요",
+                        "Left ${L10n.items(moved)} of ${group.name} uncategorized",
+                        "${L10n.items(moved)} de ${group.name} quedaron sin categoría",
+                    )
+                    else -> tr(
+                        "${group.name} ${moved}건을 ${chosen}으로 옮겼어요",
+                        "Moved ${L10n.items(moved)} of ${group.name} to ${L10n.name(chosen)}",
+                        "${L10n.items(moved)} de ${group.name} movidos a ${L10n.name(chosen)}",
+                    )
                 }
             }
         }

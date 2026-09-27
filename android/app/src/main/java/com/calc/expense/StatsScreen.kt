@@ -56,7 +56,7 @@ fun StatsScreen(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "통계",
+                text = tr("통계", "Stats", "Estadísticas"),
                 color = HomePalette.Ink,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
@@ -93,10 +93,14 @@ private fun ReportCard(onOpenReport: () -> Unit) {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("지난 주기 리포트", color = HomePalette.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(tr("지난 주기 리포트", "Last cycle report", "Informe del ciclo anterior"), color = HomePalette.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "달마다 되풀이되는 결제를 찾아 고정비를 정리해요",
+                    text = tr(
+                        "달마다 되풀이되는 결제를 찾아 고정비를 정리해요",
+                        "Find monthly repeating payments and sort out fixed costs",
+                        "Encuentra pagos que se repiten cada mes y ordena tus gastos fijos",
+                    ),
                     color = HomePalette.Ink2,
                     fontSize = 12.5f.sp,
                 )
@@ -121,7 +125,7 @@ private fun TrendCard(data: StatsData) {
         prevSpent = data.prev7,
     )
     CardBox {
-        Text(text = "최근 7일", color = HomePalette.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Text(text = tr("최근 7일", "Last 7 days", "Últimos 7 días"), color = HomePalette.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(12.dp))
 
         if (trend.hasBudget) {
@@ -135,7 +139,7 @@ private fun TrendCard(data: StatsData) {
                     modifier = Modifier.weight(1f),
                 )
                 Text(
-                    text = "목표 " + StatusText.won(trend.budget),
+                    text = tr("목표 ", "Target ", "Meta ") + StatusText.won(trend.budget),
                     color = HomePalette.Muted,
                     fontSize = 12.sp,
                     style = Figures,
@@ -146,8 +150,8 @@ private fun TrendCard(data: StatsData) {
             Spacer(Modifier.height(9.dp))
             Text(
                 text =
-                    if (trend.left >= 0L) StatusText.won(trend.left) + " 남았어요"
-                    else StatusText.won(-trend.left) + " 넘겼어요",
+                    if (trend.left >= 0L) StatusText.won(trend.left) + tr(" 남았어요", " left", " disponibles")
+                    else StatusText.won(-trend.left) + tr(" 넘겼어요", " over", " de más"),
                 color = if (trend.left >= 0L) HomePalette.Accent else HomePalette.Over,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -177,8 +181,8 @@ private fun TrendCard(data: StatsData) {
         }
         Spacer(Modifier.height(9.dp))
         Row {
-            Text("이전 7일", color = HomePalette.Muted, fontSize = 11.sp, modifier = Modifier.weight(1f))
-            Text("최근 7일", color = HomePalette.Muted, fontSize = 11.sp)
+            Text(tr("이전 7일", "Previous 7 days", "7 días anteriores"), color = HomePalette.Muted, fontSize = 11.sp, modifier = Modifier.weight(1f))
+            Text(tr("최근 7일", "Last 7 days", "Últimos 7 días"), color = HomePalette.Muted, fontSize = 11.sp)
         }
 
         // 견줄 지난주가 없으면 줄 자체가 없다 — Ledger.vsLastCycle 과 같은 규칙.
@@ -187,9 +191,17 @@ private fun TrendCard(data: StatsData) {
             Spacer(Modifier.height(11.dp))
             Text(
                 text = when {
-                    diff < 0L -> "이전 7일보다 " + StatusText.won(-diff) + " 덜 썼어요"
-                    diff > 0L -> "이전 7일보다 " + StatusText.won(diff) + " 더 썼어요"
-                    else -> "이전 7일과 똑같이 썼어요"
+                    diff < 0L -> tr(
+                        "이전 7일보다 " + StatusText.won(-diff) + " 덜 썼어요",
+                        StatusText.won(-diff) + " less than the previous 7 days",
+                        StatusText.won(-diff) + " menos que los 7 días anteriores",
+                    )
+                    diff > 0L -> tr(
+                        "이전 7일보다 " + StatusText.won(diff) + " 더 썼어요",
+                        StatusText.won(diff) + " more than the previous 7 days",
+                        StatusText.won(diff) + " más que los 7 días anteriores",
+                    )
+                    else -> tr("이전 7일과 똑같이 썼어요", "Same as the previous 7 days", "Igual que los 7 días anteriores")
                 },
                 color = when {
                     diff < 0L -> HomePalette.Accent
@@ -203,7 +215,11 @@ private fun TrendCard(data: StatsData) {
         } else if (!trend.hasBudget) {
             Spacer(Modifier.height(11.dp))
             Text(
-                text = "설정에서 예산을 정하면 목표 대비로 보여드려요",
+                text = tr(
+                    "설정에서 예산을 정하면 목표 대비로 보여드려요",
+                    "Set a budget in Settings to compare against a target",
+                    "Define un presupuesto en Ajustes para compararlo con una meta",
+                ),
                 color = HomePalette.Muted,
                 fontSize = 12.sp,
             )
@@ -238,7 +254,7 @@ private fun CategoryCard(data: StatsData, onToggle: () -> Unit, onOpenCategory: 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "카테고리 · ${data.categoryCycleLabel}",
+                    text = tr("카테고리", "Categories", "Categorías") + " · ${data.categoryCycleLabel}",
                     color = HomePalette.Ink,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
@@ -255,7 +271,9 @@ private fun CategoryCard(data: StatsData, onToggle: () -> Unit, onOpenCategory: 
             }
             Spacer(Modifier.width(10.dp))
             Text(
-                text = if (data.categoryCycleLabel == "이번 주기") "지난 주기 보기" else "이번 주기 보기",
+                text =
+                    if (data.categoryCycleLabel == tr("이번 주기", "This cycle", "Este ciclo")) tr("지난 주기 보기", "Show last cycle", "Ver ciclo anterior")
+                    else tr("이번 주기 보기", "Show this cycle", "Ver este ciclo"),
                 color = HomePalette.Accent,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -272,10 +290,14 @@ private fun CategoryCard(data: StatsData, onToggle: () -> Unit, onOpenCategory: 
             data.error != null ->
                 Text(text = data.error, color = HomePalette.Over, fontSize = 13.sp)
             data.loadingCategories ->
-                Text(text = "불러오는 중…", color = HomePalette.Muted, fontSize = 13.sp)
+                Text(text = tr("불러오는 중…", "Loading…", "Cargando…"), color = HomePalette.Muted, fontSize = 13.sp)
             data.categories.isEmpty() ->
                 Text(
-                    text = "이 주기에는 기록이 없습니다. 지출을 적으면 여기에 나옵니다.",
+                    text = tr(
+                        "이 주기에는 기록이 없습니다. 지출을 적으면 여기에 나옵니다.",
+                        "Nothing logged this cycle. Your spending will show up here.",
+                        "No hay gastos en este ciclo. Aquí aparecerán cuando anotes.",
+                    ),
                     color = HomePalette.Ink2,
                     fontSize = 13.sp,
                 )
@@ -308,7 +330,7 @@ private fun DonutAndLegend(data: StatsData, onOpenCategory: (String) -> Unit) {
                     )
                     Spacer(Modifier.width(9.dp))
                     Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.Bottom) {
-                        Text(slice.name, color = HomePalette.Ink, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                        Text(L10n.name(slice.name), color = HomePalette.Ink, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                         Spacer(Modifier.width(6.dp))
                         Text(StatusText.figure(slice.amount), color = HomePalette.Muted, fontSize = 10.sp, style = Figures)
                     }
@@ -323,7 +345,7 @@ private fun DonutAndLegend(data: StatsData, onOpenCategory: (String) -> Unit) {
     Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(HomePalette.Line))
     Spacer(Modifier.height(14.dp))
     Text(
-        text = "이 주기 합계 ${StatusText.won(data.categoryTotal)}",
+        text = tr("이 주기 합계 ", "Cycle total ", "Total del ciclo ") + StatusText.won(data.categoryTotal),
         color = HomePalette.Ink2,
         fontSize = 12.5f.sp,
         style = Figures,
@@ -358,7 +380,7 @@ private fun Donut(slices: List<CategorySlice>, modifier: Modifier) {
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(StatusText.won(total), color = HomePalette.Ink, fontSize = 15.sp, fontWeight = FontWeight.Bold, style = Figures)
-            Text("합계", color = HomePalette.Muted, fontSize = 10.5f.sp)
+            Text(tr("합계", "Total", "Total"), color = HomePalette.Muted, fontSize = 10.5f.sp)
         }
     }
 }

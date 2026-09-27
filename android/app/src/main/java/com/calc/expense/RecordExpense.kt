@@ -44,7 +44,7 @@ object RecordExpense {
     ): RecordResult {
         val parsed = when (val r = ExpenseParser.parse(text)) {
             is ParseResult.Err ->
-                return fail("${r.message} · 입력: \"${text.trim()}\"", now)
+                return fail("${r.message} · " + tr("입력", "input", "entrada") + ": \"${text.trim()}\"", now)
             is ParseResult.Ok -> r.expense.copy(category = category.trim())
         }
         return record(context, parsed, purseKey, now, today)
@@ -66,7 +66,7 @@ object RecordExpense {
     ): RecordResult {
         val linked: List<Purse> = PurseAccess.linked(context)
         if (linked.isEmpty()) {
-            return fail("로그인이 풀렸습니다. 앱을 열어 다시 로그인해 주세요", now)
+            return fail(StatusText.signedOut(), now)
         }
 
         // 어느 곳간인지는 부른 쪽이 실어 보낸다. 값이 없으면 첫 곳간으로 본다.
@@ -113,7 +113,7 @@ object RecordExpense {
         amount: Long,
     ): DeleteResult {
         val purse: Purse = PurseAccess.linked(context).firstOrNull { it.key == purseKey }
-            ?: return DeleteResult(ok = false, message = "곳간을 찾을 수 없습니다")
+            ?: return DeleteResult(ok = false, message = tr("곳간을 찾을 수 없습니다", "Couldn't find that wallet", "No se encontró esa cartera"))
 
         return when (val r = FirestoreExpenseStore.archive(context, purse, rowId)) {
             is FirestoreExpenseStore.Outcome.Err -> DeleteResult(ok = false, message = r.message)
@@ -150,7 +150,11 @@ object RecordExpense {
                 when (val archived = FirestoreExpenseStore.archive(context, purse, oldRowId)) {
                     is FirestoreExpenseStore.Outcome.Err -> EditResult(
                         ok = false,
-                        message = "새 값은 저장됐지만 옛 줄을 지우지 못했습니다: ${archived.message}",
+                        message = tr(
+                            "새 값은 저장됐지만 옛 줄을 지우지 못했습니다: ",
+                            "Saved the new value but couldn't remove the old entry: ",
+                            "Se guardó el nuevo valor, pero no se pudo borrar el anterior: ",
+                        ) + archived.message,
                     )
                     is FirestoreExpenseStore.Outcome.Ok -> {
                         Ledger.unrecord(context, purse, day, oldAmount)

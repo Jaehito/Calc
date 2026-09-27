@@ -21,7 +21,7 @@ object ExpenseHistory {
 
     fun load(context: Context, purse: Purse, month: YearMonth): Result {
         val rows: List<ExpenseRow> = FirestoreExpenseReader.monthRows(context, purse, month)
-            ?: return Result.Err("${SettingsStore.load(context).labelOf(purse)} 곳간을 불러오지 못했습니다")
+            ?: return Result.Err(StatusText.loadFailed(SettingsStore.load(context).labelOf(purse)))
 
         return Result.Ok(ExpenseHistoryGrouping.groupByDay(rows), ExpenseHistoryGrouping.total(rows))
     }

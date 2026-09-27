@@ -1,8 +1,6 @@
 package com.calc.expense
 
-import java.text.NumberFormat
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 /** 알림 한 줄과 펼쳤을 때의 본문. */
 data class StatusLines(val summary: String, val detail: String)
@@ -18,13 +16,11 @@ data class StatusLines(val summary: String, val detail: String)
  */
 object StatusText {
 
-    private val DAY_FORMAT: DateTimeFormatter =
-        DateTimeFormatter.ofPattern("M월 d일", Locale.KOREA)
+    private val DAY_FORMAT: DateTimeFormatter get() = L10n.monthDay()
 
-    private fun format(amount: Long): String =
-        NumberFormat.getNumberInstance(Locale.KOREA).format(amount)
+    private fun format(amount: Long): String = L10n.figure(amount)
 
-    fun won(amount: Long): String = format(amount) + "원"
+    fun won(amount: Long): String = L10n.won(amount)
 
     /**
      * 주기를 사람이 읽는 한 줄로 — «9월 15일 ~ 10월 14일».
@@ -47,10 +43,17 @@ object StatusText {
         val left: Long = snapshot.untilTarget
 
         if (left < 0L) {
-            return "${target}까지 ${won(-left)} 초과 · 남은 ${snapshot.daysLeft}일"
+            return tr(
+                "${target}까지 ${won(-left)} 초과 · 남은 ${snapshot.daysLeft}일",
+                "${won(-left)} over until $target · ${L10n.days(snapshot.daysLeft)} left",
+                "${won(-left)} de más hasta el $target · quedan ${L10n.days(snapshot.daysLeft)}",
+            )
         }
-        return "${target}까지 ${won(left)}" +
-            " · 남은 ${snapshot.daysLeft}일 (하루 ${format(snapshot.perDayLeft)})"
+        return tr(
+            "${target}까지 ${won(left)} · 남은 ${snapshot.daysLeft}일 (하루 ${format(snapshot.perDayLeft)})",
+            "${won(left)} until $target · ${L10n.days(snapshot.daysLeft)} left (${format(snapshot.perDayLeft)}/day)",
+            "${won(left)} hasta el $target · quedan ${L10n.days(snapshot.daysLeft)} (${format(snapshot.perDayLeft)}/día)",
+        )
     }
 
     /**
@@ -67,36 +70,62 @@ object StatusText {
         showPurse: Boolean = false,
     ): StatusLines {
         val tag: String = if (showPurse && snapshot != null) "${snapshot.label} " else ""
-        val head = "✓ $name ${won(amount)} 기록됨 · $time"
+        val head = tr(
+            "✓ $name ${won(amount)} 기록됨 · $time",
+            "✓ $name ${won(amount)} logged · $time",
+            "✓ $name ${won(amount)} anotado · $time",
+        )
 
         if (snapshot == null) {
             return StatusLines(
                 summary = head,
-                detail = head + "\n\n앱에서 예산을 정하면 오늘 쓸 수 있는 돈이 함께 표시됩니다.",
+                detail = head + "\n\n" + tr(
+                    "앱에서 예산을 정하면 오늘 쓸 수 있는 돈이 함께 표시됩니다.",
+                    "Set a budget in the app to see what you can spend today.",
+                    "Define un presupuesto en la app para ver lo que puedes gastar hoy.",
+                ),
             )
         }
 
         val available: Long = snapshot.available
         if (available < 0L) {
             return StatusLines(
-                summary = "✓ $name ${format(amount)} · ${tag}오늘 ${format(-available)} 초과",
-                detail = head +
-                    "\n\n${tag}오늘 ${won(-available)} 초과" +
-                    "\n곳간을 다 쓰고 넘은 만큼은 남은 날에 나눠 조정됩니다." +
-                    "\n\n" + untilTarget(snapshot),
+                summary = "✓ $name ${format(amount)} · " + tr(
+                    "${tag}오늘 ${format(-available)} 초과",
+                    "${tag}today ${format(-available)} over",
+                    "${tag}hoy ${format(-available)} de más",
+                ),
+                detail = head + "\n\n" + tr(
+                    "${tag}오늘 ${won(-available)} 초과" +
+                        "\n곳간을 다 쓰고 넘은 만큼은 남은 날에 나눠 조정됩니다.",
+                    "${tag}today ${won(-available)} over" +
+                        "\nThe savings are used up; the extra is spread over the remaining days.",
+                    "${tag}hoy ${won(-available)} de más" +
+                        "\nEl ahorro se agotó; el exceso se reparte entre los días que quedan.",
+                ) + "\n\n" + untilTarget(snapshot),
             )
         }
 
         return StatusLines(
-            summary =
-                if (tag.isEmpty()) "✓ $name ${format(amount)} · 오늘 쓸 수 있는 돈 ${format(available)}"
-                else "✓ $name ${format(amount)} · ${tag}오늘 ${format(available)}",
-            detail = head +
-                "\n\n${tag}오늘 쓸 수 있는 돈 ${won(available)}" +
-                "\n하루치 ${format(snapshot.dailyRate)}" +
-                " + 곳간 ${format(snapshot.vault)}" +
-                " − 오늘 ${format(snapshot.todaySpent)}" +
-                "\n\n" + untilTarget(snapshot),
+            summary = "✓ $name ${format(amount)} · " +
+                if (tag.isEmpty()) tr(
+                    "오늘 쓸 수 있는 돈 ${format(available)}",
+                    "left today ${format(available)}",
+                    "disponible hoy ${format(available)}",
+                )
+                else tr("${tag}오늘 ${format(available)}", "${tag}today ${format(available)}", "${tag}hoy ${format(available)}"),
+            detail = head + "\n\n" + breakdown(tag, snapshot) + "\n\n" + untilTarget(snapshot),
+        )
+    }
+
+    /** «오늘 쓸 수 있는 돈 = 하루치 + 곳간 − 오늘» 두 줄. */
+    private fun breakdown(tag: String, snapshot: LedgerSnapshot): String {
+        val parts: String = "${format(snapshot.dailyRate)} + " + tr("곳간", "savings", "ahorro") +
+            " ${format(snapshot.vault)} − " + tr("오늘", "today", "hoy") + " ${format(snapshot.todaySpent)}"
+        return tr(
+            "${tag}오늘 쓸 수 있는 돈 ${won(snapshot.available)}\n하루치 $parts",
+            "${tag}Left to spend today ${won(snapshot.available)}\nDaily ${parts}",
+            "${tag}Disponible hoy ${won(snapshot.available)}\nDiario $parts",
         )
     }
 
@@ -107,7 +136,7 @@ object StatusText {
      */
     fun entered(name: String, amount: Long, count: Int): String {
         val head = "✓ $name ${format(amount)}"
-        return if (count <= 1) head else "$head · ${count}건째"
+        return if (count <= 1) head else head + tr(" · ${count}건째", " · #$count", " · n.º $count")
     }
 
     /**
@@ -119,9 +148,21 @@ object StatusText {
     fun comparison(snapshot: LedgerSnapshot): String? {
         val diff: Long = snapshot.vsLastCycle ?: return null
         return when {
-            diff < 0L -> "지난 주기 이맘때보다 ${won(-diff)} 덜 썼어요"
-            diff > 0L -> "지난 주기 이맘때보다 ${won(diff)} 더 썼어요"
-            else -> "지난 주기 이맘때와 똑같이 쓰고 있어요"
+            diff < 0L -> tr(
+                "지난 주기 이맘때보다 ${won(-diff)} 덜 썼어요",
+                "${won(-diff)} less than this point last cycle",
+                "${won(-diff)} menos que a estas alturas del ciclo anterior",
+            )
+            diff > 0L -> tr(
+                "지난 주기 이맘때보다 ${won(diff)} 더 썼어요",
+                "${won(diff)} more than this point last cycle",
+                "${won(diff)} más que a estas alturas del ciclo anterior",
+            )
+            else -> tr(
+                "지난 주기 이맘때와 똑같이 쓰고 있어요",
+                "Exactly the same as this point last cycle",
+                "Igual que a estas alturas del ciclo anterior",
+            )
         }
     }
 
@@ -130,6 +171,23 @@ object StatusText {
         val line = "✗ $message · $time"
         return StatusLines(summary = line, detail = line)
     }
+
+    /** 곳간 하나를 읽지 못했을 때. */
+    fun loadFailed(label: String): String = tr(
+        "$label 곳간을 불러오지 못했습니다",
+        "Couldn't load the $label wallet",
+        "No se pudo cargar la cartera $label",
+    )
+
+    /** 로그인이 풀려 기록할 곳이 없을 때. */
+    fun signedOut(): String = tr(
+        "로그인이 풀렸습니다. 앱을 열어 다시 로그인해 주세요",
+        "You've been signed out. Open the app and sign in again",
+        "Se cerró tu sesión. Abre la app y vuelve a iniciar sesión",
+    )
+
+    /** 예외를 그대로 보여줄 때 앞에 붙이는 말. */
+    fun error(e: Throwable): String = tr("오류: ", "Error: ", "Error: ") + (e.message ?: e.javaClass.simpleName)
 
     /** 지난 며칠간 한 곳간이 쓴 합계. 주간 돌아보기에 쓴다. */
     data class WeeklySpend(val label: String, val total: Long)
@@ -142,27 +200,34 @@ object StatusText {
      */
     fun weekly(spends: List<WeeklySpend>, days: Int = 7): StatusLines {
         if (spends.isEmpty()) {
-            val line = "지난 ${days}일 기록이 없어요"
+            val line = tr("지난 ${days}일 기록이 없어요", "Nothing logged in the last $days days", "Nada anotado en los últimos $days días")
             return StatusLines(summary = line, detail = line)
         }
 
+        val lastDays: String = tr("지난 ${days}일", "Last $days days", "Últimos $days días")
         val summary: String =
             if (spends.size > 1) {
-                "지난 ${days}일 " + spends.joinToString(" · ") { "${it.label} ${format(it.total)}" }
+                "$lastDays " + spends.joinToString(" · ") { "${it.label} ${format(it.total)}" }
             } else {
-                "지난 ${days}일 ${won(spends[0].total)}"
+                "$lastDays ${won(spends[0].total)}"
             }
 
         val body: String = spends.joinToString("\n") { s ->
-            "${s.label} ${won(s.total)} · 하루 평균 ${format(s.total / days)}"
+            "${s.label} ${won(s.total)} · " +
+                tr("하루 평균", "daily avg.", "media diaria") + " ${format(s.total / days)}"
         }
-        return StatusLines(summary = summary, detail = "지난 ${days}일 돌아보기\n\n$body")
+        val title: String = tr("지난 ${days}일 돌아보기", "Your last $days days", "Tus últimos $days días")
+        return StatusLines(summary = summary, detail = "$title\n\n$body")
     }
 
     /** 설정 화면에 보여줄 현재 상태. 홈 화면이 생기기 전까지 곳간을 눈으로 확인하는 창구다. */
     fun overview(snapshots: List<LedgerSnapshot>): String {
         if (snapshots.isEmpty()) {
-            return "DB를 연결하고 예산을 정하면 오늘 쓸 수 있는 돈이 여기에 표시됩니다."
+            return tr(
+                "DB를 연결하고 예산을 정하면 오늘 쓸 수 있는 돈이 여기에 표시됩니다.",
+                "Set a budget to see what you can spend today here.",
+                "Define un presupuesto para ver aquí lo que puedes gastar hoy.",
+            )
         }
 
         return snapshots.joinToString("\n\n") { snapshot -> block(snapshot) }
@@ -171,13 +236,10 @@ object StatusText {
     private fun block(snapshot: LedgerSnapshot): String {
         val available: Long = snapshot.available
         val headline: String =
-            if (available >= 0L) "${snapshot.label} · 오늘 쓸 수 있는 돈  ${won(available)}"
-            else "${snapshot.label} · 오늘 ${won(-available)} 초과"
+            if (available >= 0L) "${snapshot.label} · " + tr("오늘 쓸 수 있는 돈 ", "Left to spend today ", "Disponible hoy ") + " ${won(available)}"
+            else "${snapshot.label} · " + tr("오늘 ${won(-available)} 초과", "today ${won(-available)} over", "hoy ${won(-available)} de más")
 
-        return headline +
-            "\n하루치 ${format(snapshot.dailyRate)}" +
-            " + 곳간 ${format(snapshot.vault)}" +
-            " − 오늘 ${format(snapshot.todaySpent)}" +
+        return headline + "\n" + breakdown("", snapshot).substringAfter('\n') +
             "\n" + untilTarget(snapshot)
     }
 }

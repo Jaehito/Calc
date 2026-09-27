@@ -16,7 +16,14 @@ object ExpenseExport {
     /** 표 프로그램이 한글을 깨뜨리지 않게 앞에 붙이는 표식(BOM). 없으면 엑셀이 깨진 글자로 연다. */
     const val BOM: String = "﻿"
 
-    private val HEADER: List<String> = listOf("날짜", "이름", "금액", "카테고리", "곳간")
+    private val HEADER: List<String>
+        get() = listOf(
+            tr("날짜", "Date", "Fecha"),
+            tr("이름", "Name", "Nombre"),
+            tr("금액", "Amount", "Importe"),
+            tr("카테고리", "Category", "Categoría"),
+            tr("곳간", "Wallet", "Cartera"),
+        )
 
     /**
      * [rows] 를 CSV 로. 날짜 오름차순(오래된 것부터) — 가계부를 위에서 아래로 읽는 순서다.
@@ -57,12 +64,12 @@ object ExpenseExport {
     }
 
     private fun label(purse: Purse): String = when (purse) {
-        Purse.PERSONAL -> "개인"
-        Purse.SHARED -> "공용"
+        Purse.PERSONAL -> tr("개인", "Personal", "Personal")
+        Purse.SHARED -> tr("공용", "Shared", "Compartido")
     }
 
     /** 파일 이름. 언제 뽑은 것인지 이름만 보고 알 수 있어야 여러 개 쌓였을 때 구별된다. */
-    fun fileName(today: LocalDate): String = "곳간-지출-$today.csv"
+    fun fileName(today: LocalDate): String = tr("곳간-지출", "spending", "gastos") + "-$today.csv"
 
     /**
      * 내보내기가 훑을 가장 이른 날. 이 앱보다 앞선 기록은 없다.

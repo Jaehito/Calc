@@ -37,6 +37,7 @@ class HomeActivity : ComponentActivity() {
     companion object {
         /** 결제 배너로 들어왔다는 표시. 수집함을 반드시 한 번 연다([NotificationHelper]). */
         const val EXTRA_OPEN_INBOX = "openInbox"
+        private const val STATE_INBOX_ASKED = "inboxAsked"
     }
 
     private val io = Executors.newSingleThreadExecutor()
@@ -85,8 +86,13 @@ class HomeActivity : ComponentActivity() {
      */
     private var inboxAsked: Boolean = false
 
+    /** 이 화면을 그린 언어. 설정에서 언어를 바꾸고 돌아오면 다시 그린다. */
+    private val createdLang: Lang = L10n.lang
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 언어를 바꿔 다시 그릴 때 수집함을 또 띄우지 않는다.
+        inboxAsked = savedInstanceState?.getBoolean(STATE_INBOX_ASKED) == true
         setContent {
             Scaffold(bottomBar = { BottomBar() }) { padding ->
                 Box(modifier = Modifier.fillMaxSize().padding(padding)) {
@@ -175,22 +181,22 @@ class HomeActivity : ComponentActivity() {
             NavigationBarItem(
                 selected = tab == 0,
                 onClick = { tab = 0 },
-                icon = { Icon(painterResource(R.drawable.ic_tab_home), contentDescription = "홈", modifier = Modifier.size(23.dp)) },
-                label = { Text("홈") },
+                icon = { Icon(painterResource(R.drawable.ic_tab_home), contentDescription = tr("홈", "Home", "Inicio"), modifier = Modifier.size(23.dp)) },
+                label = { Text(tr("홈", "Home", "Inicio")) },
                 colors = navColors(),
             )
             NavigationBarItem(
                 selected = tab == 1,
                 onClick = { selectStats() },
-                icon = { Icon(painterResource(R.drawable.ic_tab_stats), contentDescription = "통계", modifier = Modifier.size(23.dp)) },
-                label = { Text("통계") },
+                icon = { Icon(painterResource(R.drawable.ic_tab_stats), contentDescription = tr("통계", "Stats", "Estadísticas"), modifier = Modifier.size(23.dp)) },
+                label = { Text(tr("통계", "Stats", "Estadísticas")) },
                 colors = navColors(),
             )
             NavigationBarItem(
                 selected = tab == 2,
                 onClick = { selectDogam() },
-                icon = { Icon(painterResource(R.drawable.ic_tab_dogam), contentDescription = "도감", modifier = Modifier.size(23.dp)) },
-                label = { Text("도감") },
+                icon = { Icon(painterResource(R.drawable.ic_tab_dogam), contentDescription = tr("도감", "Garden", "Jardín"), modifier = Modifier.size(23.dp)) },
+                label = { Text(tr("도감", "Garden", "Jardín")) },
                 colors = navColors(),
             )
         }
@@ -211,8 +217,17 @@ class HomeActivity : ComponentActivity() {
         setIntent(intent)
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(STATE_INBOX_ASKED, inboxAsked)
+    }
+
     override fun onResume() {
         super.onResume()
+        if (createdLang != L10n.lang) {
+            recreate()
+            return
+        }
         refresh()
         // 배너로 들어왔으면 이미 한 번 띄웠더라도 다시 연다. 그 배너를 누른 이유가 그것이다.
         val fromBanner: Boolean = intent?.getBooleanExtra(EXTRA_OPEN_INBOX, false) == true
@@ -375,7 +390,7 @@ class HomeActivity : ComponentActivity() {
             val result: RecordResult = try {
                 RecordExpense.record(app, expense, purse.key, now)
             } catch (e: Exception) {
-                RecordResult(ok = false, lines = StatusText.failed("오류: ${e.message ?: e.javaClass.simpleName}", now))
+                RecordResult(ok = false, lines = StatusText.failed(StatusText.error(e), now))
             }
             if (result.ok) {
                 PendingPaymentStore.remove(app, item.id)
@@ -463,7 +478,9 @@ class HomeActivity : ComponentActivity() {
         val today: LocalDate = LocalDate.now()
         val base: StatsData = StatsRepository.localOnly(this, today)
         val cycle: BudgetCycle = categoryCycle(today)
-        val label: String = if (categoryCycleBack == 0) "이번 주기" else "지난 주기"
+        val label: String =
+            if (categoryCycleBack == 0) tr("이번 주기", "This cycle", "Este ciclo")
+            else tr("지난 주기", "Last cycle", "Ciclo anterior")
         val range: String = StatusText.cycleRange(cycle)
         stats = base.copy(
             categoryCycleLabel = label,
@@ -478,7 +495,7 @@ class HomeActivity : ComponentActivity() {
                 try {
                     StatsRepository.fetchCategories(app, cycle)
                 } catch (e: Exception) {
-                    emptyMap<String, Long>() to "오류: ${e.message ?: e.javaClass.simpleName}"
+                    emptyMap<String, Long>() to StatusText.error(e)
                 }
 
             runOnUiThread {
@@ -536,7 +553,7 @@ class HomeActivity : ComponentActivity() {
             val load: DogamLoad = try {
                 DogamRepository.refresh(app, today)
             } catch (e: Exception) {
-                DogamLoad(DogamStore.load(app), "오류: ${e.message ?: e.javaClass.simpleName}")
+                DogamLoad(DogamStore.load(app), StatusText.error(e))
             }
 
             runOnUiThread {
@@ -586,14 +603,14 @@ class HomeActivity : ComponentActivity() {
         val purses: List<Purse> = PurseAccess.linked(this)
         if (purses.isEmpty()) return
 
-        notice = "맞추는 중…"
+        notice = tr("맞추는 중…", "Syncing…", "Sincronizando…")
         io.execute {
             var failure: String? = null
             for (purse in purses) {
                 val error: String? = try {
                     Ledger.resync(app, purse)
                 } catch (e: Exception) {
-                    "오류: ${e.message ?: e.javaClass.simpleName}"
+                    StatusText.error(e)
                 }
                 if (error != null && failure == null) failure = error
             }

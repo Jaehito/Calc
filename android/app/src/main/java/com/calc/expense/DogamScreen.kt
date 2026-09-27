@@ -44,7 +44,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 /**
  * 도감 탭에 필요한 것.
@@ -67,9 +66,9 @@ private val NextBack = Color(0xFFF4F1EA)
 private val ShelfTop = Color(0xFFEBDDC6)
 private val ShelfBottom = Color(0xFFDCC8A8)
 
-private val DayFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("M월 d일", Locale.KOREA)
-private val FullDayFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("M월 d일 EEEE", Locale.KOREA)
-private val ShortDayFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("M/d", Locale.KOREA)
+private val DayFormat: DateTimeFormatter get() = L10n.monthDay()
+private val FullDayFormat: DateTimeFormatter get() = L10n.fullDay()
+private val ShortDayFormat: DateTimeFormatter get() = L10n.shortDay()
 
 /**
  * 도감 탭. 위는 선반(업적마다 한 송이), 옆 칸은 나의 기록(최고 기록과 쌓인 횟수).

@@ -38,12 +38,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 private val Figures = TextStyle(fontFeatureSettings = "tnum")
 
-private val DayFormat: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("M월 d일 (E)", Locale.KOREA)
+private val DayFormat: DateTimeFormatter get() = L10n.dayWithWeekday()
 
 /** 내역 화면이 그리는 상태 한 벌. 묶기·합계는 [ExpenseHistoryGrouping] 이 이미 끝냈다. */
 data class HistoryUi(
@@ -99,7 +97,7 @@ fun HistoryScreen(
             Spacer(Modifier.width(8.dp))
             Text(text = ui.title, color = HomePalette.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
             Text(
-                text = "새로고침",
+                text = tr("새로고침", "Refresh", "Actualizar"),
                 color = HomePalette.Accent,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -123,15 +121,17 @@ fun HistoryScreen(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(text = "${ui.monthName} 지출", color = HomePalette.Ink2, fontSize = 12.sp)
+                    Text(text = tr("${ui.monthName} 지출", "${ui.monthName} spending", "Gastos de ${ui.monthName}"), color = HomePalette.Ink2, fontSize = 12.sp)
                     Spacer(Modifier.height(2.dp))
                     Row(verticalAlignment = Alignment.Bottom) {
-                        Text(text = StatusText.figure(ui.total), color = HomePalette.Ink, fontSize = 30.sp, fontWeight = FontWeight.Bold, style = Figures)
-                        Text(text = " 원", color = HomePalette.Ink2, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(bottom = 4.dp))
+                        Text(text = L10n.wonPrefix + StatusText.figure(ui.total), color = HomePalette.Ink, fontSize = 30.sp, fontWeight = FontWeight.Bold, style = Figures)
+                        if (L10n.wonSuffix.isNotEmpty()) {
+                            Text(text = " " + L10n.wonSuffix, color = HomePalette.Ink2, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(bottom = 4.dp))
+                        }
                     }
                 }
                 Text(
-                    text = if (ui.isThisMonth) "지난 달" else "이번 달",
+                    text = if (ui.isThisMonth) tr("지난 달", "Last month", "Mes anterior") else tr("이번 달", "This month", "Este mes"),
                     color = HomePalette.Accent,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -156,16 +156,16 @@ fun HistoryScreen(
             ) {
                 Box(modifier = Modifier.width(7.dp).height(7.dp).clip(RoundedCornerShape(4.dp)).background(HomePalette.AccentBright))
                 Spacer(Modifier.width(7.dp))
-                Text(text = "공용 곳간을 함께 보는 목록이에요", color = HomePalette.Ink2, fontSize = 12.sp)
+                Text(text = tr("공용 곳간을 함께 보는 목록이에요", "This list is shared with your household", "Esta lista se comparte con tu hogar"), color = HomePalette.Ink2, fontSize = 12.sp)
             }
         }
 
         Spacer(Modifier.height(6.dp))
 
         when {
-            ui.loading -> Note("불러오는 중…")
+            ui.loading -> Note(tr("불러오는 중…", "Loading…", "Cargando…"))
             ui.error != null -> Note(ui.error, HomePalette.Over)
-            ui.groups.isEmpty() -> Note("이 달에는 기록이 없어요.")
+            ui.groups.isEmpty() -> Note(tr("이 달에는 기록이 없어요.", "Nothing logged this month.", "No hay gastos este mes."))
             else -> for (group in ui.groups) {
                 DaySection(group, onRowClick = { row -> editingRow = row })
             }
@@ -224,11 +224,11 @@ private fun ExpenseItem(row: ExpenseRow, onClick: () -> Unit) {
             .clickable(onClick = onClick)
             .padding(horizontal = 15.dp, vertical = 13.dp),
     ) {
-        Text(text = row.name.ifBlank { "(이름 없음)" }, color = HomePalette.Ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+        Text(text = row.name.ifBlank { tr("(이름 없음)", "(no name)", "(sin nombre)") }, color = HomePalette.Ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
         if (row.category.isNotBlank()) {
             Spacer(Modifier.width(8.dp))
             Text(
-                text = row.category,
+                text = L10n.name(row.category),
                 color = HomePalette.Ink2,
                 fontSize = 10.sp,
                 modifier = Modifier
@@ -266,13 +266,13 @@ private fun EditRowDialog(
         onDismissRequest = onDismiss,
         containerColor = HomePalette.Card,
         shape = RoundedCornerShape(24.dp),
-        title = { Text("내역 수정", color = HomePalette.Ink, fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+        title = { Text(tr("내역 수정", "Edit entry", "Editar gasto"), color = HomePalette.Ink, fontWeight = FontWeight.Bold, fontSize = 18.sp) },
         text = {
             Column {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("이름") },
+                    label = { Text(tr("이름", "Name", "Nombre")) },
                     singleLine = true,
                     shape = RoundedCornerShape(14.dp),
                     colors = mintFieldColors(),
@@ -282,7 +282,7 @@ private fun EditRowDialog(
                 OutlinedTextField(
                     value = amountText,
                     onValueChange = { amountText = it },
-                    label = { Text("금액") },
+                    label = { Text(tr("금액", "Amount", "Importe")) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     shape = RoundedCornerShape(14.dp),
@@ -290,13 +290,13 @@ private fun EditRowDialog(
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(14.dp))
-                Text(text = "카테고리", color = HomePalette.Muted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                Text(text = tr("카테고리", "Category", "Categoría"), color = HomePalette.Muted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(7.dp))
                 Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
                     for ((index, catName) in categories.withIndex()) {
                         val on: Boolean = category == catName
                         Text(
-                            text = catName,
+                            text = L10n.name(catName),
                             color = if (on) HomePalette.Accent else HomePalette.Ink2,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
@@ -311,7 +311,7 @@ private fun EditRowDialog(
                 }
                 Spacer(Modifier.height(18.dp))
                 Text(
-                    text = "삭제",
+                    text = tr("삭제", "Delete", "Borrar"),
                     color = HomePalette.Over,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
@@ -333,11 +333,11 @@ private fun EditRowDialog(
                     disabledContainerColor = HomePalette.Chip,
                 ),
             ) {
-                Text("저장", color = if (canSave) Color.White else HomePalette.Muted, fontWeight = FontWeight.Bold)
+                Text(tr("저장", "Save", "Guardar"), color = if (canSave) Color.White else HomePalette.Muted, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("취소", color = HomePalette.Ink2) }
+            TextButton(onClick = onDismiss) { Text(tr("취소", "Cancel", "Cancelar"), color = HomePalette.Ink2) }
         },
     )
 }

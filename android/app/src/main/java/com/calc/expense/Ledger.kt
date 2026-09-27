@@ -167,7 +167,7 @@ object Ledger {
 
         while (!month.isAfter(lastMonth)) {
             val rows: List<ExpenseRow> = FirestoreExpenseReader.monthRows(context, purse, month)
-                ?: return "${settings.labelOf(purse)} 곳간을 불러오지 못했습니다"
+                ?: return StatusText.loadFailed(settings.labelOf(purse))
 
             val totals = LinkedHashMap<LocalDate, Long>()
             for (row in rows) totals[row.date] = (totals[row.date] ?: 0L) + row.amount

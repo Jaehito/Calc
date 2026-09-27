@@ -8,9 +8,12 @@ package com.calc.expense
  * [defaultLabel] 은 사용자가 이름을 정하지 않았을 때만 쓰인다 — 실제 표시 이름은
  * [Settings.labelOf] 로 얻는다.
  */
-enum class Purse(val key: String, val defaultLabel: String) {
+enum class Purse(val key: String, private val koLabel: String) {
     PERSONAL("personal", "개인"),
     SHARED("shared", "공용");
+
+    /** 지금 언어로 옮긴 기본 이름. 저장하지 않는다. */
+    val defaultLabel: String get() = L10n.name(koLabel)
 
     companion object {
         /**

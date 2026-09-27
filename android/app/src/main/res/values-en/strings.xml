@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Spending Log</string>
+    <string name="label_cycle_report">Last cycle report</string>
+    <string name="label_category">Category</string>
+    <string name="label_history">History</string>
+    <string name="label_settings">Settings</string>
+    <string name="label_reminder_service">Spending log reminder</string>
+</resources>

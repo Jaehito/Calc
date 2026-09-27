@@ -31,13 +31,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 /** 자릿수가 바뀌어도 폭이 흔들리지 않게 고정폭 숫자를 쓴다. */
 private val Figures = TextStyle(fontFeatureSettings = "tnum")
 
-private val DateFormat: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("M월 d일 EEEE", Locale.KOREA)
+private val DateFormat: DateTimeFormatter get() = L10n.fullDay()
 
 /**
  * 홈 화면.
@@ -116,7 +114,7 @@ fun HomeScreen(
             shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(containerColor = HomePalette.AccentBright),
         ) {
-            Text(text = "기록하기", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Text(text = tr("기록하기", "Log spending", "Anotar gasto"), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }
@@ -126,10 +124,10 @@ fun HomeScreen(
 private fun PurseCard(snapshot: LedgerSnapshot, showLabel: Boolean, onClick: () -> Unit) {
     val tone: Tone = if (snapshot.isOver) Tone.OVER else Tone.REMAINING
     val caption: String = when {
-        snapshot.isOver && showLabel -> "${snapshot.label} · 오늘 초과"
-        snapshot.isOver -> "오늘 초과"
-        showLabel -> "${snapshot.label} · 오늘 쓸 수 있는 돈"
-        else -> "오늘 쓸 수 있는 돈"
+        snapshot.isOver && showLabel -> "${snapshot.label} · " + tr("오늘 초과", "Over today", "Exceso de hoy")
+        snapshot.isOver -> tr("오늘 초과", "Over today", "Exceso de hoy")
+        showLabel -> "${snapshot.label} · " + tr("오늘 쓸 수 있는 돈", "Left to spend today", "Disponible hoy")
+        else -> tr("오늘 쓸 수 있는 돈", "Left to spend today", "Disponible hoy")
     }
     // 넘긴 날은 음수 대신 초과액으로 말한다. 마이너스 부호는 읽는 데 한 박자 더 걸린다.
     val amount: Long = if (snapshot.isOver) -snapshot.available else snapshot.available
@@ -146,7 +144,7 @@ private fun PurseCard(snapshot: LedgerSnapshot, showLabel: Boolean, onClick: () 
             Text(text = caption, color = HomePalette.Ink2, fontSize = 13.sp, modifier = Modifier.weight(1f))
             // 카드를 눌러 내역으로 갈 수 있다는 표시.
             Text(
-                text = "내역 ›",
+                text = tr("내역 ›", "History ›", "Historial ›"),
                 color = HomePalette.Accent,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -159,26 +157,28 @@ private fun PurseCard(snapshot: LedgerSnapshot, showLabel: Boolean, onClick: () 
         Spacer(Modifier.height(2.dp))
         Row(verticalAlignment = Alignment.Bottom) {
             Text(
-                text = StatusText.figure(amount),
+                text = L10n.wonPrefix + StatusText.figure(amount),
                 color = HomePalette.of(tone),
                 fontSize = 40.sp,
                 fontWeight = FontWeight.Bold,
                 style = Figures,
             )
-            Text(
-                text = " 원",
-                color = HomePalette.Ink2,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = 6.dp),
-            )
+            if (L10n.wonSuffix.isNotEmpty()) {
+                Text(
+                    text = " " + L10n.wonSuffix,
+                    color = HomePalette.Ink2,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(bottom = 6.dp),
+                )
+            }
         }
 
         Spacer(Modifier.height(16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FactCell("하루치", StatusText.figure(snapshot.dailyRate), HomePalette.Ink, HomePalette.AccentBright, Modifier.weight(1f))
-            FactCell("곳간", "+" + StatusText.figure(snapshot.vault), HomePalette.Accent, HomePalette.Gold, Modifier.weight(1f))
-            FactCell("오늘 씀", "−" + StatusText.figure(snapshot.todaySpent), HomePalette.Ink, HomePalette.Over, Modifier.weight(1f))
+            FactCell(tr("하루치", "Daily", "Diario"), StatusText.figure(snapshot.dailyRate), HomePalette.Ink, HomePalette.AccentBright, Modifier.weight(1f))
+            FactCell(tr("곳간", "Savings", "Ahorro"), "+" + StatusText.figure(snapshot.vault), HomePalette.Accent, HomePalette.Gold, Modifier.weight(1f))
+            FactCell(tr("오늘 씀", "Spent today", "Gastado hoy"), "−" + StatusText.figure(snapshot.todaySpent), HomePalette.Ink, HomePalette.Over, Modifier.weight(1f))
         }
 
         Spacer(Modifier.height(16.dp))
@@ -230,9 +230,9 @@ private fun VaultBar(snapshot: LedgerSnapshot) {
         if (cap > 0L) (snapshot.vault.toFloat() / cap.toFloat()).coerceIn(0f, 1f) else 0f
 
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(text = "곳간", color = HomePalette.Ink2, fontSize = 13.sp, modifier = Modifier.weight(1f))
+        Text(text = tr("곳간", "Savings", "Ahorro"), color = HomePalette.Ink2, fontSize = 13.sp, modifier = Modifier.weight(1f))
         Text(
-            text = "상한 " + StatusText.won(cap),
+            text = tr("상한 ", "Cap ", "Tope ") + StatusText.won(cap),
             color = HomePalette.Muted,
             fontSize = 12.sp,
             style = Figures,
@@ -261,22 +261,28 @@ private fun VaultBar(snapshot: LedgerSnapshot) {
 private fun EmptyCard(onSetBudget: () -> Unit) {
     CardBox {
         Text(
-            text = "아직 챌린지 금액을 안 정했어요",
+            text = tr("아직 챌린지 금액을 안 정했어요", "No challenge amount set yet", "Aún no has fijado tu meta"),
             color = HomePalette.Ink,
             fontSize = 17.sp,
             fontWeight = FontWeight.SemiBold,
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            text = "월급에서 고정비를 빼면 한 달에 쓸 수 있는 돈이 나옵니다. " +
-                "정하고 나면 오늘 쓸 수 있는 돈이 여기에 뜹니다.",
+            text = tr(
+                "월급에서 고정비를 빼면 한 달에 쓸 수 있는 돈이 나옵니다. " +
+                    "정하고 나면 오늘 쓸 수 있는 돈이 여기에 뜹니다.",
+                "Your income minus fixed costs is what you can spend in a month. " +
+                    "Once set, what you can spend today shows up here.",
+                "Tu sueldo menos los gastos fijos es lo que puedes gastar al mes. " +
+                    "Cuando lo fijes, aquí verás lo que puedes gastar hoy.",
+            ),
             color = HomePalette.Ink2,
             fontSize = 13.sp,
             lineHeight = 20.sp,
         )
         Spacer(Modifier.height(14.dp))
         Text(
-            text = "챌린지 금액 정하기",
+            text = tr("챌린지 금액 정하기", "Set challenge amount", "Fijar meta"),
             color = Color.White,
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
@@ -298,7 +304,7 @@ private fun FixedCostCard(fixedTotal: Long, onEdit: () -> Unit) {
     CardBox {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = "이번 달 고정비", color = HomePalette.Ink2, fontSize = 13.sp)
+                Text(text = tr("이번 달 고정비", "Fixed costs this month", "Gastos fijos del mes"), color = HomePalette.Ink2, fontSize = 13.sp)
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = StatusText.won(fixedTotal),
@@ -308,7 +314,7 @@ private fun FixedCostCard(fixedTotal: Long, onEdit: () -> Unit) {
                 )
             }
             Text(
-                text = "다시 계산",
+                text = tr("다시 계산", "Recalculate", "Recalcular"),
                 color = HomePalette.Accent,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,

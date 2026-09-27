@@ -46,7 +46,7 @@ fun SettingsGear(onClick: () -> Unit) {
     ) {
         Icon(
             painter = painterResource(R.drawable.ic_settings),
-            contentDescription = "설정",
+            contentDescription = tr("설정", "Settings", "Ajustes"),
             tint = HomePalette.Ink2,
             modifier = Modifier.size(20.dp),
         )

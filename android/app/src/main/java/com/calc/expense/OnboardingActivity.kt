@@ -171,7 +171,7 @@ class OnboardingActivity : ComponentActivity() {
      */
     private fun join() {
         val uid: String = FirebaseAuth.getInstance().currentUser?.uid
-            ?: return run { ui = ui.copy(joinMessage = "로그인 정보를 확인할 수 없어요.", joinFailed = true) }
+            ?: return run { ui = ui.copy(joinMessage = tr("로그인 정보를 확인할 수 없어요.", "Couldn't verify your sign-in.", "No se pudo verificar tu sesión."), joinFailed = true) }
         ui = ui.copy(joinBusy = true, joinMessage = null)
         HouseholdRepository.join(uid, ui.joinCode) { result ->
             if (isFinishing || isDestroyed) return@join
@@ -191,7 +191,7 @@ class OnboardingActivity : ComponentActivity() {
                     }
                 }
                 .onFailure {
-                    ui = ui.copy(joinBusy = false, joinFailed = true, joinMessage = it.message ?: "연결하지 못했어요.")
+                    ui = ui.copy(joinBusy = false, joinFailed = true, joinMessage = it.message ?: tr("연결하지 못했어요.", "Couldn't connect.", "No se pudo conectar."))
                 }
         }
     }
@@ -199,12 +199,21 @@ class OnboardingActivity : ComponentActivity() {
     /** 가져온 값을 그대로 적어 보여준다. 가정에 아직 값이 없거나 못 읽었으면 설정에서 정하라고 한다. */
     private fun joinedMessage(pulled: HouseholdPull): String {
         if (pulled != HouseholdPull.CHANGED && pulled != HouseholdPull.SAME) {
-            return "가정에 연결됐어요.\n공용 예산은 설정 › 예산에서 정할 수 있어요."
+            return tr(
+                "가정에 연결됐어요.\n공용 예산은 설정 › 예산에서 정할 수 있어요.",
+                "Joined the household.\nYou can set the shared budget in Settings › Budget.",
+                "Te uniste al hogar.\nPuedes definir el presupuesto compartido en Ajustes › Presupuesto.",
+            )
         }
         val settings: Settings = SettingsStore.load(this)
         val budget: String =
-            if (settings.shared.hasBudget) "공용 예산 ${StatusText.won(settings.shared.monthlyBudget)}" else "공용 예산 미정"
-        return "가정에 연결됐어요.\n$budget · 월급날 ${settings.payDay}일을 가져왔어요."
+            if (settings.shared.hasBudget) tr("공용 예산 ", "Shared budget ", "Presupuesto compartido ") + StatusText.won(settings.shared.monthlyBudget)
+            else tr("공용 예산 미정", "Shared budget not set", "Presupuesto compartido sin definir")
+        return tr(
+            "가정에 연결됐어요.\n$budget · 월급날 ${settings.payDay}일을 가져왔어요.",
+            "Joined the household.\nImported: $budget · payday ${L10n.dayOfMonth(settings.payDay)}.",
+            "Te uniste al hogar.\nSe importó: $budget · día de cobro ${L10n.dayOfMonth(settings.payDay)}.",
+        )
     }
 
     /**
