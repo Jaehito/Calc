@@ -37,6 +37,10 @@ class MainActivity : ComponentActivity() {
     private var showStorageNotice: Boolean by mutableStateOf(false)
     private var notificationOn: Boolean by mutableStateOf(false)
     private var reminderOn: Boolean by mutableStateOf(false)
+    private var overlayAllowed: Boolean by mutableStateOf(false)
+
+    /** 결제 팝업 권한 화면으로 보냈는지. 돌아왔을 때 결과를 한 줄로 알린다. */
+    private var awaitingOverlay: Boolean = false
     private var householdPaired: Boolean by mutableStateOf(false)
     private var householdCode: String? by mutableStateOf(null)
     private var householdJoinInput: String by mutableStateOf("")
@@ -76,6 +80,7 @@ class MainActivity : ComponentActivity() {
                     showStorageNotice = showStorageNotice,
                     notificationOn = notificationOn,
                     reminderOn = reminderOn,
+                    overlayAllowed = overlayAllowed,
                     accountEmail = FirebaseAuth.getInstance().currentUser?.email,
                     householdPaired = householdPaired,
                     householdCode = householdCode,
@@ -100,6 +105,7 @@ class MainActivity : ComponentActivity() {
                     )
                 },
                 onToggleReminder = { toggleReminder() },
+                onOpenOverlaySettings = { openOverlaySettings() },
                 onExport = { exportSettings() },
                 onImport = { importSettings() },
                 onExportExpenses = { exportExpenses() },
@@ -415,6 +421,35 @@ class MainActivity : ComponentActivity() {
 
     private fun refreshReminderButton() {
         reminderOn = ReminderState.isEnabled(this)
+        overlayAllowed = AndroidSettings.canDrawOverlays(this)
+        if (awaitingOverlay) {
+            awaitingOverlay = false
+            if (overlayAllowed) {
+                setStatus(tr("결제 팝업을 바로 띄워요.", "Payment popups will now show instantly.", "Los avisos de pago se mostrarán al instante."))
+            }
+        }
+    }
+
+    /**
+     * «다른 앱 위에 표시» 설정으로 보낸다. 없어도 결제 알림은 배너로 오고, 있으면 카드사 팝업이
+     * 들어갈 때까지 기다리지 않는 팝업([PaymentOverlay])으로 온다.
+     */
+    private fun openOverlaySettings() {
+        val intent = Intent(AndroidSettings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+        try {
+            awaitingOverlay = true
+            startActivity(intent)
+        } catch (_: Exception) {
+            awaitingOverlay = false
+            setStatus(
+                tr(
+                    "이 기기에서 «다른 앱 위에 표시» 설정을 열 수 없습니다.",
+                    "Can't open «Display over other apps» settings on this device.",
+                    "No se pueden abrir los ajustes de «Mostrar sobre otras apps» en este dispositivo.",
+                ),
+                isError = true,
+            )
+        }
     }
 
     /**
@@ -444,6 +479,19 @@ class MainActivity : ComponentActivity() {
         ReminderState.setEnabled(this, true)
         refreshReminderButton()
         setStatus(tr("결제 알림 읽기를 켰어요. 결제를 보면 금액과 가게를 잠깐 띄우고, 몇 초 뒤 스스로 사라져요.", "Reading payment alerts. When a payment is seen, the amount and store pop up briefly and vanish after a few seconds.", "Leyendo avisos de pago. Al detectar un pago, el importe y la tienda aparecen un momento y desaparecen en unos segundos."))
+
+        // 이어서 팝업 권한을 한 번 묻는다. 건너뛰어도 배너로 동작하고, 설정의 «결제 팝업 바로
+        // 띄우기» 줄에서 나중에 켤 수 있다.
+        if (!overlayAllowed) {
+            setStatus(
+                tr(
+                    "결제 알림 읽기를 켰어요. «곳간»을 켜 두면 결제 팝업이 기다리지 않고 바로 떠요. 건너뛰어도 배너로 알려요.",
+                    "Reading payment alerts. Turn on «Spending Log» here so the popup shows instantly — skip it and you'll get a banner instead.",
+                    "Leyendo avisos de pago. Activa «Registro de gastos» aquí para que el aviso salga al instante; si lo omites, recibirás un banner.",
+                ),
+            )
+            openOverlaySettings()
+        }
     }
 
     private fun openNotificationAccessSettings() {

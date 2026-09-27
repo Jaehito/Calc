@@ -70,6 +70,8 @@ data class SettingsUi(
     val showStorageNotice: Boolean = false,
     val notificationOn: Boolean = false,
     val reminderOn: Boolean = false,
+    /** «다른 앱 위에 표시» 권한. 있으면 결제 팝업이 시스템 팝업 줄을 서지 않고 바로 뜬다. */
+    val overlayAllowed: Boolean = false,
     val accountEmail: String? = null,
     val householdPaired: Boolean = false,
     val householdCode: String? = null,
@@ -108,6 +110,7 @@ fun SettingsScreen(
     onOpenNotificationSettings: () -> Unit,
     onOpenInput: () -> Unit,
     onToggleReminder: () -> Unit,
+    onOpenOverlaySettings: () -> Unit,
     onExport: () -> Unit,
     onExportExpenses: () -> Unit,
     onImport: () -> Unit,
@@ -147,7 +150,7 @@ fun SettingsScreen(
 
             LanguageGroup(ui.language, onLanguageChange)
             BudgetGroup(ui, onFormChange, onFieldDone, onOpenFixedCosts)
-            NotificationGroup(ui, onToggleNotification, onToggleReminder, onOpenInput, onOpenNotificationSettings)
+            NotificationGroup(ui, onToggleNotification, onToggleReminder, onOpenOverlaySettings, onOpenInput, onOpenNotificationSettings)
             HouseholdGroup(
                 ui, onHouseholdJoinInputChange, onCreateHousehold, onJoinHousehold,
                 onLeaveHousehold, onShareHouseholdCode,
@@ -347,6 +350,7 @@ private fun NotificationGroup(
     ui: SettingsUi,
     onToggleNotification: (Boolean) -> Unit,
     onToggleReminder: () -> Unit,
+    onOpenOverlaySettings: () -> Unit,
     onOpenInput: () -> Unit,
     onOpenNotificationSettings: () -> Unit,
 ) {
@@ -373,6 +377,19 @@ private fun NotificationGroup(
             checked = ui.reminderOn,
             onCheckedChange = { onToggleReminder() },
         )
+        // 결제 알림을 켤 때 권한을 한 번 물었는데 건너뛴 사람을 위한 두 번째 문.
+        // 이미 켰으면 안 보인다 — 할 일이 없는 줄은 두지 않는다.
+        if (ui.reminderOn && !ui.overlayAllowed) {
+            LinkRow(
+                title = tr("결제 팝업 바로 띄우기", "Show payment popup instantly", "Mostrar el aviso de pago al instante"),
+                sub = tr(
+                    "«다른 앱 위에 표시»를 켜면 카드사 알림이 들어갈 때까지 기다리지 않고 바로 떠요",
+                    "Turn on «Display over other apps» so it appears right away instead of waiting for the card alert",
+                    "Activa «Mostrar sobre otras apps» para que aparezca al momento sin esperar al aviso de la tarjeta",
+                ),
+                onClick = onOpenOverlaySettings,
+            )
+        }
         Divider()
         LinkRow(title = tr("입력 화면 열어보기", "Open the entry screen", "Abrir la pantalla de entrada"), sub = null, onClick = onOpenInput)
         LinkRow(

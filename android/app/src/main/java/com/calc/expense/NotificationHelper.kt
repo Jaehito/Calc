@@ -103,7 +103,16 @@ object NotificationHelper {
      * 알림마다 목적지를 직접 적지 않는 이유는, 그렇게 두면 알림이 늘 때마다 «홈이야 기록이야» 를
      * 그 자리에서 다시 정하게 되고 규칙이 흩어지기 때문이다.
      */
-    private fun openFor(context: Context, door: EntryDoor, requestCode: Int): PendingIntent {
+    private fun openFor(context: Context, door: EntryDoor, requestCode: Int): PendingIntent =
+        PendingIntent.getActivity(
+            context,
+            requestCode,
+            intentFor(context, door),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+    /** [openFor] 의 인텐트 그 자체. 알림이 아닌 문(결제 팝업 [PaymentOverlay])도 같은 곳으로 보낸다. */
+    fun intentFor(context: Context, door: EntryDoor): Intent {
         val intent: Intent = when (EntryRoutes.of(door)) {
             EntryRoute.HOME -> Intent(context, HomeActivity::class.java)
             EntryRoute.RECORD -> Intent(context, QuickInputActivity::class.java)
@@ -121,13 +130,7 @@ object NotificationHelper {
             } else {
                 Intent.FLAG_ACTIVITY_NEW_TASK
             }
-
-        return PendingIntent.getActivity(
-            context,
-            requestCode,
-            intent.addFlags(flags),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
+        return intent.addFlags(flags)
     }
 
     /**
@@ -247,10 +250,10 @@ object NotificationHelper {
     /**
      * 결제를 보면 **잠깐 떴다 스스로 사라지는 배너.**
      *
-     * 바라신 것은 토스트였는데, 안드로이드는 앱이 꺼져 있을 때 토스트를 띄우지 못하게 막아
-     * 뒀다(11부터). 떠 있는 창을 쓰려면 «다른 앱 위에 표시» 권한을 따로 받아야 하고 제조사가
-     * 막기도 한다. 그래서 배너 알림에 [BANNER_TIMEOUT_MS] 자동 사라짐을 걸어 같은 모양을
-     * 만든다 — 뜨는 자리도 누르는 동작도 토스트와 같고 권한이 필요 없다.
+     * **이제는 대체 경로다.** «다른 앱 위에 표시» 권한이 있고 잠금이 풀려 있으면
+     * [PaymentOverlay] 가 뜬다 — 이 배너는 시스템 팝업 줄을 서야 해서 카드사 팝업이 들어갈
+     * 때까지 늦게 떴다. 권한이 없거나 잠금화면일 때(그 창은 잠금화면 위에 못 뜬다) 여기로 온다.
+     * [BANNER_TIMEOUT_MS] 뒤 스스로 사라진다.
      *
      * **트레이에 남지 않는다.** 그래서 «곳간이 쓰는 알림 자리는 하나»라는 약속을 깨지 않는다.
      *

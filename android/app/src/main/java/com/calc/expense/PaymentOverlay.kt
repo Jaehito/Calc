@@ -1,0 +1,244 @@
+package com.calc.expense
+
+import android.annotation.SuppressLint
+import android.app.KeyguardManager
+import android.content.Context
+import android.graphics.PixelFormat
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.os.PowerManager
+import android.provider.Settings as AndroidSettings
+import android.util.Log
+import android.view.Gravity
+import android.view.LayoutInflater
+import android.view.MotionEvent
+import android.view.View
+import android.view.WindowInsets
+import android.view.WindowManager
+import android.view.animation.LinearInterpolator
+import android.widget.TextView
+import kotlin.math.abs
+
+/**
+ * 결제를 보면 **다른 앱 위, 화면 아래(토스트 자리)** 에 5초 뜨는 팝업.
+ *
+ * 배너 알림([NotificationHelper.showPaymentBanner])은 시스템이 줄을 세운다 — 카드사 알림이 이미
+ * 팝업으로 떠 있으면 그게 들어갈 때까지 우리 배너가 기다렸다. 이 창은 시스템 팝업 줄과 무관하게
+ * 바로 그려진다. 시스템 팝업보다 한 층 아래라 화면 위에 두면 카드사 팝업에 가려지므로 아래에 둔다.
+ *
+ * «다른 앱 위에 표시» 권한이 있고, 화면이 켜져 잠금이 풀려 있을 때만 쓴다. 잠금화면 위에는
+ * 이 창이 그려지지 않는다. 쓸 수 없으면 예전 배너로 떨어진다 — 결제를 알리는 길은 늘 하나다.
+ *
+ * 누르면 수집함, 옆·아래로 밀면 닫힘. 결제가 잇따라 오면 떠 있는 팝업의 글자만 바꾸고 시간을
+ * 다시 센다(두 장 겹쳐 뜨지 않는다).
+ */
+object PaymentOverlay {
+
+    private const val TAG = "PaymentOverlay"
+    private const val SHOW_MS = 5_000L
+    private const val ANIM_MS = 180L
+
+    private val main = Handler(Looper.getMainLooper())
+
+    // 메인 스레드에서만 만진다.
+    private var card: View? = null
+    private val autoHide = Runnable { hide() }
+
+    /** 권한이 있고 사람이 화면을 보고 있는지. 아니면 배너를 쓴다. */
+    fun canShow(context: Context): Boolean {
+        if (!AndroidSettings.canDrawOverlays(context)) return false
+        val power: PowerManager? = context.getSystemService(PowerManager::class.java)
+        if (power?.isInteractive != true) return false
+        val keyguard: KeyguardManager? = context.getSystemService(KeyguardManager::class.java)
+        return keyguard?.isKeyguardLocked != true
+    }
+
+    /** 팝업을 띄우고, 띄울 수 없으면 배너로 알린다. 어느 스레드에서 불러도 된다. */
+    fun showOrBanner(context: Context, amount: Long, merchant: String) {
+        val app: Context = context.applicationContext
+        if (!canShow(app)) {
+            NotificationHelper.showPaymentBanner(app, amount, merchant)
+            return
+        }
+        main.post {
+            val shown: Boolean = try {
+                show(app, amount, merchant)
+            } catch (e: Exception) {
+                // 제조사가 막았거나 권한이 방금 꺼졌다. 알림은 놓치지 않는다.
+                Log.w(TAG, "결제 팝업을 띄우지 못해 배너로 대체", e)
+                false
+            }
+            if (!shown) NotificationHelper.showPaymentBanner(app, amount, merchant)
+        }
+    }
+
+    private fun show(app: Context, amount: Long, merchant: String): Boolean {
+        val title: String = if (merchant.isBlank()) StatusText.won(amount) else StatusText.won(amount) + " · " + merchant
+        val action: String = tr("눌러서 기록", "Tap to log", "Toca para anotar")
+
+        val existing: View? = card
+        if (existing != null) {
+            bind(existing, title, action)
+            restartTimer(existing)
+            return true
+        }
+
+        val view: View = LayoutInflater.from(app).inflate(R.layout.overlay_payment, null)
+        view.clipToOutline = true
+        bind(view, title, action)
+        attachGestures(app, view)
+
+        val wm: WindowManager = app.getSystemService(WindowManager::class.java) ?: return false
+        wm.addView(view, layoutParams(app))
+        card = view
+
+        view.alpha = 0f
+        view.post {
+            view.translationY = view.height * 0.6f
+            view.animate().alpha(1f).translationY(0f).setDuration(ANIM_MS).start()
+        }
+        restartTimer(view)
+        return true
+    }
+
+    private fun bind(view: View, title: String, action: String) {
+        view.findViewById<TextView>(R.id.overlayTitle).text = title
+        view.findViewById<TextView>(R.id.overlayAction).text = action
+        view.contentDescription = "$title. $action"
+    }
+
+    /** 초록 줄을 다시 채워 5초 동안 줄이고, 끝나면 닫는다. */
+    private fun restartTimer(view: View) {
+        main.removeCallbacks(autoHide)
+        val bar: View = view.findViewById(R.id.overlayTimer)
+        bar.animate().cancel()
+        bar.pivotX = 0f
+        bar.scaleX = 1f
+        bar.animate().scaleX(0f).setDuration(SHOW_MS).setInterpolator(LinearInterpolator()).start()
+        main.postDelayed(autoHide, SHOW_MS)
+    }
+
+    private fun layoutParams(app: Context): WindowManager.LayoutParams {
+        val density: Float = app.resources.displayMetrics.density
+        val side: Int = (12 * density).toInt()
+        val params = WindowManager.LayoutParams(
+            app.resources.displayMetrics.widthPixels - side * 2,
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            // 포커스를 뺏지 않는다 — 보던 앱의 키보드·입력이 그대로다. 창 밖 터치는 그 앱으로 간다.
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            PixelFormat.TRANSLUCENT,
+        )
+        params.gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+        params.y = (24 * density).toInt()
+        // 하단 바와 키보드 위로 올린다. 키보드 뒤에 숨으면 입력 중에는 못 본다.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            params.fitInsetsTypes = WindowInsets.Type.systemBars() or WindowInsets.Type.ime()
+        }
+        params.windowAnimations = 0
+        params.title = "PaymentOverlay"
+        return params
+    }
+
+    /**
+     * 누르면 수집함을 열고, 밀면 닫는다. 조금 움직인 건 누른 것으로 본다 —
+     * 손가락이 살짝 떨려도 눌리게.
+     */
+    @SuppressLint("ClickableViewAccessibility")
+    private fun attachGestures(app: Context, view: View) {
+        val slop: Float = 12 * app.resources.displayMetrics.density
+        var downX = 0f
+        var downY = 0f
+        var dragging = false
+
+        view.setOnTouchListener { v, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    downX = event.rawX
+                    downY = event.rawY
+                    dragging = false
+                    // 만지는 동안은 사라지지 않는다.
+                    main.removeCallbacks(autoHide)
+                    v.findViewById<View>(R.id.overlayTimer).animate().cancel()
+                    true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val dx: Float = event.rawX - downX
+                    val dy: Float = event.rawY - downY
+                    if (!dragging && (abs(dx) > slop || dy > slop)) dragging = true
+                    if (dragging) {
+                        v.translationX = dx
+                        v.translationY = if (dy > 0f) dy else 0f
+                        v.alpha = 1f - (abs(dx) / v.width.coerceAtLeast(1)).coerceIn(0f, 0.7f)
+                    }
+                    true
+                }
+                MotionEvent.ACTION_UP -> {
+                    val dx: Float = event.rawX - downX
+                    val dy: Float = event.rawY - downY
+                    when {
+                        !dragging -> {
+                            hide(immediate = true)
+                            openInbox(app)
+                        }
+                        abs(dx) > v.width / 3f -> dismissSideways(v, dx)
+                        dy > v.height / 2f -> hide()
+                        else -> {
+                            v.animate().translationX(0f).translationY(0f).alpha(1f).setDuration(ANIM_MS).start()
+                            restartTimer(v)
+                        }
+                    }
+                    true
+                }
+                MotionEvent.ACTION_CANCEL -> {
+                    v.animate().translationX(0f).translationY(0f).alpha(1f).setDuration(ANIM_MS).start()
+                    restartTimer(v)
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
+    private fun openInbox(app: Context) {
+        try {
+            app.startActivity(NotificationHelper.intentFor(app, EntryDoor.PENDING_INBOX))
+        } catch (e: Exception) {
+            Log.w(TAG, "수집함을 열지 못함", e)
+        }
+    }
+
+    // 닫는 애니메이션을 시작하는 순간 [card] 를 비운다. 그 사이 새 결제가 오면 사라지는 중인
+    // 카드에 글자를 바꿔 쓰지 않고 새 카드를 띄운다.
+    private fun dismissSideways(view: View, dx: Float) {
+        main.removeCallbacks(autoHide)
+        if (card === view) card = null
+        val target: Float = if (dx > 0f) view.width.toFloat() else -view.width.toFloat()
+        view.animate().translationX(target).alpha(0f).setDuration(ANIM_MS)
+            .withEndAction { remove(view) }
+            .start()
+    }
+
+    private fun hide(immediate: Boolean = false) {
+        main.removeCallbacks(autoHide)
+        val view: View = card ?: return
+        card = null
+        if (immediate) {
+            remove(view)
+            return
+        }
+        view.animate().alpha(0f).translationY(view.height * 0.6f).setDuration(ANIM_MS)
+            .withEndAction { remove(view) }
+            .start()
+    }
+
+    private fun remove(view: View) {
+        if (card === view) card = null
+        try {
+            view.context.getSystemService(WindowManager::class.java)?.removeView(view)
+        } catch (_: Exception) {
+            // 이미 떨어졌다.
+        }
+    }
+}
