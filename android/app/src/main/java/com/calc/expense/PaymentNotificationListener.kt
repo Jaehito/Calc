@@ -61,15 +61,14 @@ class PaymentNotificationListener : NotificationListenerService() {
         // **알리는 게 먼저, 저장은 그다음.** 사람은 결제 직후 화면을 보고 있다 — 수집함·결제 기록
         // 저장을 끝내고 띄우면 그만큼 늦게 뜬다. 저장이 실패해도 알림이 먼저 나간 쪽이 낫다.
         // 권한이 있으면 시스템 팝업 줄을 서지 않는 팝업([PaymentOverlay]), 없으면 배너.
-        PaymentOverlay.showOrBanner(app, candidate.amount, merchant)
+        val postedAt: Long = if (sbn.postTime > 0L) sbn.postTime else System.currentTimeMillis()
+        PaymentOverlay.showOrBanner(app, candidate.amount, merchant, postedAt = postedAt)
 
         // 카테고리도 «사용자의 이름»으로 찾는다 — 카테고리 기억은 사용자가 적은 이름에
         // 붙어 있어서 알림의 원래 이름으로는 찾지 못한다. 기억이 낱말 규칙을 이기는 것은
         // 기록 화면([QuickInputActivity.applyAutoCategory])과 같은 순서다.
         val category: String =
             CategoryMemoryStore.recall(app, merchant, categories) ?: candidate.category
-
-        val postedAt: Long = if (sbn.postTime > 0L) sbn.postTime else System.currentTimeMillis()
 
         PendingPaymentStore.add(
             app,

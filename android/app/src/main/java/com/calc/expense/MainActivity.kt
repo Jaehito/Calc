@@ -38,6 +38,7 @@ class MainActivity : ComponentActivity() {
     private var notificationOn: Boolean by mutableStateOf(false)
     private var reminderOn: Boolean by mutableStateOf(false)
     private var overlayAllowed: Boolean by mutableStateOf(false)
+    private var overlayLog: List<String> by mutableStateOf(emptyList())
 
     /** 결제 팝업 권한 화면으로 보냈는지. 돌아왔을 때 결과를 한 줄로 알린다. */
     private var awaitingOverlay: Boolean = false
@@ -81,6 +82,7 @@ class MainActivity : ComponentActivity() {
                     notificationOn = notificationOn,
                     reminderOn = reminderOn,
                     overlayAllowed = overlayAllowed,
+                    overlayLog = overlayLog,
                     accountEmail = FirebaseAuth.getInstance().currentUser?.email,
                     householdPaired = householdPaired,
                     householdCode = householdCode,
@@ -106,6 +108,7 @@ class MainActivity : ComponentActivity() {
                 },
                 onToggleReminder = { toggleReminder() },
                 onOpenOverlaySettings = { openOverlaySettings() },
+                onTestOverlay = { testOverlay() },
                 onExport = { exportSettings() },
                 onImport = { importSettings() },
                 onExportExpenses = { exportExpenses() },
@@ -422,12 +425,25 @@ class MainActivity : ComponentActivity() {
     private fun refreshReminderButton() {
         reminderOn = ReminderState.isEnabled(this)
         overlayAllowed = AndroidSettings.canDrawOverlays(this)
+        overlayLog = PaymentOverlayLog.lines(this)
         if (awaitingOverlay) {
             awaitingOverlay = false
             if (overlayAllowed) {
                 setStatus(tr("결제 팝업을 바로 띄워요.", "Payment popups will now show instantly.", "Los avisos de pago se mostrarán al instante."))
             }
         }
+    }
+
+    /**
+     * 임시 진단. 3초 뒤 가짜 결제 팝업을 띄운다 — 그 사이 홈으로 나가면 다른 앱 위에서 어떻게
+     * 보이는지 확인할 수 있다. 실제 결제와 같은 길([PaymentOverlay.showOrBanner])을 탄다.
+     */
+    private fun testOverlay() {
+        setStatus(tr("3초 뒤에 띄워요. 홈으로 나가 보세요.", "Showing in 3 seconds. Go to the home screen.", "Se mostrará en 3 segundos. Ve a la pantalla de inicio."))
+        val app = applicationContext
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            PaymentOverlay.showOrBanner(app, 4_500L, tr("시험 결제", "Test payment", "Pago de prueba"), source = "시험")
+        }, 3_000L)
     }
 
     /**
