@@ -84,6 +84,8 @@ data class SettingsUi(
     val blockedPackages: List<String> = emptyList(),
     /** 알림 이름 → 사용자가 고친 이름. 열쇠는 띄어쓰기를 뺀 알림 이름이다([NameMemories]). */
     val nameMemories: List<Pair<String, String>> = emptyList(),
+    /** 고른 언어. null 이면 폰 언어를 따른다. */
+    val language: Lang? = null,
 )
 
 /**
@@ -120,6 +122,7 @@ fun SettingsScreen(
     onUnblockPackage: (String) -> Unit,
     onForgetName: (String) -> Unit,
     onToastShown: () -> Unit,
+    onLanguageChange: (Lang?) -> Unit,
 ) {
     Box(modifier = Modifier.fillMaxSize().background(HomePalette.Ground)) {
         Column(
@@ -139,9 +142,10 @@ fun SettingsScreen(
                         .padding(horizontal = 6.dp, vertical = 2.dp),
                 )
                 Spacer(Modifier.width(8.dp))
-                Text(text = "설정", color = HomePalette.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text(text = tr("설정", "Settings", "Ajustes"), color = HomePalette.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             }
 
+            LanguageGroup(ui.language, onLanguageChange)
             BudgetGroup(ui, onFormChange, onFieldDone, onOpenFixedCosts)
             NotificationGroup(ui, onToggleNotification, onToggleReminder, onOpenInput, onOpenNotificationSettings)
             HouseholdGroup(
@@ -156,7 +160,13 @@ fun SettingsScreen(
 
             if (ui.showStorageNotice) {
                 Spacer(Modifier.height(12.dp))
-                WarningBanner("이 기기에서 암호화 저장소를 열지 못해 설정이 평문으로 저장됩니다. 앱 전용 영역이라 다른 앱은 읽지 못합니다.")
+                WarningBanner(
+                    tr(
+                        "이 기기에서 암호화 저장소를 열지 못해 설정이 평문으로 저장됩니다. 앱 전용 영역이라 다른 앱은 읽지 못합니다.",
+                        "Encrypted storage couldn't be opened on this device, so settings are saved unencrypted. They're in app-only storage that other apps can't read.",
+                        "No se pudo abrir el almacenamiento cifrado en este dispositivo, así que los ajustes se guardan sin cifrar. Están en un espacio exclusivo de la app que otras apps no pueden leer.",
+                    ),
+                )
             }
 
             // 아래 안내가 마지막 카드를 가리지 않게 여백을 둔다.
@@ -164,6 +174,45 @@ fun SettingsScreen(
         }
 
         Toast(ui, onToastShown, modifier = Modifier.align(Alignment.BottomCenter))
+    }
+}
+
+// ── 언어 ──────────────────────────────────────────────────────────────────────
+
+/**
+ * 화면 언어. 선택지는 그 언어 자신의 이름으로 적는다 — 모르는 언어로 잘못 바꿔도 돌아올 수 있게.
+ * 제목에도 «Language» 를 붙여 둔다.
+ */
+@Composable
+private fun LanguageGroup(current: Lang?, onChange: (Lang?) -> Unit) {
+    GroupTitle(tr("언어 · Language", "Language", "Idioma · Language"))
+    CardBox {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            val options: List<Pair<Lang?, String>> = listOf(
+                null to tr("폰 설정", "System", "Sistema"),
+                Lang.KO to "한국어",
+                Lang.EN to "English",
+                Lang.ES to "Español",
+            )
+            for ((lang, label) in options) {
+                val on: Boolean = current == lang
+                Text(
+                    text = label,
+                    color = if (on) Color.White else HomePalette.Ink2,
+                    fontSize = 13.sp,
+                    fontWeight = if (on) FontWeight.Bold else FontWeight.Medium,
+                    maxLines = 1,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(if (on) HomePalette.AccentBright else HomePalette.Chip)
+                        .clickable { if (!on) onChange(lang) }
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                )
+            }
+        }
     }
 }
 
@@ -177,33 +226,45 @@ private fun BudgetGroup(
     onOpenFixedCosts: () -> Unit,
 ) {
     val form: SettingsFormUi = ui.form
-    GroupTitle("예산") { SavedMark(ui.savedCount) }
+    GroupTitle(tr("예산", "Budget", "Presupuesto")) { SavedMark(ui.savedCount) }
     CardBox {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             MintField(
                 value = form.personalName,
                 onValueChange = { onFormChange(form.copy(personalName = it.take(Purse.MAX_NAME_LENGTH))) },
-                label = "개인 곳간 이름",
+                label = tr("개인 곳간 이름", "Personal wallet name", "Nombre de la cartera personal"),
                 onDone = onFieldDone,
                 modifier = Modifier.weight(1f),
             )
             MintField(
                 value = form.personalBudgetText,
                 onValueChange = { onFormChange(form.copy(personalBudgetText = it)) },
-                label = "월 예산",
+                label = tr("월 예산", "Monthly budget", "Presupuesto mensual"),
                 keyboardType = KeyboardType.Number,
                 onDone = onFieldDone,
                 modifier = Modifier.weight(1.2f),
             )
         }
-        HelperText("예산을 주기 일수로 나눈 값이 하루치이고, 아낀 만큼 곳간에 쌓입니다. «93만»처럼 적어도 됩니다.")
+        HelperText(
+            tr(
+                "예산을 주기 일수로 나눈 값이 하루치이고, 아낀 만큼 곳간에 쌓입니다. «93만»처럼 적어도 됩니다.",
+                "The budget divided by the days in the cycle is your daily amount; what you save builds up. You can also type «93만» (= 930,000).",
+                "El presupuesto dividido entre los días del ciclo es tu cantidad diaria; lo que ahorras se acumula. También puedes escribir «93만» (= 930.000).",
+            ),
+        )
         Divider()
         LinkRow(
-            title = if (ui.fixedTotal > 0L) "고정비 고치고 다시 계산" else "고정비로 계산하기",
+            title =
+                if (ui.fixedTotal > 0L) tr("고정비 고치고 다시 계산", "Edit fixed costs and recalculate", "Editar gastos fijos y recalcular")
+                else tr("고정비로 계산하기", "Calculate from fixed costs", "Calcular con gastos fijos"),
             sub = if (ui.fixedTotal > 0L) {
-                "지금 적어 둔 고정비 ${StatusText.won(ui.fixedTotal)}"
+                tr("지금 적어 둔 고정비 ", "Current fixed costs ", "Gastos fijos actuales ") + StatusText.won(ui.fixedTotal)
             } else {
-                "월급에서 월세·보험 같은 고정비를 빼 개인 예산을 정해요"
+                tr(
+                    "월급에서 월세·보험 같은 고정비를 빼 개인 예산을 정해요",
+                    "Subtract fixed costs like rent and insurance from your income to set your budget",
+                    "Resta a tu sueldo gastos fijos como alquiler o seguros para fijar tu presupuesto",
+                )
             },
             onClick = onOpenFixedCosts,
         )
@@ -214,28 +275,38 @@ private fun BudgetGroup(
                 MintField(
                     value = form.sharedName,
                     onValueChange = { onFormChange(form.copy(sharedName = it.take(Purse.MAX_NAME_LENGTH))) },
-                    label = "공용 곳간 이름",
+                    label = tr("공용 곳간 이름", "Shared wallet name", "Nombre de la cartera compartida"),
                     onDone = onFieldDone,
                     modifier = Modifier.weight(1f),
                 )
                 MintField(
                     value = form.sharedBudgetText,
                     onValueChange = { onFormChange(form.copy(sharedBudgetText = it)) },
-                    label = "공용 월 예산",
+                    label = tr("공용 월 예산", "Shared monthly budget", "Presupuesto mensual compartido"),
                     keyboardType = KeyboardType.Number,
                     onDone = onFieldDone,
                     modifier = Modifier.weight(1.2f),
                 )
             }
-            HelperText("공용 곳간 이름·예산과 월급날은 두 폰이 같이 씁니다. 여기서 바꾸면 배우자 폰도 앱을 열 때 따라 바뀝니다.")
+            HelperText(
+                tr(
+                    "공용 곳간 이름·예산과 월급날은 두 폰이 같이 씁니다. 여기서 바꾸면 배우자 폰도 앱을 열 때 따라 바뀝니다.",
+                    "The shared wallet's name, budget and payday are shared by both phones. Changes here apply to your partner's phone when they open the app.",
+                    "El nombre, el presupuesto y el día de cobro de la cartera compartida son comunes a ambos teléfonos. Los cambios se aplican en el de tu pareja al abrir la app.",
+                ),
+            )
         }
 
         Divider()
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = "월급날", color = HomePalette.Ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                Text(text = tr("월급날", "Payday", "Día de cobro"), color = HomePalette.Ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 Text(
-                    text = "이날부터 다음 월급 전날까지가 한 주기예요. 달력대로 쓰려면 1",
+                    text = tr(
+                        "이날부터 다음 월급 전날까지가 한 주기예요. 달력대로 쓰려면 1",
+                        "A cycle runs from this day to the day before the next payday. Use 1 for calendar months",
+                        "Un ciclo va de este día al día anterior al siguiente cobro. Usa 1 para meses naturales",
+                    ),
                     color = HomePalette.Muted,
                     fontSize = 11.sp,
                     lineHeight = 15.sp,
@@ -245,7 +316,7 @@ private fun BudgetGroup(
             MintField(
                 value = form.payDayText,
                 onValueChange = { onFormChange(form.copy(payDayText = it.filter(Char::isDigit).take(2))) },
-                label = "일",
+                label = tr("일", "Day", "Día"),
                 keyboardType = KeyboardType.Number,
                 onDone = onFieldDone,
                 modifier = Modifier.width(76.dp),
@@ -265,7 +336,7 @@ private fun SavedMark(savedCount: Int) {
         visible = false
     }
     AnimatedVisibility(visible = visible, enter = fadeIn(), exit = fadeOut()) {
-        Text(text = "저장됨 ✓", color = HomePalette.Accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        Text(text = tr("저장됨 ✓", "Saved ✓", "Guardado ✓"), color = HomePalette.Accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -279,24 +350,36 @@ private fun NotificationGroup(
     onOpenInput: () -> Unit,
     onOpenNotificationSettings: () -> Unit,
 ) {
-    GroupTitle("알림")
+    GroupTitle(tr("알림", "Notifications", "Notificaciones"))
     CardBox {
         SwitchRow(
-            title = "잠금화면 알림",
-            sub = "잠금화면에 오늘 쓸 수 있는 돈을 띄우고, 눌러서 바로 적어요",
+            title = tr("잠금화면 알림", "Lock screen card", "Tarjeta en pantalla de bloqueo"),
+            sub = tr(
+                "잠금화면에 오늘 쓸 수 있는 돈을 띄우고, 눌러서 바로 적어요",
+                "Shows what you can spend today on the lock screen; tap to log right away",
+                "Muestra en la pantalla de bloqueo lo que puedes gastar hoy; tócala para anotar al momento",
+            ),
             checked = ui.notificationOn,
             onCheckedChange = onToggleNotification,
         )
         Divider()
         SwitchRow(
-            title = "결제 알림 읽기",
-            sub = "카드·은행 알림을 보면 금액과 가게를 잠깐 띄워요. «알림 접근» 권한이 필요해요",
+            title = tr("결제 알림 읽기", "Read payment alerts", "Leer avisos de pago"),
+            sub = tr(
+                "카드·은행 알림을 보면 금액과 가게를 잠깐 띄워요. «알림 접근» 권한이 필요해요",
+                "Briefly shows the amount and store from card and bank alerts (Korean banks only). Needs «Notification access»",
+                "Muestra un momento el importe y la tienda de los avisos de tarjeta y banco (solo bancos coreanos). Requiere «Acceso a notificaciones»",
+            ),
             checked = ui.reminderOn,
             onCheckedChange = { onToggleReminder() },
         )
         Divider()
-        LinkRow(title = "입력 화면 열어보기", sub = null, onClick = onOpenInput)
-        LinkRow(title = "시스템 알림 설정 열기", sub = "잠금화면에 내용이 안 보일 때", onClick = onOpenNotificationSettings)
+        LinkRow(title = tr("입력 화면 열어보기", "Open the entry screen", "Abrir la pantalla de entrada"), sub = null, onClick = onOpenInput)
+        LinkRow(
+            title = tr("시스템 알림 설정 열기", "Open system notification settings", "Abrir ajustes de notificaciones"),
+            sub = tr("잠금화면에 내용이 안 보일 때", "If the lock screen hides the content", "Si la pantalla de bloqueo oculta el contenido"),
+            onClick = onOpenNotificationSettings,
+        )
     }
 }
 
@@ -311,14 +394,14 @@ private fun HouseholdGroup(
     onLeave: () -> Unit,
     onShare: () -> Unit,
 ) {
-    GroupTitle("가정")
+    GroupTitle(tr("가정", "Household", "Hogar"))
     CardBox {
         if (ui.householdPaired) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(text = "가정 코드", color = HomePalette.Muted, fontSize = 11.sp)
+                    Text(text = tr("가정 코드", "Household code", "Código de hogar"), color = HomePalette.Muted, fontSize = 11.sp)
                     Text(
-                        text = ui.householdCode ?: "불러오는 중…",
+                        text = ui.householdCode ?: tr("불러오는 중…", "Loading…", "Cargando…"),
                         color = HomePalette.Ink,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
@@ -326,7 +409,7 @@ private fun HouseholdGroup(
                     )
                 }
                 Text(
-                    text = "연결됨",
+                    text = tr("연결됨", "Linked", "Vinculado"),
                     color = HomePalette.Accent,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -337,31 +420,41 @@ private fun HouseholdGroup(
                 )
             }
             Spacer(Modifier.height(12.dp))
-            PillButton(text = "코드 공유하기", onClick = onShare, enabled = ui.householdCode != null)
+            PillButton(text = tr("코드 공유하기", "Share code", "Compartir código"), onClick = onShare, enabled = ui.householdCode != null)
             Spacer(Modifier.height(6.dp))
-            TextLink("연결 해제", onLeave, color = HomePalette.Muted)
+            TextLink(tr("연결 해제", "Leave household", "Salir del hogar"), onLeave, color = HomePalette.Muted)
         } else {
             Text(
-                text = "배우자와 가정 코드로 묶으면 공용 곳간이 생겨요",
+                text = tr(
+                    "배우자와 가정 코드로 묶으면 공용 곳간이 생겨요",
+                    "Link with your partner via a household code to get a shared wallet",
+                    "Vincúlate con tu pareja mediante un código de hogar para tener una cartera compartida",
+                ),
                 color = HomePalette.Ink,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
             )
-            HelperText("한 사람이 코드를 만들어 보내고, 다른 사람이 그 코드를 넣으면 됩니다. 개인 곳간에는 영향이 없어요.")
+            HelperText(
+                tr(
+                    "한 사람이 코드를 만들어 보내고, 다른 사람이 그 코드를 넣으면 됩니다. 개인 곳간에는 영향이 없어요.",
+                    "One person creates a code and sends it; the other enters it. Your personal wallet isn't affected.",
+                    "Una persona crea un código y lo envía; la otra lo introduce. Tu cartera personal no se ve afectada.",
+                ),
+            )
             Spacer(Modifier.height(10.dp))
-            PillButton(text = "코드 만들기", onClick = onCreate, enabled = !ui.householdBusy)
+            PillButton(text = tr("코드 만들기", "Create code", "Crear código"), onClick = onCreate, enabled = !ui.householdBusy)
             Spacer(Modifier.height(12.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 MintField(
                     value = ui.householdJoinInput,
                     onValueChange = onJoinInputChange,
-                    label = "받은 코드",
+                    label = tr("받은 코드", "Received code", "Código recibido"),
                     onDone = {},
                     modifier = Modifier.weight(1f),
                 )
                 Spacer(Modifier.width(8.dp))
                 OutlinedPillButton(
-                    text = "연결",
+                    text = tr("연결", "Join", "Unirse"),
                     onClick = onJoin,
                     enabled = !ui.householdBusy && ui.householdJoinInput.isNotBlank(),
                 )
@@ -389,12 +482,12 @@ private fun RecordGroup(
     onFieldDone: () -> Unit,
 ) {
     var open: Boolean by rememberSaveable { mutableStateOf(false) }
-    GroupTitle("기록")
+    GroupTitle(tr("기록", "Logging", "Registro"))
     CardBox {
         LinkRow(
-            title = "카테고리 칩",
-            sub = form.categoriesText.ifBlank { "기본 목록" },
-            trailing = if (open) "접기" else "고치기",
+            title = tr("카테고리 칩", "Category chips", "Categorías"),
+            sub = form.categoriesText.ifBlank { tr("기본 목록", "Default list", "Lista predeterminada") },
+            trailing = if (open) tr("접기", "Close", "Cerrar") else tr("고치기", "Edit", "Editar"),
             onClick = { open = !open },
         )
         if (open) {
@@ -402,11 +495,17 @@ private fun RecordGroup(
             MintField(
                 value = form.categoriesText,
                 onValueChange = { onFormChange(form.copy(categoriesText = it)) },
-                label = "쉼표로 구분",
+                label = tr("쉼표로 구분", "Comma-separated", "Separadas por comas"),
                 singleLine = false,
                 onDone = onFieldDone,
             )
-            HelperText("기록할 때 뜨는 칩입니다. 적은 순서대로 나옵니다. 비우면 기본 목록으로 돌아갑니다.")
+            HelperText(
+                tr(
+                    "기록할 때 뜨는 칩입니다. 적은 순서대로 나옵니다. 비우면 기본 목록으로 돌아갑니다.",
+                    "Chips shown when logging, in the order written. Leave empty to restore the default list.",
+                    "Opciones que aparecen al anotar, en el orden escrito. Déjalo vacío para volver a la lista predeterminada.",
+                ),
+            )
         }
     }
 }
@@ -439,7 +538,7 @@ private fun MoreGroup(
             .padding(horizontal = 4.dp, vertical = 4.dp),
     ) {
         Text(
-            text = "더보기",
+            text = tr("더보기", "More", "Más"),
             color = HomePalette.Ink2,
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
@@ -452,14 +551,20 @@ private fun MoreGroup(
     CardBox {
         val blockedCount: Int = ui.blockedSenders.size + ui.blockedPackages.size
         LinkRow(
-            title = "수집함에서 안 보는 출처",
-            sub = "결제 알림을 모을 때 건너뛰는 발신자·앱",
-            trailing = if (blockedCount > 0) "$blockedCount" else "없음",
+            title = tr("수집함에서 안 보는 출처", "Hidden sources", "Fuentes ocultas"),
+            sub = tr("결제 알림을 모을 때 건너뛰는 발신자·앱", "Senders and apps skipped when collecting payment alerts", "Remitentes y apps que se omiten al reunir avisos de pago"),
+            trailing = if (blockedCount > 0) "$blockedCount" else tr("없음", "None", "Ninguna"),
             onClick = { blockedOpen = !blockedOpen },
         )
         if (blockedOpen) {
             if (blockedCount == 0) {
-                HelperText("수집함 팝업에서 «이 발신자 안 보기»·«이 앱 안 보기»를 누르면 여기에 생깁니다.")
+                HelperText(
+                    tr(
+                        "수집함 팝업에서 «이 발신자 안 보기»·«이 앱 안 보기»를 누르면 여기에 생깁니다.",
+                        "Appears here when you tap «Hide this sender» or «Hide this app» in the inbox.",
+                        "Aparece aquí al tocar «Ocultar remitente» u «Ocultar esta app» en la bandeja.",
+                    ),
+                )
             }
             for (sender in ui.blockedSenders) BlockedRow(label = sender) { onUnblockSender(sender) }
             for (packageName in ui.blockedPackages) BlockedRow(label = packageName) { onUnblockPackage(packageName) }
@@ -467,46 +572,66 @@ private fun MoreGroup(
         }
         Divider()
         LinkRow(
-            title = "결제 알림 이름 바꿔 띄우기",
-            sub = "수집함에서 고쳐 적은 이름을 다음 알림부터 대신 띄워요",
-            trailing = if (ui.nameMemories.isNotEmpty()) "${ui.nameMemories.size}" else "없음",
+            title = tr("결제 알림 이름 바꿔 띄우기", "Renamed payment alerts", "Avisos de pago renombrados"),
+            sub = tr(
+                "수집함에서 고쳐 적은 이름을 다음 알림부터 대신 띄워요",
+                "Names you corrected in the inbox are used for future alerts",
+                "Los nombres que corregiste en la bandeja se usan en los próximos avisos",
+            ),
+            trailing = if (ui.nameMemories.isNotEmpty()) "${ui.nameMemories.size}" else tr("없음", "None", "Ninguno"),
             onClick = { namesOpen = !namesOpen },
         )
         if (namesOpen) {
             if (ui.nameMemories.isEmpty()) {
-                HelperText("수집함에서 알림 이름을 고쳐 기록하면 여기에 생깁니다. 쿠팡 같은 쇼핑몰과 카드사 이름만 읽힌 결제는 기억하지 않아요.")
+                HelperText(
+                    tr(
+                        "수집함에서 알림 이름을 고쳐 기록하면 여기에 생깁니다. 쿠팡 같은 쇼핑몰과 카드사 이름만 읽힌 결제는 기억하지 않아요.",
+                        "Appears here when you correct an alert's name in the inbox. Payments that only show a store like Coupang or a card company aren't remembered.",
+                        "Aparece aquí al corregir el nombre de un aviso en la bandeja. No se recuerdan los pagos que solo muestran una tienda como Coupang o la emisora de la tarjeta.",
+                    ),
+                )
             }
             for ((from, to) in ui.nameMemories) {
-                BlockedRow(label = "$from → $to", action = "지우기") { onForgetName(from) }
+                BlockedRow(label = "$from → $to", action = tr("지우기", "Remove", "Borrar")) { onForgetName(from) }
             }
             Spacer(Modifier.height(6.dp))
         }
         Divider()
         LinkRow(
-            title = "지출 내보내기 (CSV)",
-            sub = "적은 지출 전부를 «다운로드» 폴더에 표 파일로 저장해요",
+            title = tr("지출 내보내기 (CSV)", "Export spending (CSV)", "Exportar gastos (CSV)"),
+            sub = tr(
+                "적은 지출 전부를 «다운로드» 폴더에 표 파일로 저장해요",
+                "Saves all your spending as a spreadsheet file in «Downloads»",
+                "Guarda todos tus gastos como hoja de cálculo en «Descargas»",
+            ),
             onClick = onExportExpenses,
         )
         Divider()
         LinkRow(
-            title = "설정 백업 코드",
-            sub = "예산·이름·월급날을 코드로 옮겨요",
-            trailing = if (backupOpen) "접기" else "열기",
+            title = tr("설정 백업 코드", "Settings backup code", "Código de copia de ajustes"),
+            sub = tr("예산·이름·월급날을 코드로 옮겨요", "Moves budget, names and payday via a code", "Traslada presupuesto, nombres y día de cobro con un código"),
+            trailing = if (backupOpen) tr("접기", "Close", "Cerrar") else tr("열기", "Open", "Abrir"),
             onClick = { backupOpen = !backupOpen },
         )
         if (backupOpen) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedPillButton("내보내기", onExport, modifier = Modifier.weight(1f))
-                OutlinedPillButton("불러오기", onImport, modifier = Modifier.weight(1f))
+                OutlinedPillButton(tr("내보내기", "Export", "Exportar"), onExport, modifier = Modifier.weight(1f))
+                OutlinedPillButton(tr("불러오기", "Import", "Importar"), onImport, modifier = Modifier.weight(1f))
             }
-            HelperText("«내보내기»는 지금 설정을 코드로 만들어 클립보드에 복사합니다. 메모에 붙여 두면 새 기기에서 «불러오기»로 한 번에 되돌립니다.")
+            HelperText(
+                tr(
+                    "«내보내기»는 지금 설정을 코드로 만들어 클립보드에 복사합니다. 메모에 붙여 두면 새 기기에서 «불러오기»로 한 번에 되돌립니다.",
+                    "«Export» turns your settings into a code and copies it. Keep it in a note and use «Import» on a new device to restore them.",
+                    "«Exportar» convierte tus ajustes en un código y lo copia. Guárdalo en una nota y usa «Importar» en un dispositivo nuevo para recuperarlos.",
+                ),
+            )
             Spacer(Modifier.height(6.dp))
         }
         Divider()
         LinkRow(
-            title = ui.accountEmail ?: "로그인 정보 없음",
-            sub = "구글 계정",
-            trailing = "로그아웃",
+            title = ui.accountEmail ?: tr("로그인 정보 없음", "Not signed in", "Sin sesión"),
+            sub = tr("구글 계정", "Google account", "Cuenta de Google"),
+            trailing = tr("로그아웃", "Sign out", "Cerrar sesión"),
             onClick = onSignOut,
         )
     }
@@ -514,7 +639,7 @@ private fun MoreGroup(
 
 /** 지울 수 있는 한 줄. 막아 둔 출처(«해제»)와 이름 기억(«지우기»)이 같이 쓴다. */
 @Composable
-private fun BlockedRow(label: String, action: String = "해제", onUnblock: () -> Unit) {
+private fun BlockedRow(label: String, action: String = tr("해제", "Unhide", "Mostrar"), onUnblock: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
         Text(text = label, color = HomePalette.Ink2, fontSize = 13.sp, modifier = Modifier.weight(1f))
         Text(

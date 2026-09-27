@@ -76,7 +76,14 @@ object FixedCosts {
      *
      * 나이·직업으로 금액을 추측하지 않는 이유가 이것이다. 사용자는 자기 월세를 이미 안다.
      */
-    val SUGGESTED: List<String> = listOf("월세", "대출이자", "보험", "통신", "구독")
+    val SUGGESTED: List<String>
+        get() = listOf(
+            tr("월세", "Rent", "Alquiler"),
+            tr("대출이자", "Loan", "Préstamo"),
+            tr("보험", "Insurance", "Seguro"),
+            tr("통신", "Phone", "Teléfono"),
+            tr("구독", "Subscription", "Suscripción"),
+        )
 
     /** 저장·계산에 쓸 수 있게 다듬는다. 빈 줄을 버리고, 이름을 자르고, 상한까지만 남긴다. */
     fun clean(items: List<FixedCostItem>): List<FixedCostItem> =

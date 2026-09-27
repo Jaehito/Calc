@@ -91,7 +91,7 @@ fun DogamScreen(ui: DogamUi, today: LocalDate, onOpenSettings: () -> Unit = {}) 
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "도감",
+                text = tr("도감", "Garden", "Jardín"),
                 color = HomePalette.Ink,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
@@ -110,18 +110,30 @@ fun DogamScreen(ui: DogamUi, today: LocalDate, onOpenSettings: () -> Unit = {}) 
                 ShelfCard(shelf, ui, onOpen = { opened = it })
             }
             Spacer(Modifier.height(12.dp))
-            Foot("한 번 핀 꽃은 시들지 않아요. 곳간이 비어도 선반은 그대로예요.")
+            Foot(
+                tr(
+                    "한 번 핀 꽃은 시들지 않아요. 곳간이 비어도 선반은 그대로예요.",
+                    "A flower that has bloomed never wilts. Your shelves stay even if your savings run out.",
+                    "Una flor que ha florecido nunca se marchita. Tus estantes siguen aunque se acabe el ahorro.",
+                ),
+            )
         } else {
             RecordsCard(ui, today)
             Spacer(Modifier.height(10.dp))
             TalliesCard(ui.result.tallies)
             Spacer(Modifier.height(12.dp))
-            Foot("처음 쓴 첫 주는 금액 기록에서 빠져요. 곳간이 비어도 이 숫자들은 줄지 않아요.")
+            Foot(
+                tr(
+                    "처음 쓴 첫 주는 금액 기록에서 빠져요. 곳간이 비어도 이 숫자들은 줄지 않아요.",
+                    "Your very first week doesn't count toward amount records. These numbers never go down, even if your savings run out.",
+                    "Tu primera semana no cuenta para los récords de importe. Estos números nunca bajan, aunque se acabe el ahorro.",
+                ),
+            )
         }
 
         if (ui.loading) {
             Spacer(Modifier.height(8.dp))
-            Foot("지난 기록을 다시 세는 중…")
+            Foot(tr("지난 기록을 다시 세는 중…", "Recounting past records…", "Recontando registros anteriores…"))
         }
         val error: String? = ui.error
         if (error != null) {
@@ -151,13 +163,13 @@ private fun Segments(page: Int, bloomed: Int, onSelect: (Int) -> Unit) {
             .padding(3.dp),
     ) {
         Segment(
-            text = "선반",
+            text = tr("선반", "Shelves", "Estantes"),
             badge = "$bloomed/${Plant.entries.size}",
             selected = page == 0,
             onClick = { onSelect(0) },
             modifier = Modifier.weight(1f),
         )
-        Segment(text = "나의 기록", badge = null, selected = page == 1, onClick = { onSelect(1) }, modifier = Modifier.weight(1f))
+        Segment(text = tr("나의 기록", "My records", "Mis récords"), badge = null, selected = page == 1, onClick = { onSelect(1) }, modifier = Modifier.weight(1f))
     }
 }
 
@@ -225,9 +237,9 @@ private fun NextCard(result: DogamResult) {
     val next: Plant? = Dogam.next(result)
     CardColumn {
         if (next == null) {
-            Text("${Plant.entries.size}송이를 모두 피웠어요", color = HomePalette.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text(tr("${Plant.entries.size}송이를 모두 피웠어요", "All ${Plant.entries.size} flowers have bloomed", "Han florecido las ${Plant.entries.size} flores"), color = HomePalette.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(4.dp))
-            Text("이제 나의 기록을 깨 보세요", color = HomePalette.Ink2, fontSize = 12.5f.sp)
+            Text(tr("이제 나의 기록을 깨 보세요", "Now try breaking your records", "Ahora intenta batir tus récords"), color = HomePalette.Ink2, fontSize = 12.5f.sp)
         } else {
             NextPlant(next, result)
         }
@@ -246,7 +258,7 @@ private fun NextPlant(next: Plant, result: DogamResult) {
             }
             Spacer(Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text("다음에 필 꽃", color = HomePalette.Ink2, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                Text(tr("다음에 필 꽃", "Next to bloom", "Próxima en florecer"), color = HomePalette.Ink2, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 Text(next.label, color = HomePalette.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 Text(next.condition, color = HomePalette.Ink2, fontSize = 12.sp)
 
@@ -257,8 +269,8 @@ private fun NextPlant(next: Plant, result: DogamResult) {
                     Bar(fraction = count.toFloat() / next.target)
                     Spacer(Modifier.height(5.dp))
                     Row {
-                        Text("지금 ${count}${tally.unit}", color = HomePalette.Ink2, fontSize = 12.sp, style = Figures, modifier = Modifier.weight(1f))
-                        Text("${next.target - count}${tally.unit} 더", color = HomePalette.Accent, fontSize = 12.sp, fontWeight = FontWeight.Bold, style = Figures)
+                        Text(tr("지금 ", "Now ", "Ahora ") + "$count${tally.unit}", color = HomePalette.Ink2, fontSize = 12.sp, style = Figures, modifier = Modifier.weight(1f))
+                        Text(tr("${next.target - count}${tally.unit} 더", "${next.target - count}${tally.unit} to go", "faltan ${next.target - count}${tally.unit}"), color = HomePalette.Accent, fontSize = 12.sp, fontWeight = FontWeight.Bold, style = Figures)
                     }
                 }
             }
@@ -412,7 +424,7 @@ private fun PlantSheet(plant: Plant, result: DogamResult, onClose: () -> Unit) {
         MeaningChip(plant)
         Spacer(Modifier.height(8.dp))
         Text(
-            text = if (day != null) plant.story else "아직 피지 않았어요",
+            text = if (day != null) plant.story else tr("아직 피지 않았어요", "Not in bloom yet", "Aún no ha florecido"),
             color = HomePalette.Ink2,
             fontSize = 13.5f.sp,
             textAlign = TextAlign.Center,
@@ -427,16 +439,23 @@ private fun PlantSheet(plant: Plant, result: DogamResult, onClose: () -> Unit) {
                 .padding(horizontal = 14.dp, vertical = 4.dp),
         ) {
             if (day != null) {
-                Fact("핀 날", day.format(FullDayFormat))
-                Fact("어떻게", plant.condition)
+                Fact(tr("핀 날", "Bloomed", "Floreció"), day.format(FullDayFormat))
+                Fact(tr("어떻게", "How", "Cómo"), plant.condition)
             } else {
-                Fact("조건", plant.condition)
+                Fact(tr("조건", "Condition", "Condición"), plant.condition)
                 val tally: Tally? = plant.tally
                 if (tally != null && plant.target > 1) {
-                    Fact("지금", "${minOf(result.tallies.of(tally), plant.target)} / ${plant.target}${tally.unit}")
+                    Fact(tr("지금", "Now", "Ahora"), "${minOf(result.tallies.of(tally), plant.target)} / ${plant.target}${tally.unit}")
                 }
             }
-            Fact("화분", "${plant.shelf.potName} · ${plant.shelf.title} 선반")
+            Fact(
+                tr("화분", "Pot", "Maceta"),
+                tr(
+                    "${plant.shelf.potName} · ${plant.shelf.title} 선반",
+                    "${plant.shelf.potName} · ${plant.shelf.title} shelf",
+                    "${plant.shelf.potName} · estante ${plant.shelf.title}",
+                ),
+            )
         }
         Spacer(Modifier.height(16.dp))
         Button(
@@ -445,7 +464,7 @@ private fun PlantSheet(plant: Plant, result: DogamResult, onClose: () -> Unit) {
             shape = RoundedCornerShape(14.dp),
             modifier = Modifier.fillMaxWidth().height(48.dp),
         ) {
-            Text("닫기", fontWeight = FontWeight.Bold)
+            Text(tr("닫기", "Close", "Cerrar"), fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -453,7 +472,7 @@ private fun PlantSheet(plant: Plant, result: DogamResult, onClose: () -> Unit) {
 @Composable
 private fun Fact(label: String, value: String) {
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
-        Text(label, color = HomePalette.Ink2, fontSize = 13.sp, modifier = Modifier.width(60.dp))
+        Text(label, color = HomePalette.Ink2, fontSize = 13.sp, modifier = Modifier.width(76.dp))
         Text(value, color = HomePalette.Ink, fontSize = 13.sp, modifier = Modifier.weight(1f))
     }
 }
@@ -466,52 +485,73 @@ private fun RecordsCard(ui: DogamUi, today: LocalDate) {
         val saved: Best? = bests.savedDay
         RecordRow(
             icon = R.drawable.dogam_ic_coin, tint = Color(0xFFD98E1F), back = Color(0xFFFFF4E0),
-            title = "가장 많이 아낀 날",
-            detail = if (saved != null) "${saved.from.format(DayFormat)} · ${StatusText.won(saved.spent)} 씀" else "첫 주가 지나면 세기 시작해요",
-            value = saved?.let { StatusText.figure(it.value) }, unit = "원",
+            title = tr("가장 많이 아낀 날", "Biggest saving day", "Día de mayor ahorro"),
+            detail =
+                if (saved != null) "${saved.from.format(DayFormat)} · " + tr("${StatusText.won(saved.spent)} 씀", "spent ${StatusText.won(saved.spent)}", "gastado ${StatusText.won(saved.spent)}")
+                else tr("첫 주가 지나면 세기 시작해요", "Starts counting after your first week", "Empieza a contar tras tu primera semana"),
+            value = saved?.let { L10n.wonPrefix + StatusText.figure(it.value) }, unit = L10n.wonSuffix,
             fresh = Dogam.isFresh(saved, today),
         )
         Divider()
         RecordRow(
             icon = R.drawable.dogam_ic_shield, tint = HomePalette.Accent, back = HomePalette.Soft,
-            title = "하루치 지킨 최장",
-            detail = bests.keepRun?.let { range(it) } ?: "하루치 안에서 마친 날이 이어지면 늘어요",
-            value = bests.keepRun?.value?.toString(), unit = "일",
+            title = tr("하루치 지킨 최장", "Longest on-budget streak", "Racha más larga en presupuesto"),
+            detail = bests.keepRun?.let { range(it) } ?: tr(
+                "하루치 안에서 마친 날이 이어지면 늘어요",
+                "Grows as you end days within the daily amount in a row",
+                "Crece al terminar días seguidos dentro de la cantidad diaria",
+            ),
+            value = bests.keepRun?.value?.toString(), unit = DAYS_UNIT,
             fresh = Dogam.isFresh(bests.keepRun, today),
         )
         Divider()
         val quiet: Best? = bests.noSpendRun
         RecordRow(
             icon = R.drawable.dogam_ic_moon, tint = Color(0xFF7C6BD6), back = Color(0xFFEEEBFA),
-            title = "가장 오래 안 쓴 날",
+            title = tr("가장 오래 안 쓴 날", "Longest no-spend streak", "Racha más larga sin gastos"),
             detail = if (quiet != null) {
                 val purse: Purse? = quiet.purse
                 val where: String = if (purse != null) (ui.purseLabels[purse] ?: purse.defaultLabel) + " · " else ""
                 where + range(quiet)
             } else {
-                "곳간 하나라도 0원으로 마친 날부터 세요"
+                tr(
+                    "곳간 하나라도 0원으로 마친 날부터 세요",
+                    "Counts from a day when any wallet ends at ₩0",
+                    "Cuenta desde un día en que alguna cartera termina en ₩0",
+                )
             },
-            value = quiet?.value?.toString(), unit = "일",
+            value = quiet?.value?.toString(), unit = DAYS_UNIT,
             fresh = Dogam.isFresh(quiet, today),
         )
         Divider()
         RecordRow(
             icon = R.drawable.dogam_ic_week, tint = Color(0xFF3F82C9), back = Color(0xFFE6F0FA),
-            title = "가장 적게 쓴 주",
-            detail = bests.cheapestWeek?.let { range(it) } ?: "월요일부터 일요일까지 한 주가 지나면 나와요",
-            value = bests.cheapestWeek?.let { StatusText.figure(it.value) }, unit = "원",
+            title = tr("가장 적게 쓴 주", "Cheapest week", "Semana más barata"),
+            detail = bests.cheapestWeek?.let { range(it) } ?: tr(
+                "월요일부터 일요일까지 한 주가 지나면 나와요",
+                "Shows up after a full Monday–Sunday week",
+                "Aparece tras una semana completa de lunes a domingo",
+            ),
+            value = bests.cheapestWeek?.let { L10n.wonPrefix + StatusText.figure(it.value) }, unit = L10n.wonSuffix,
             fresh = Dogam.isFresh(bests.cheapestWeek, today),
         )
         Divider()
         RecordRow(
             icon = R.drawable.dogam_ic_pen, tint = Color(0xFFD9587F), back = Color(0xFFFCE8EF),
-            title = "가장 오래 이어 적은 날",
-            detail = bests.recordRun?.let { range(it) } ?: "하루도 빠짐없이 적으면 늘어요",
-            value = bests.recordRun?.value?.toString(), unit = "일",
+            title = tr("가장 오래 이어 적은 날", "Longest logging streak", "Racha más larga anotando"),
+            detail = bests.recordRun?.let { range(it) } ?: tr(
+                "하루도 빠짐없이 적으면 늘어요",
+                "Grows as you log without missing a day",
+                "Crece al anotar sin saltarte ningún día",
+            ),
+            value = bests.recordRun?.value?.toString(), unit = DAYS_UNIT,
             fresh = Dogam.isFresh(bests.recordRun, today),
         )
     }
 }
+
+/** 기록 숫자 뒤 «일». */
+private val DAYS_UNIT: String get() = tr("일", " days", " días")
 
 private fun range(best: Best): String =
     if (best.from == best.to) best.from.format(ShortDayFormat)
@@ -546,7 +586,7 @@ private fun RecordRow(
                 Text(title, color = HomePalette.Ink, fontSize = 13.5f.sp, fontWeight = FontWeight.SemiBold)
                 if (fresh && value != null) {
                     Spacer(Modifier.width(6.dp))
-                    Tag("신기록")
+                    Tag(tr("신기록", "New record", "Nuevo récord"))
                 }
             }
             Text(detail, color = HomePalette.Muted, fontSize = 11.5f.sp, style = Figures)
@@ -567,16 +607,16 @@ private fun RecordRow(
 @Composable
 private fun TalliesCard(tallies: Tallies) {
     CardColumn {
-        Text("지금까지 쌓인 횟수", color = HomePalette.Ink2, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+        Text(tr("지금까지 쌓인 횟수", "Counts so far", "Totales hasta ahora"), color = HomePalette.Ink2, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TallyBox(tallies.sDays, "S 등급", Modifier.weight(1f))
-            TallyBox(tallies.noSpendDays, "무지출의 날", Modifier.weight(1f))
+            TallyBox(tallies.sDays, tr("S 등급", "S grades", "Notas S"), Modifier.weight(1f))
+            TallyBox(tallies.noSpendDays, tr("무지출의 날", "No-spend days", "Días sin gastos"), Modifier.weight(1f))
         }
         Spacer(Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TallyBox(tallies.keptDays, "하루치 지킨 날", Modifier.weight(1f))
-            TallyBox(tallies.comebacks, "다시 지킨 날", Modifier.weight(1f))
+            TallyBox(tallies.keptDays, tr("하루치 지킨 날", "On-budget days", "Días en presupuesto"), Modifier.weight(1f))
+            TallyBox(tallies.comebacks, tr("다시 지킨 날", "Comeback days", "Días de recuperación"), Modifier.weight(1f))
         }
     }
 }
@@ -603,8 +643,16 @@ private fun TallyBox(count: Int, label: String, modifier: Modifier) {
 fun BloomNotice(blooms: List<Plant>, onClick: () -> Unit) {
     val first: Plant = blooms.firstOrNull() ?: return
     val title: String =
-        if (blooms.size == 1) "${first.label}${Plant.subjectParticle(first.label)} 피었어요"
-        else "${first.label} 외 ${blooms.size - 1}송이가 피었어요"
+        if (blooms.size == 1) tr(
+            "${first.label}${Plant.subjectParticle(first.label)} 피었어요",
+            "${first.label} bloomed",
+            "Floreció ${first.label}",
+        )
+        else tr(
+            "${first.label} 외 ${blooms.size - 1}송이가 피었어요",
+            "${first.label} and ${blooms.size - 1} more bloomed",
+            "Florecieron ${first.label} y ${blooms.size - 1} más",
+        )
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -624,7 +672,7 @@ fun BloomNotice(blooms: List<Plant>, onClick: () -> Unit) {
         Spacer(Modifier.width(11.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(title, color = HomePalette.Ink, fontSize = 13.5f.sp, fontWeight = FontWeight.Bold)
-            Text("${first.meaningText} · 도감에서 보기", color = HomePalette.Ink2, fontSize = 11.5f.sp)
+            Text("${first.meaningText} · " + tr("도감에서 보기", "See in Garden", "Ver en el jardín"), color = HomePalette.Ink2, fontSize = 11.5f.sp)
         }
         Text("›", color = HomePalette.Ink2, fontSize = 18.sp)
     }

@@ -4,7 +4,7 @@ package com.calc.expense
  * 도감의 선반. 업적의 **종류**다 — 같은 선반의 화분은 같은 무늬라, 빈 화분만 봐도
  * 무슨 쪽 업적인지 보인다. 단계가 오를수록 무늬가 차오르고 마지막 단계는 금테다.
  */
-enum class Shelf(val title: String, val potName: String) {
+enum class Shelf(title: String, potName: String) {
     RECORD("적는 습관", "공책 화분"),
     PILE("쌓인 날", "벽돌 화분"),
     GRADE_S("S 등급", "별 화분"),
@@ -12,14 +12,20 @@ enum class Shelf(val title: String, val potName: String) {
     COMEBACK("다시 일어서기", "비 갠 하늘 화분"),
     NO_SPEND("무지출", "밤하늘 화분"),
     PERIOD("한 주 · 한 주기", "무지개 띠 · 동전 화분"),
-    TIDY("정리", "유리병 · 저금통"),
+    TIDY("정리", "유리병 · 저금통");
+
+    private val titleKo: String = title
+    private val potNameKo: String = potName
+
+    val title: String get() = DogamText.shelf(this, 0, titleKo)
+    val potName: String get() = DogamText.shelf(this, 1, potNameKo)
 }
 
 /**
  * 진척 막대로 보여주는 횟수. **더해지기만 하는 것만** 여기에 둔다 — 「연속 며칠」처럼 끊기면
  * 0 으로 돌아가는 숫자를 막대로 보여주면 끊긴 날 막대가 비면서 또 하나의 상실이 된다.
  */
-enum class Tally(val unit: String) {
+enum class Tally(unit: String) {
     S_DAYS("번"),
     NO_SPEND_DAYS("번"),
     KEPT_WEEKS("번"),
@@ -31,7 +37,13 @@ enum class Tally(val unit: String) {
     COMEBACKS("번"),
 
     /** 10건 넘게 적고 미분류가 0건인 주기의 수. */
-    TIDY_CYCLES("번"),
+    TIDY_CYCLES("번");
+
+    private val unitKo: String = unit
+
+    /** 숫자 뒤에 붙는 단위. 한국어는 붙여 쓰고(«5번»), 다른 말은 띄어 쓴다(« times»). */
+    val unit: String
+        get() = if (unitKo == "일") tr("일", " days", " días") else tr("번", " times", " veces")
 }
 
 /**
@@ -51,13 +63,13 @@ enum class Tally(val unit: String) {
  */
 enum class Plant(
     val key: String,
-    val label: String,
+    label: String,
     val shelf: Shelf,
-    val meaning: String,
+    meaning: String,
     val isFlowerLanguage: Boolean,
-    val story: String,
-    val condition: String,
-    val short: String,
+    story: String,
+    condition: String,
+    short: String,
     val tally: Tally? = null,
     val target: Int = 0,
 ) {
@@ -222,9 +234,21 @@ enum class Plant(
         tally = Tally.TIDY_CYCLES, target = 3,
     );
 
+    // 한국어 원문. 다른 언어는 [DogamText] 가 [key] 로 찾아 준다.
+    private val ko: Array<String> = arrayOf(label, meaning, story, condition, short)
+
+    val label: String get() = DogamText.plant(this, 0, ko[0])
+    val meaning: String get() = DogamText.plant(this, 1, ko[1])
+    val story: String get() = DogamText.plant(this, 2, ko[2])
+    val condition: String get() = DogamText.plant(this, 3, ko[3])
+    val short: String get() = DogamText.plant(this, 4, ko[4])
+
     /** 「꽃말 「침묵」」. 꽃말이 아니라 모습에서 붙인 뜻이면 「뜻」이라 쓴다. */
     val meaningText: String
-        get() = (if (isFlowerLanguage) "꽃말" else "뜻") + " 「" + meaning + "」"
+        get() = (
+            if (isFlowerLanguage) tr("꽃말", "Flower meaning", "Significado")
+            else tr("뜻", "Meaning", "Sentido")
+            ) + tr(" 「" + meaning + "」", ": “$meaning”", ": «$meaning»")
 
     companion object {
         fun ofKey(key: String): Plant? = entries.firstOrNull { it.key == key }

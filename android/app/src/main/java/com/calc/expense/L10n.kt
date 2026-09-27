@@ -8,7 +8,7 @@ import java.util.Locale
 enum class Lang(val code: String, val locale: Locale) {
     KO("ko", Locale.KOREA),
     EN("en", Locale.ENGLISH),
-    ES("es", Locale("es"));
+    ES("es", Locale.forLanguageTag("es"));
 
     companion object {
         fun ofCode(code: String?): Lang? = entries.firstOrNull { it.code == code }
@@ -144,6 +144,19 @@ object L10n {
         if (lang == Lang.KO) return stored
         val pair: Pair<String, String> = STORED_NAMES[stored] ?: return stored
         return if (lang == Lang.EN) pair.first else pair.second
+    }
+
+    /**
+     * [name] 의 반대. 설정 칸에 번역된 이름으로 보인 카테고리를 저장할 한국어로 되돌린다.
+     * 한국어 화면에서는 되돌리지 않는다 — 한국어 사용자가 직접 만든 «Food» 칩은 그대로 둔다.
+     */
+    fun storedName(shown: String): String {
+        if (lang == Lang.KO) return shown
+        for ((stored, pair) in STORED_NAMES) {
+            if (pair.first.equals(shown, ignoreCase = true)) return stored
+            if (pair.second.equals(shown, ignoreCase = true)) return stored
+        }
+        return shown
     }
 
     private val STORED_NAMES: Map<String, Pair<String, String>> = mapOf(

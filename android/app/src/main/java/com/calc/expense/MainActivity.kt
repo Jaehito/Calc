@@ -29,6 +29,7 @@ class MainActivity : ComponentActivity() {
     private val io = Executors.newSingleThreadExecutor()
 
     private var form: SettingsFormUi by mutableStateOf(SettingsFormUi())
+    private var language: Lang? by mutableStateOf(null)
     private var toast: String? by mutableStateOf(null)
     private var toastIsError: Boolean by mutableStateOf(false)
     private var toastId: Int by mutableStateOf(0)
@@ -49,11 +50,19 @@ class MainActivity : ComponentActivity() {
     private val requestNotificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (granted) enableNotification()
-            else setStatus("알림 권한이 거부되었습니다. 설정에서 직접 허용해 주세요.", isError = true)
+            else setStatus(
+                tr(
+                    "알림 권한이 거부되었습니다. 설정에서 직접 허용해 주세요.",
+                    "Notification permission was denied. Please allow it in system settings.",
+                    "Se denegó el permiso de notificaciones. Actívalo en los ajustes del sistema.",
+                ),
+                isError = true,
+            )
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        language = LanguageStore.load(this)
         loadIntoForm()
 
         setContent {
@@ -78,6 +87,7 @@ class MainActivity : ComponentActivity() {
                     blockedSenders = blockedSenders,
                     blockedPackages = blockedPackages,
                     nameMemories = nameMemories,
+                    language = language,
                 ),
                 onBack = { finish() },
                 onFormChange = { form = it },
@@ -114,9 +124,10 @@ class MainActivity : ComponentActivity() {
                 onForgetName = { key ->
                     NameMemoryStore.forget(this, key)
                     refreshBlocklist()
-                    setStatus("지웠어요. 다음 알림부터 원래 이름으로 떠요.")
+                    setStatus(tr("지웠어요. 다음 알림부터 원래 이름으로 떠요.", "Removed. Next alerts will show the original name.", "Borrado. Los próximos avisos mostrarán el nombre original."))
                 },
                 onToastShown = { toast = null },
+                onLanguageChange = { lang -> changeLanguage(lang) },
             )
         }
     }
@@ -220,7 +231,7 @@ class MainActivity : ComponentActivity() {
     /** 새 가정을 만들고 배우자에게 알려줄 코드를 화면에 띄운다. */
     private fun createHousehold() {
         val uid: String = FirebaseAuth.getInstance().currentUser?.uid
-            ?: return setHouseholdMessage("로그인 정보를 확인할 수 없습니다", isError = true)
+            ?: return setHouseholdMessage(tr("로그인 정보를 확인할 수 없습니다", "Couldn't verify your sign-in", "No se pudo verificar tu sesión"), isError = true)
         householdBusy = true
         HouseholdRepository.create(uid) { result ->
             householdBusy = false
@@ -233,16 +244,22 @@ class MainActivity : ComponentActivity() {
                     // 배우자가 코드를 넣자마자 받아 갈 공용 예산·월급날을 올려 둔다.
                     autosave()
                     HouseholdSync.push(this, SettingsStore.load(this))
-                    setHouseholdMessage("가정을 만들었어요. «코드 공유하기»로 배우자에게 보내 주세요.")
+                    setHouseholdMessage(
+                        tr(
+                            "가정을 만들었어요. «코드 공유하기»로 배우자에게 보내 주세요.",
+                            "Household created. Send it to your partner with «Share code».",
+                            "Hogar creado. Envíalo a tu pareja con «Compartir código».",
+                        ),
+                    )
                 }
-                .onFailure { setHouseholdMessage("가정을 만들지 못했어요: ${it.message}", isError = true) }
+                .onFailure { setHouseholdMessage(tr("가정을 만들지 못했어요: ", "Couldn't create the household: ", "No se pudo crear el hogar: ") + it.message, isError = true) }
         }
     }
 
     /** 배우자가 만든 코드로 가정에 들어간다. */
     private fun joinHousehold() {
         val uid: String = FirebaseAuth.getInstance().currentUser?.uid
-            ?: return setHouseholdMessage("로그인 정보를 확인할 수 없습니다", isError = true)
+            ?: return setHouseholdMessage(tr("로그인 정보를 확인할 수 없습니다", "Couldn't verify your sign-in", "No se pudo verificar tu sesión"), isError = true)
         householdBusy = true
         HouseholdRepository.join(uid, householdJoinInput) { result ->
             householdBusy = false
@@ -253,10 +270,16 @@ class MainActivity : ComponentActivity() {
                     householdPaired = true
                     householdCode = HouseholdStore.code(this)
                     householdJoinInput = ""
-                    setHouseholdMessage("가정에 연결됐어요. 공용 예산·월급날은 가정 값을 따릅니다.")
+                    setHouseholdMessage(
+                        tr(
+                            "가정에 연결됐어요. 공용 예산·월급날은 가정 값을 따릅니다.",
+                            "Joined the household. The shared budget and payday follow the household's values.",
+                            "Te uniste al hogar. El presupuesto compartido y el día de cobro siguen los del hogar.",
+                        ),
+                    )
                     pullHouseholdSettings()
                 }
-                .onFailure { setHouseholdMessage(it.message ?: "연결에 실패했어요", isError = true) }
+                .onFailure { setHouseholdMessage(it.message ?: tr("연결에 실패했어요", "Couldn't connect", "No se pudo conectar"), isError = true) }
         }
     }
 
@@ -269,9 +292,9 @@ class MainActivity : ComponentActivity() {
                     HouseholdStore.setHouseholdId(this, null)
                     householdPaired = false
                     householdCode = null
-                    setHouseholdMessage("연결을 해제했어요.")
+                    setHouseholdMessage(tr("연결을 해제했어요.", "Left the household.", "Saliste del hogar."))
                 }
-                .onFailure { setHouseholdMessage("해제하지 못했어요: ${it.message}", isError = true) }
+                .onFailure { setHouseholdMessage(tr("해제하지 못했어요: ", "Couldn't leave: ", "No se pudo salir: ") + it.message, isError = true) }
         }
     }
 
@@ -279,13 +302,19 @@ class MainActivity : ComponentActivity() {
     private fun shareHouseholdCode() {
         val code: String = householdCode ?: return
         val text: String =
-            "곳간 가정 코드: $code\n" +
-                "앱 첫 화면의 «배우자에게 받은 가정 코드가 있어요»나 설정 › 가정에 넣으면 같이 쓸 수 있어요."
+            tr(
+                "곳간 가정 코드: $code\n" +
+                    "앱 첫 화면의 «배우자에게 받은 가정 코드가 있어요»나 설정 › 가정에 넣으면 같이 쓸 수 있어요.",
+                "Household code: $code\n" +
+                    "Enter it under «I have a household code from my partner» on the app's first screen, or in Settings › Household.",
+                "Código de hogar: $code\n" +
+                    "Introdúcelo en «Tengo un código de hogar de mi pareja» en la primera pantalla, o en Ajustes › Hogar.",
+            )
         val send = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_TEXT, text)
         }
-        startActivity(Intent.createChooser(send, "가정 코드 보내기"))
+        startActivity(Intent.createChooser(send, tr("가정 코드 보내기", "Send household code", "Enviar código de hogar")))
     }
 
     private fun setHouseholdMessage(message: String, isError: Boolean = false) {
@@ -304,7 +333,7 @@ class MainActivity : ComponentActivity() {
         val code: String = SettingsCodec.encode(SettingsStore.load(this))
         val clipboard = getSystemService(ClipboardManager::class.java)
         clipboard.setPrimaryClip(ClipData.newPlainText("expense-settings", code))
-        setStatus("설정 코드를 클립보드에 복사했어요. 메모에 붙여 보관하세요.")
+        setStatus(tr("설정 코드를 클립보드에 복사했어요. 메모에 붙여 보관하세요.", "Settings code copied. Paste it into a note to keep it.", "Código de ajustes copiado. Pégalo en una nota para guardarlo."))
     }
 
     /**
@@ -320,7 +349,7 @@ class MainActivity : ComponentActivity() {
      * 저장 권한 없이 넣을 수 없어 공유 시트로 넘긴다([ExpenseExportRepository]).
      */
     private fun exportExpenses() {
-        setStatus("지출을 모으는 중…")
+        setStatus(tr("지출을 모으는 중…", "Gathering spending…", "Reuniendo gastos…"))
         io.execute {
             val result: ExportResult = try {
                 ExpenseExportRepository.write(this)
@@ -335,10 +364,10 @@ class MainActivity : ComponentActivity() {
                     is ExportResult.Ok -> {
                         val savedTo: String? = result.savedTo
                         if (savedTo != null) {
-                            setStatus("지출 ${result.count}건을 «$savedTo» 에 저장했습니다.")
+                            setStatus(tr("지출 ${result.count}건을 «$savedTo» 에 저장했습니다.", "Saved ${L10n.items(result.count)} to «$savedTo».", "Se guardaron ${L10n.items(result.count)} en «$savedTo»."))
                         } else {
                             // 옛 기기라 내려받지 못했다. 공유 시트가 남은 길이다.
-                            setStatus("지출 ${result.count}건을 파일로 만들었습니다. 보낼 곳을 고르세요.")
+                            setStatus(tr("지출 ${result.count}건을 파일로 만들었습니다. 보낼 곳을 고르세요.", "Created a file with ${L10n.items(result.count)}. Choose where to send it.", "Se creó un archivo con ${L10n.items(result.count)}. Elige dónde enviarlo."))
                             share(result)
                         }
                     }
@@ -356,7 +385,7 @@ class MainActivity : ComponentActivity() {
             putExtra(Intent.EXTRA_SUBJECT, result.file.name)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        startActivity(Intent.createChooser(send, "지출 내보내기"))
+        startActivity(Intent.createChooser(send, tr("지출 내보내기", "Export spending", "Exportar gastos")))
     }
 
     /** 클립보드의 코드를 읽어 설정을 복원한다. 코드가 아니면 그대로 두고 알린다. */
@@ -364,12 +393,12 @@ class MainActivity : ComponentActivity() {
         val clipboard = getSystemService(ClipboardManager::class.java)
         val clip: CharSequence? = clipboard.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.text
         if (clip.isNullOrBlank()) {
-            setStatus("클립보드가 비어 있습니다. 먼저 설정 코드를 복사해 주세요.", isError = true)
+            setStatus(tr("클립보드가 비어 있습니다. 먼저 설정 코드를 복사해 주세요.", "The clipboard is empty. Copy a settings code first.", "El portapapeles está vacío. Copia primero un código de ajustes."), isError = true)
             return
         }
         val restored: Settings? = SettingsCodec.decode(clip.toString())
         if (restored == null) {
-            setStatus("클립보드 내용이 설정 코드가 아닙니다. «내보내기»로 만든 코드를 복사해 주세요.", isError = true)
+            setStatus(tr("클립보드 내용이 설정 코드가 아닙니다. «내보내기»로 만든 코드를 복사해 주세요.", "The clipboard doesn't hold a settings code. Copy the code made with «Export».", "El portapapeles no contiene un código de ajustes. Copia el código creado con «Exportar»."), isError = true)
             return
         }
         val before: Settings = SettingsStore.load(this)
@@ -377,7 +406,7 @@ class MainActivity : ComponentActivity() {
         HouseholdSync.pushIfNeeded(this, before, restored)
         loadIntoForm()
         savedCount++
-        setStatus("설정을 불러와 저장했어요.")
+        setStatus(tr("설정을 불러와 저장했어요.", "Settings imported and saved.", "Ajustes importados y guardados."))
     }
 
     /** «알림 접근» 권한이 이 앱에 허용돼 있는지. 리스너 서비스는 이게 있어야 동작한다. */
@@ -398,23 +427,23 @@ class MainActivity : ComponentActivity() {
         if (ReminderState.isEnabled(this)) {
             ReminderState.setEnabled(this, false)
             refreshReminderButton()
-            setStatus("결제 알림 읽기를 껐어요.")
+            setStatus(tr("결제 알림 읽기를 껐어요.", "Stopped reading payment alerts.", "Se dejó de leer los avisos de pago."))
             return
         }
 
         if (!NotificationState.isOn(this)) {
-            setStatus("먼저 «잠금화면 알림»을 켜 주세요. 결제 알림도 그 자리를 씁니다.", isError = true)
+            setStatus(tr("먼저 «잠금화면 알림»을 켜 주세요. 결제 알림도 그 자리를 씁니다.", "Turn on «Lock screen card» first. Payment alerts use the same spot.", "Activa primero «Tarjeta en pantalla de bloqueo». Los avisos de pago usan el mismo sitio."), isError = true)
             return
         }
         if (!hasNotificationAccess()) {
-            setStatus("«알림 접근»에서 «곳간»을 켠 뒤 돌아와 스위치를 다시 눌러 주세요.")
+            setStatus(tr("«알림 접근»에서 «곳간»을 켠 뒤 돌아와 스위치를 다시 눌러 주세요.", "Turn on «Spending Log» in «Notification access», then come back and tap the switch again.", "Activa «Registro de gastos» en «Acceso a notificaciones», vuelve y toca el interruptor de nuevo."))
             openNotificationAccessSettings()
             return
         }
 
         ReminderState.setEnabled(this, true)
         refreshReminderButton()
-        setStatus("결제 알림 읽기를 켰어요. 결제를 보면 금액과 가게를 잠깐 띄우고, 몇 초 뒤 스스로 사라져요.")
+        setStatus(tr("결제 알림 읽기를 켰어요. 결제를 보면 금액과 가게를 잠깐 띄우고, 몇 초 뒤 스스로 사라져요.", "Reading payment alerts. When a payment is seen, the amount and store pop up briefly and vanish after a few seconds.", "Leyendo avisos de pago. Al detectar un pago, el importe y la tienda aparecen un momento y desaparecen en unos segundos."))
     }
 
     private fun openNotificationAccessSettings() {
@@ -422,7 +451,7 @@ class MainActivity : ComponentActivity() {
         try {
             startActivity(intent)
         } catch (_: Exception) {
-            setStatus("이 기기에서 알림 접근 설정을 열 수 없습니다.", isError = true)
+            setStatus(tr("이 기기에서 알림 접근 설정을 열 수 없습니다.", "Can't open notification access settings on this device.", "No se pueden abrir los ajustes de acceso a notificaciones en este dispositivo."), isError = true)
         }
     }
 
@@ -439,10 +468,27 @@ class MainActivity : ComponentActivity() {
         NotificationHelper.show(this)
     }
 
+    /**
+     * 언어를 바꾸고 화면을 다시 그린다.
+     *
+     * 순서가 중요하다. 칸에 보이는 카테고리는 지금 언어로 번역돼 있으니 **바꾸기 전에** 저장하고,
+     * 바꾼 뒤에는 새 언어로 칸을 다시 채운다 — 그래야 다시 그리며 저장할 때(onPause) 옛 언어의
+     * 이름을 새 언어로 되돌리려다 사용자 카테고리로 잘못 남기지 않는다.
+     */
+    private fun changeLanguage(lang: Lang?) {
+        autosave()
+        LanguageStore.save(this, lang)
+        language = lang
+        loadIntoForm()
+        // 잠금화면 카드·알림 채널 이름도 새 언어로.
+        republishNotification()
+        recreate()
+    }
+
     private fun loadIntoForm() {
         val s: Settings = SettingsStore.load(this)
         form = SettingsFormUi(
-            categoriesText = Categories.format(CategoryStore.load(this)),
+            categoriesText = Categories.format(CategoryStore.load(this).map(L10n::name)),
             payDayText = s.payDay.toString(),
             personalName = s.personal.name,
             personalBudgetText = budgetText(s.personal.monthlyBudget),
@@ -490,7 +536,11 @@ class MainActivity : ComponentActivity() {
                 if (isFinishing || isDestroyed) return@runOnUiThread
                 if (failures.isNotEmpty()) {
                     setStatus(
-                        "저장소 대조에 실패해 로컬 기록으로 표시 중입니다.\n\n" +
+                        tr(
+                            "저장소 대조에 실패해 로컬 기록으로 표시 중입니다.\n\n",
+                            "Couldn't sync with the server; showing local records.\n\n",
+                            "No se pudo sincronizar con el servidor; se muestran los datos locales.\n\n",
+                        ) +
                             failures.joinToString("\n"),
                         isError = true,
                     )
@@ -515,7 +565,7 @@ class MainActivity : ComponentActivity() {
         val before: Settings = SettingsStore.load(this)
         val after: Settings = currentForm(before)
         val categoriesBefore: List<String> = CategoryStore.load(this)
-        val categoriesAfter: List<String> = Categories.parse(form.categoriesText)
+        val categoriesAfter: List<String> = Categories.parse(form.categoriesText).map(L10n::storedName).distinct()
 
         val settingsChanged: Boolean = after != before
         val categoriesChanged: Boolean = categoriesAfter != categoriesBefore
@@ -536,7 +586,7 @@ class MainActivity : ComponentActivity() {
 
     private fun requestNotificationThenEnable() {
         if (!PurseAccess.isReady(this)) {
-            setStatus("먼저 로그인해 주세요. 계정이 있어야 기록을 저장할 수 있습니다.", isError = true)
+            setStatus(tr("먼저 로그인해 주세요. 계정이 있어야 기록을 저장할 수 있습니다.", "Please sign in first. An account is needed to save records.", "Inicia sesión primero. Se necesita una cuenta para guardar los gastos."), isError = true)
             return
         }
 
@@ -552,17 +602,19 @@ class MainActivity : ComponentActivity() {
         notificationOn = true
 
         if (NotificationHelper.isEnabled(this)) {
-            val pick: String = if (PurseAccess.linked(this).size > 1) " 곳간은 입력 화면 위에서 골라요." else ""
-            setStatus("알림을 켰어요. 잠금화면 카드를 눌러 «커피 4500»처럼 적어 보세요.$pick")
+            val pick: String =
+                if (PurseAccess.linked(this).size > 1) tr(" 곳간은 입력 화면 위에서 골라요.", " Pick the wallet on the entry screen.", " Elige la cartera en la pantalla de entrada.")
+                else ""
+            setStatus(tr("알림을 켰어요. 잠금화면 카드를 눌러 «커피 4500»처럼 적어 보세요.", "Notification on. Tap the lock screen card and type e.g. «coffee 4500».", "Notificación activada. Toca la tarjeta de la pantalla de bloqueo y escribe p. ej. «café 4500».") + pick)
         } else {
-            setStatus("이 앱의 알림이 차단돼 있어요. «시스템 알림 설정 열기»에서 허용해 주세요.", isError = true)
+            setStatus(tr("이 앱의 알림이 차단돼 있어요. «시스템 알림 설정 열기»에서 허용해 주세요.", "Notifications for this app are blocked. Allow them via «Open system notification settings».", "Las notificaciones de esta app están bloqueadas. Actívalas en «Abrir ajustes de notificaciones»."), isError = true)
         }
     }
 
     private fun disableNotification() {
         LockCard.disable(this)
         notificationOn = false
-        setStatus("알림을 껐어요. 다시 켜기 전까지 잠금화면에 나오지 않아요.")
+        setStatus(tr("알림을 껐어요. 다시 켜기 전까지 잠금화면에 나오지 않아요.", "Notification off. It won't show on the lock screen until turned back on.", "Notificación desactivada. No aparecerá en la pantalla de bloqueo hasta que la actives."))
     }
 
     private fun openNotificationSettings() {

@@ -117,10 +117,16 @@ fun OnboardingScreen(
 
 @Composable
 private fun IncomeStep(ui: OnboardingUi, onIncomeChange: (String) -> Unit) {
-    Question("한 달에 얼마 버세요?")
-    Hint("세금 떼고 통장에 들어오는 금액이요. 대충이어도 나중에 고칠 수 있어요.")
+    Question(tr("한 달에 얼마 버세요?", "How much do you earn a month?", "¿Cuánto ganas al mes?"))
+    Hint(
+        tr(
+            "세금 떼고 통장에 들어오는 금액이요. 대충이어도 나중에 고칠 수 있어요.",
+            "What reaches your account after tax. A rough figure is fine — you can change it later.",
+            "Lo que llega a tu cuenta después de impuestos. Una cifra aproximada vale; puedes cambiarla luego.",
+        ),
+    )
     Spacer(Modifier.height(20.dp))
-    AmountField(ui.incomeText, onIncomeChange, "월급 (예: 3000000 또는 300만)")
+    AmountField(ui.incomeText, onIncomeChange, tr("월급 (예: 3000000 또는 300만)", "Income (e.g. 3000000)", "Sueldo (p. ej. 3000000)"))
 }
 
 @Composable
@@ -131,8 +137,14 @@ private fun FixedStep(
     onAddRow: () -> Unit,
     onRemoveRow: (Int) -> Unit,
 ) {
-    Question("매달 그냥 나가는 돈")
-    Hint("자동이체처럼 손 안 대도 빠져나가는 것만요. 모르는 칸은 비워 두면 빠집니다.")
+    Question(tr("매달 그냥 나가는 돈", "Money that goes out every month", "Dinero que sale cada mes"))
+    Hint(
+        tr(
+            "자동이체처럼 손 안 대도 빠져나가는 것만요. 모르는 칸은 비워 두면 빠집니다.",
+            "Only things that leave on their own, like automatic transfers. Leave unknown rows empty to skip them.",
+            "Solo lo que sale solo, como domiciliaciones. Deja vacías las filas que no sepas y se omitirán.",
+        ),
+    )
     Spacer(Modifier.height(16.dp))
 
     for ((index, row) in ui.rows.withIndex()) {
@@ -140,7 +152,7 @@ private fun FixedStep(
             OutlinedTextField(
                 value = row.name,
                 onValueChange = { onRowChange(index, row.copy(name = it.take(FixedCosts.MAX_NAME_LENGTH))) },
-                label = { Text("이름") },
+                label = { Text(tr("이름", "Name", "Nombre")) },
                 singleLine = true,
                 shape = RoundedCornerShape(14.dp),
                 colors = mintFieldColors(),
@@ -150,7 +162,7 @@ private fun FixedStep(
             OutlinedTextField(
                 value = row.amountText,
                 onValueChange = { onRowChange(index, row.copy(amountText = it)) },
-                label = { Text("금액") },
+                label = { Text(tr("금액", "Amount", "Importe")) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 shape = RoundedCornerShape(14.dp),
@@ -172,7 +184,7 @@ private fun FixedStep(
     }
 
     Text(
-        text = "+ 항목 추가",
+        text = tr("+ 항목 추가", "+ Add item", "+ Añadir concepto"),
         color = HomePalette.Accent,
         fontSize = 14.sp,
         fontWeight = FontWeight.SemiBold,
@@ -185,7 +197,7 @@ private fun FixedStep(
 
     Spacer(Modifier.height(10.dp))
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(text = "고정비 합계", color = HomePalette.Ink2, fontSize = 14.sp)
+        Text(text = tr("고정비 합계", "Fixed costs total", "Total de gastos fijos"), color = HomePalette.Ink2, fontSize = 14.sp)
         Text(
             text = StatusText.won(plan.fixedTotal),
             color = HomePalette.Ink,
@@ -198,16 +210,24 @@ private fun FixedStep(
 @Composable
 private fun ResultStep(plan: FixedCostPlan) {
     if (plan.isOverIncome) {
-        Question("고정비가 월급보다 많아요")
+        Question(tr("고정비가 월급보다 많아요", "Fixed costs exceed your income", "Los gastos fijos superan tu sueldo"))
         Hint(
-            "고정비 ${StatusText.won(plan.fixedTotal)}가 월급 ${StatusText.won(plan.monthlyIncome)}를 넘습니다. " +
-                "금액을 잘못 적었거나, 이번 달은 앱이 계산해 줄 수 있는 상황이 아닙니다. " +
-                "뒤로 가서 고치거나 금액을 직접 정해 주세요.",
+            tr(
+                "고정비 ${StatusText.won(plan.fixedTotal)}가 월급 ${StatusText.won(plan.monthlyIncome)}를 넘습니다. " +
+                    "금액을 잘못 적었거나, 이번 달은 앱이 계산해 줄 수 있는 상황이 아닙니다. " +
+                    "뒤로 가서 고치거나 금액을 직접 정해 주세요.",
+                "Fixed costs of ${StatusText.won(plan.fixedTotal)} exceed your income of ${StatusText.won(plan.monthlyIncome)}. " +
+                    "Either an amount is wrong, or this month isn't something the app can calculate. " +
+                    "Go back to fix it, or set the amount yourself.",
+                "Los gastos fijos de ${StatusText.won(plan.fixedTotal)} superan tu sueldo de ${StatusText.won(plan.monthlyIncome)}. " +
+                    "O algún importe está mal, o este mes la app no puede calcularlo. " +
+                    "Vuelve atrás para corregirlo o fija el importe tú mismo.",
+            ),
         )
         return
     }
 
-    Question("이만큼 쓸 수 있어요")
+    Question(tr("이만큼 쓸 수 있어요", "Here's what you can spend", "Esto es lo que puedes gastar"))
     Spacer(Modifier.height(18.dp))
 
     Column(
@@ -217,32 +237,41 @@ private fun ResultStep(plan: FixedCostPlan) {
             .background(HomePalette.Card)
             .padding(20.dp),
     ) {
-        Text(text = "한 달에 쓸 수 있는 돈", color = HomePalette.Ink2, fontSize = 13.sp)
+        Text(text = tr("한 달에 쓸 수 있는 돈", "Available per month", "Disponible al mes"), color = HomePalette.Ink2, fontSize = 13.sp)
         Row(verticalAlignment = Alignment.Bottom) {
             Text(
-                text = StatusText.figure(plan.recommended),
+                text = L10n.wonPrefix + StatusText.figure(plan.recommended),
                 color = HomePalette.Accent,
                 fontSize = 38.sp,
                 fontWeight = FontWeight.Bold,
             )
-            Text(
-                text = "원",
-                color = HomePalette.Accent,
-                fontSize = 17.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 6.dp),
-            )
+            if (L10n.wonSuffix.isNotEmpty()) {
+                Text(
+                    text = L10n.wonSuffix,
+                    color = HomePalette.Accent,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 6.dp),
+                )
+            }
         }
         Spacer(Modifier.height(10.dp))
         Text(
-            text = "월급 ${StatusText.figure(plan.monthlyIncome)} − 고정비 ${StatusText.figure(plan.fixedTotal)}",
+            text = tr("월급", "Income", "Sueldo") + " ${StatusText.figure(plan.monthlyIncome)} − " +
+                tr("고정비", "fixed costs", "gastos fijos") + " ${StatusText.figure(plan.fixedTotal)}",
             color = HomePalette.Muted,
             fontSize = 12.sp,
         )
     }
 
     Spacer(Modifier.height(14.dp))
-    Hint("이 금액이 곳간·등급·도감의 기준이 됩니다. 나중에 설정에서 언제든 바꿀 수 있어요.")
+    Hint(
+        tr(
+            "이 금액이 곳간·등급·도감의 기준이 됩니다. 나중에 설정에서 언제든 바꿀 수 있어요.",
+            "This amount drives your savings, grades and garden. You can change it anytime in Settings.",
+            "Este importe es la base de tu ahorro, notas y jardín. Puedes cambiarlo cuando quieras en Ajustes.",
+        ),
+    )
 }
 
 @Composable
@@ -252,27 +281,39 @@ private fun BudgetStep(
     onOpenCalculator: () -> Unit,
     onOpenJoin: () -> Unit,
 ) {
-    Question("한 달에 얼마 쓸 거예요?")
-    Hint("고정비를 빼고 실제로 쓸 수 있는 돈이요. 나중에 설정에서 언제든 바꿀 수 있어요.")
+    Question(tr("한 달에 얼마 쓸 거예요?", "How much will you spend a month?", "¿Cuánto vas a gastar al mes?"))
+    Hint(
+        tr(
+            "고정비를 빼고 실제로 쓸 수 있는 돈이요. 나중에 설정에서 언제든 바꿀 수 있어요.",
+            "The money you can actually spend after fixed costs. You can change it anytime in Settings.",
+            "El dinero que realmente puedes gastar tras los gastos fijos. Puedes cambiarlo cuando quieras en Ajustes.",
+        ),
+    )
     Spacer(Modifier.height(20.dp))
-    AmountField(ui.budgetText, onBudgetChange, "한 달 예산 (예: 930000 또는 93만)")
+    AmountField(ui.budgetText, onBudgetChange, tr("한 달 예산 (예: 930000 또는 93만)", "Monthly budget (e.g. 930000)", "Presupuesto mensual (p. ej. 930000)"))
     Spacer(Modifier.height(16.dp))
-    LinkRow("월급·고정비로 계산해 볼래요", onOpenCalculator)
+    LinkRow(tr("월급·고정비로 계산해 볼래요", "Calculate from income and fixed costs", "Calcular con sueldo y gastos fijos"), onOpenCalculator)
     if (ui.canJoin) {
         Spacer(Modifier.height(8.dp))
-        LinkRow("배우자에게 받은 가정 코드가 있어요", onOpenJoin)
+        LinkRow(tr("배우자에게 받은 가정 코드가 있어요", "I have a household code from my partner", "Tengo un código de hogar de mi pareja"), onOpenJoin)
     }
 }
 
 @Composable
 private fun JoinStep(ui: OnboardingUi, onJoinCodeChange: (String) -> Unit) {
-    Question("가정 코드를 넣어 주세요")
-    Hint("배우자가 설정 › 가정에서 만든 ${HouseholdCode.LENGTH}자리 코드예요. 묶이면 공용 곳간 예산과 월급날을 같이 써요.")
+    Question(tr("가정 코드를 넣어 주세요", "Enter the household code", "Introduce el código de hogar"))
+    Hint(
+        tr(
+            "배우자가 설정 › 가정에서 만든 ${HouseholdCode.LENGTH}자리 코드예요. 묶이면 공용 곳간 예산과 월급날을 같이 써요.",
+            "The ${HouseholdCode.LENGTH}-character code your partner made in Settings › Household. Once linked, you share the shared wallet's budget and payday.",
+            "El código de ${HouseholdCode.LENGTH} caracteres que tu pareja creó en Ajustes › Hogar. Al vincularos, compartís el presupuesto y el día de cobro de la cartera compartida.",
+        ),
+    )
     Spacer(Modifier.height(20.dp))
     OutlinedTextField(
         value = ui.joinCode,
         onValueChange = onJoinCodeChange,
-        label = { Text("가정 코드") },
+        label = { Text(tr("가정 코드", "Household code", "Código de hogar")) },
         singleLine = true,
         enabled = !ui.joined,
         textStyle = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold, letterSpacing = 6.sp),
@@ -307,8 +348,14 @@ private fun JoinStep(ui: OnboardingUi, onJoinCodeChange: (String) -> Unit) {
  */
 @Composable
 private fun NotifyStep() {
-    Question("잠금화면에서 바로 적어요")
-    Hint("알림을 켜 두면 잠금화면에 오늘 쓸 수 있는 돈이 보이고, 눌러서 «커피 4500»처럼 바로 적을 수 있어요.")
+    Question(tr("잠금화면에서 바로 적어요", "Log right from the lock screen", "Anota desde la pantalla de bloqueo"))
+    Hint(
+        tr(
+            "알림을 켜 두면 잠금화면에 오늘 쓸 수 있는 돈이 보이고, 눌러서 «커피 4500»처럼 바로 적을 수 있어요.",
+            "With the notification on, the lock screen shows what you can spend today; tap it and type e.g. «coffee 4500».",
+            "Con la notificación activada, la pantalla de bloqueo muestra lo que puedes gastar hoy; tócala y escribe p. ej. «café 4500».",
+        ),
+    )
     Spacer(Modifier.height(20.dp))
     Column(
         modifier = Modifier
@@ -317,7 +364,7 @@ private fun NotifyStep() {
             .background(LockPreviewGround)
             .padding(16.dp),
     ) {
-        Text(text = "예시", color = LockPreviewMuted, fontSize = 11.sp)
+        Text(text = tr("예시", "Example", "Ejemplo"), color = LockPreviewMuted, fontSize = 11.sp)
         Spacer(Modifier.height(8.dp))
         Column(
             modifier = Modifier
@@ -326,13 +373,13 @@ private fun NotifyStep() {
                 .background(Color.White.copy(alpha = 0.10f))
                 .padding(14.dp),
         ) {
-            Text(text = "곳간 · 지금", color = LockPreviewMuted, fontSize = 11.sp)
+            Text(text = tr("곳간 · 지금", "Wallet · now", "Cartera · ahora"), color = LockPreviewMuted, fontSize = 11.sp)
             Spacer(Modifier.height(4.dp))
-            Text(text = "오늘 31,000원 남았어요", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-            Text(text = "이번 주기 612,400원 남음", color = LockPreviewText, fontSize = 12.sp)
+            Text(text = tr("오늘 31,000원 남았어요", "₩31,000 left today", "Quedan ₩31,000 hoy"), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Text(text = tr("이번 주기 612,400원 남음", "₩612,400 left this cycle", "Quedan ₩612,400 este ciclo"), color = LockPreviewText, fontSize = 12.sp)
             Spacer(Modifier.height(10.dp))
             Text(
-                text = "커피 4500",
+                text = tr("커피 4500", "coffee 4500", "café 4500"),
                 color = LockPreviewMuted,
                 fontSize = 13.sp,
                 modifier = Modifier
@@ -369,42 +416,42 @@ private fun Actions(
     Column(modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp)) {
         when (ui.step) {
             OnboardingStep.INCOME -> {
-                PrimaryButton("다음", onNext, enabled = readAmount(ui.incomeText) > 0L)
-                GhostButton("나중에 할래요", onSkip)
+                PrimaryButton(tr("다음", "Next", "Siguiente"), onNext, enabled = readAmount(ui.incomeText) > 0L)
+                GhostButton(tr("나중에 할래요", "Maybe later", "Más tarde"), onSkip)
             }
             OnboardingStep.FIXED -> {
                 // 고정비가 하나도 없어도 넘어갈 수 있다 — 그러면 월급이 그대로 예산이 된다.
-                PrimaryButton("다음", onNext, enabled = true)
-                GhostButton("나중에 할래요", onSkip)
+                PrimaryButton(tr("다음", "Next", "Siguiente"), onNext, enabled = true)
+                GhostButton(tr("나중에 할래요", "Maybe later", "Más tarde"), onSkip)
             }
             OnboardingStep.RESULT -> {
                 if (plan.isOverIncome) {
-                    PrimaryButton("고정비 고치기", onBackToFixed, enabled = true)
-                    GhostButton("금액 직접 정하기", onEditManually)
+                    PrimaryButton(tr("고정비 고치기", "Fix fixed costs", "Corregir gastos fijos"), onBackToFixed, enabled = true)
+                    GhostButton(tr("금액 직접 정하기", "Set the amount myself", "Fijar el importe yo"), onEditManually)
                 } else {
-                    PrimaryButton("이 금액으로 시작", onFinish, enabled = true)
-                    GhostButton("직접 고치기", onEditManually)
+                    PrimaryButton(tr("이 금액으로 시작", "Start with this amount", "Empezar con este importe"), onFinish, enabled = true)
+                    GhostButton(tr("직접 고치기", "Edit it myself", "Editarlo yo"), onEditManually)
                 }
             }
             OnboardingStep.BUDGET -> {
                 // 계산 경로와 가정 코드는 본문 링크로 있다. 여기 한 번 더 두면 같은 길이 둘이다.
-                PrimaryButton("다음", onFinish, enabled = readAmount(ui.budgetText) > 0L)
+                PrimaryButton(tr("다음", "Next", "Siguiente"), onFinish, enabled = readAmount(ui.budgetText) > 0L)
             }
             OnboardingStep.JOIN -> {
                 if (ui.joined) {
-                    PrimaryButton("개인 예산 정하러 가기", onLeaveJoin, enabled = true)
+                    PrimaryButton(tr("개인 예산 정하러 가기", "Set my personal budget", "Fijar mi presupuesto personal"), onLeaveJoin, enabled = true)
                 } else {
                     PrimaryButton(
-                        if (ui.joinBusy) "연결하는 중…" else "연결하기",
+                        if (ui.joinBusy) tr("연결하는 중…", "Joining…", "Uniéndote…") else tr("연결하기", "Join", "Unirse"),
                         onJoin,
                         enabled = !ui.joinBusy && HouseholdCode.isValid(ui.joinCode),
                     )
-                    GhostButton("취소", onLeaveJoin)
+                    GhostButton(tr("취소", "Cancel", "Cancelar"), onLeaveJoin)
                 }
             }
             OnboardingStep.NOTIFY -> {
-                PrimaryButton("알림 켜기", onEnableNotification, enabled = true)
-                GhostButton("나중에 할래요", onSkipNotification)
+                PrimaryButton(tr("알림 켜기", "Turn on notification", "Activar notificación"), onEnableNotification, enabled = true)
+                GhostButton(tr("나중에 할래요", "Maybe later", "Más tarde"), onSkipNotification)
             }
         }
     }
