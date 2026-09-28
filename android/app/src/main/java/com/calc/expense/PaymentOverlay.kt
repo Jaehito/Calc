@@ -75,17 +75,10 @@ object PaymentOverlay {
         return keyguard?.isKeyguardLocked != true
     }
 
-    /**
-     * 팝업을 띄우고, 띄울 수 없으면 배너로 알린다. 어느 스레드에서 불러도 된다.
-     *
-     * @param source 진단 기록에 남길 출처(«결제»·«시험»)
-     * @param postedAt 원래 알림이 올라온 시각. 0 이 아니면 얼마나 늦게 띄웠는지 기록한다
-     */
-    fun showOrBanner(context: Context, amount: Long, merchant: String, source: String = "결제", postedAt: Long = 0L) {
+    /** 팝업을 띄우고, 띄울 수 없으면 배너로 알린다. 어느 스레드에서 불러도 된다. */
+    fun showOrBanner(context: Context, amount: Long, merchant: String) {
         val app: Context = context.applicationContext
-        val late: String = if (postedAt > 0L) " +${System.currentTimeMillis() - postedAt}ms" else ""
         if (!canShow(app)) {
-            PaymentOverlayLog.add(app, "$source$late → 배너 (${whyNot(app)})")
             NotificationHelper.showPaymentBanner(app, amount, merchant)
             return
         }
@@ -95,51 +88,10 @@ object PaymentOverlay {
             } catch (e: Exception) {
                 // 제조사가 막았거나 권한이 방금 꺼졌다. 알림은 놓치지 않는다.
                 Log.w(TAG, "결제 팝업을 띄우지 못해 배너로 대체", e)
-                PaymentOverlayLog.add(app, "$source$late → 배너 (오류 ${e.javaClass.simpleName}: ${e.message})")
                 false
             }
-            if (shown) {
-                PaymentOverlayLog.add(app, "$source$late → 팝업")
-                checkLater(app, source)
-            } else {
-                NotificationHelper.showPaymentBanner(app, amount, merchant)
-            }
+            if (!shown) NotificationHelper.showPaymentBanner(app, amount, merchant)
         }
-    }
-
-    /** 왜 팝업을 못 쓰는지 한 줄로. 진단 기록용. */
-    private fun whyNot(app: Context): String {
-        val reasons = ArrayList<String>()
-        if (!AndroidSettings.canDrawOverlays(app)) reasons.add("권한 없음")
-        if (app.getSystemService(PowerManager::class.java)?.isInteractive != true) reasons.add("화면 꺼짐")
-        if (app.getSystemService(KeyguardManager::class.java)?.isKeyguardLocked == true) reasons.add("잠금화면")
-        return reasons.joinToString(", ")
-    }
-
-    /**
-     * 창을 붙이고 1.5초 뒤, 그 창이 정말 화면에 있는지 남긴다. 다른 앱(은행 앱 등)이 팝업을
-     * 숨기면 붙이기는 성공하는데 안 보인다 — 그게 이 숫자들로 드러나는지 본다.
-     */
-    private fun checkLater(app: Context, source: String) {
-        val view: View = card ?: return
-        main.postDelayed({
-            val loc = IntArray(2)
-            view.getLocationOnScreen(loc)
-            val screenH: Int = app.resources.displayMetrics.heightPixels
-            PaymentOverlayLog.add(
-                app,
-                "$source 확인: 붙음=${view.isAttachedToWindow} 창=${visibilityName(view.windowVisibility)}" +
-                    " 보임=${view.isShown} 크기=${view.width}x${view.height} y=${loc[1]}/$screenH" +
-                    " 투명도=${"%.1f".format(view.alpha)}",
-            )
-        }, 1_500L)
-    }
-
-    private fun visibilityName(v: Int): String = when (v) {
-        View.VISIBLE -> "VISIBLE"
-        View.INVISIBLE -> "INVISIBLE"
-        View.GONE -> "GONE"
-        else -> v.toString()
     }
 
     private fun show(app: Context, amount: Long, merchant: String): Boolean {
@@ -193,11 +145,9 @@ object PaymentOverlay {
             live = true
             setTouchable(app, view)
             restartTimer(view)
-            if (waited > POLL_MS * 2) PaymentOverlayLog.add(app, "가려졌다가 ${waited / 1000}초 뒤 보임 → 5초")
             return
         }
         if (waited >= WAIT_HIDDEN_MS) {
-            PaymentOverlayLog.add(app, "1분 동안 가려져 치움(수집함에는 있음)")
             card = null
             remove(view)
             return

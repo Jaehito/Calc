@@ -72,8 +72,6 @@ data class SettingsUi(
     val reminderOn: Boolean = false,
     /** «다른 앱 위에 표시» 권한. 있으면 결제 팝업이 시스템 팝업 줄을 서지 않고 바로 뜬다. */
     val overlayAllowed: Boolean = false,
-    /** 임시 진단 — 최근 결제 팝업 시도([PaymentOverlayLog]). */
-    val overlayLog: List<String> = emptyList(),
     val accountEmail: String? = null,
     val householdPaired: Boolean = false,
     val householdCode: String? = null,
@@ -113,7 +111,6 @@ fun SettingsScreen(
     onOpenInput: () -> Unit,
     onToggleReminder: () -> Unit,
     onOpenOverlaySettings: () -> Unit,
-    onTestOverlay: () -> Unit,
     onExport: () -> Unit,
     onExportExpenses: () -> Unit,
     onImport: () -> Unit,
@@ -153,7 +150,7 @@ fun SettingsScreen(
 
             LanguageGroup(ui.language, onLanguageChange)
             BudgetGroup(ui, onFormChange, onFieldDone, onOpenFixedCosts)
-            NotificationGroup(ui, onToggleNotification, onToggleReminder, onOpenOverlaySettings, onTestOverlay, onOpenInput, onOpenNotificationSettings)
+            NotificationGroup(ui, onToggleNotification, onToggleReminder, onOpenOverlaySettings, onOpenInput, onOpenNotificationSettings)
             HouseholdGroup(
                 ui, onHouseholdJoinInputChange, onCreateHousehold, onJoinHousehold,
                 onLeaveHousehold, onShareHouseholdCode,
@@ -354,7 +351,6 @@ private fun NotificationGroup(
     onToggleNotification: (Boolean) -> Unit,
     onToggleReminder: () -> Unit,
     onOpenOverlaySettings: () -> Unit,
-    onTestOverlay: () -> Unit,
     onOpenInput: () -> Unit,
     onOpenNotificationSettings: () -> Unit,
 ) {
@@ -393,27 +389,6 @@ private fun NotificationGroup(
                 ),
                 onClick = onOpenOverlaySettings,
             )
-        }
-        // 임시 진단. 팝업이 안 보인 원인을 찾으면 지운다.
-        if (ui.reminderOn) {
-            LinkRow(
-                title = tr("팝업 시험", "Test popup", "Probar aviso"),
-                sub = tr(
-                    "누르고 3초 안에 홈으로 나가면 가짜 결제 팝업이 떠요",
-                    "Tap, then go to the home screen within 3 seconds to see a fake payment popup",
-                    "Tócalo y ve a la pantalla de inicio en 3 segundos para ver un aviso de prueba",
-                ),
-                onClick = onTestOverlay,
-            )
-            if (ui.overlayLog.isNotEmpty()) {
-                Text(
-                    text = ui.overlayLog.joinToString("\n"),
-                    color = HomePalette.Muted,
-                    fontSize = 10.5.sp,
-                    lineHeight = 14.sp,
-                    modifier = Modifier.padding(bottom = 6.dp),
-                )
-            }
         }
         Divider()
         LinkRow(title = tr("입력 화면 열어보기", "Open the entry screen", "Abrir la pantalla de entrada"), sub = null, onClick = onOpenInput)
