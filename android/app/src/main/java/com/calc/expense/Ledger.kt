@@ -33,16 +33,20 @@ object Ledger {
         if (!config.hasBudget || !PurseAccess.isLinked(context, purse)) return null
 
         val stored: BudgetState? = BudgetStore.load(context, purse)
-        val reckoning: Budget.Reckoning =
-            Budget.reckon(stored, config.monthlyBudget, today, settings.payDay) { day ->
-                SpendingCache.spentOn(context, purse, day)
-            }
+        val cycle: BudgetCycle = Payday.cycleOf(today, settings.payDay)
+        val reckoning: Budget.Reckoning = Budget.reckon(
+            stored,
+            config.monthlyBudget,
+            today,
+            settings.payDay,
+            spentOn = { day -> SpendingCache.spentOn(context, purse, day) },
+            // 재설치로 앵커가 사라져도 저장소에서 돌아온 이번 주기 기록부터 다시 접는다([Budget.startingAnchor]).
+            firstSpentDay = firstSpentDay(context, purse, cycle, today),
+        )
 
         // 저장하는 건 앵커뿐이다. 오늘 상태는 매번 캐시에서 다시 접으므로
         // 재동기화로 이번 주기 지난 날짜가 고쳐지면 곳간도 같이 고쳐진다.
         if (reckoning.anchor != stored) BudgetStore.save(context, reckoning.anchor, purse)
-
-        val cycle: BudgetCycle = Payday.cycleOf(today, settings.payDay)
         val cycleSpent: Long = spentInCycle(context, purse, cycle)
 
         return LedgerSnapshot(
@@ -90,6 +94,21 @@ object Ledger {
         }
 
         return cycleSpent - previousThroughSameDay
+    }
+
+    /** 이번 주기에서 지출이 있는 가장 이른 날. 오늘은 빼고 본다 — 오늘은 아직 정산하지 않는다. */
+    private fun firstSpentDay(context: Context, purse: Purse, cycle: BudgetCycle, today: LocalDate): LocalDate? {
+        var first: LocalDate? = null
+        var month: YearMonth = YearMonth.from(cycle.start)
+        val lastMonth: YearMonth = YearMonth.from(cycle.lastDay)
+        while (!month.isAfter(lastMonth)) {
+            for ((day, amount) in SpendingCache.totals(context, purse, month)) {
+                if (amount <= 0L || !cycle.contains(day) || !day.isBefore(today)) continue
+                if (first == null || day.isBefore(first)) first = day
+            }
+            month = month.plusMonths(1)
+        }
+        return first
     }
 
     /** 주기가 걸친 달들을 읽어 그 범위의 지출만 더한다. [GradeRepository] 도 주기 채점에 재사용한다. */

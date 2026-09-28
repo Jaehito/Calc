@@ -28,6 +28,26 @@ enum class HouseholdPull {
  */
 object HouseholdSync {
 
+    /**
+     * 재설치 등으로 **로컬 가정 id 가 비었으면** 저장소(`users/{uid}.householdId`)에서 되찾고,
+     * 가정 설정(공용 예산·월급날·공용 이름)까지 받아 온다. 되찾았으면 true 로 알린다.
+     *
+     * 예전에는 설정 화면만 이걸 해서, 다시 설치한 사람의 홈에 공용 곳간이 설정에 한 번 다녀올
+     * 때까지 안 보였다. 홈이 열릴 때 부른다. 콜백은 메인 스레드로 온다.
+     */
+    fun restoreIfMissing(context: Context, onDone: (Boolean) -> Unit) {
+        val app: Context = context.applicationContext
+        if (HouseholdStore.householdId(app) != null) return onDone(false)
+        val uid: String = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+            ?: return onDone(false)
+        HouseholdRepository.currentHouseholdId(uid) { id ->
+            // 가정이 없거나 읽지 못했다(둘 다 null). 다음에 홈을 열 때 다시 묻는다 — 문서 하나라 가볍다.
+            if (id == null || HouseholdStore.householdId(app) != null) return@currentHouseholdId onDone(false)
+            HouseholdStore.setHouseholdId(app, id)
+            pull(app) { onDone(true) }
+        }
+    }
+
     fun pull(context: Context, onDone: (HouseholdPull) -> Unit = {}) {
         val app: Context = context.applicationContext
         val id: String = HouseholdStore.householdId(app) ?: return onDone(HouseholdPull.SKIPPED)

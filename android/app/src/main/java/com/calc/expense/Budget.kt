@@ -156,8 +156,9 @@ object Budget {
         today: LocalDate,
         payDay: Int,
         spentOn: (LocalDate) -> Long,
+        firstSpentDay: LocalDate? = null,
     ): Reckoning {
-        var anchor: BudgetState = stored ?: start(monthlyBudget, today, payDay)
+        var anchor: BudgetState = startingAnchor(stored, monthlyBudget, today, payDay, firstSpentDay)
 
         if (anchor.monthlyBudget != monthlyBudget) {
             anchor = updateBudget(anchor, monthlyBudget, today, payDay)
@@ -170,6 +171,38 @@ object Budget {
         }
 
         return Reckoning(anchor = anchor, today = settle(anchor, today, payDay, spentOn))
+    }
+
+    /**
+     * 정산을 시작할 앵커.
+     *
+     * 저장된 앵커가 없으면 보통은 오늘부터 시작한다([start]). 그런데 이번 주기에 **오늘보다 앞선
+     * 기록**이 저장소에 있다면 이 사람은 처음 쓰는 게 아니라 다시 설치했거나 기기를 옮긴 것이다 —
+     * 곳간 앵커는 폰에만 있어 사라졌지만 지출은 저장소에서 돌아온다. 그때 오늘부터 예산 전액으로
+     * 시작하면 이미 쓴 돈을 없던 것으로 쳐서 하루치가 몇 배로 부푼다(실측: 남은 6.6만 원·2주인데
+     * 오늘 6만 원). 그래서 **그 첫 기록 날부터** 시작해 기록을 다시 접는다.
+     *
+     * 저장된 앵커가 있어도, 그 앵커가 시작한 날보다 앞선 이번 주기 기록이 있으면 같은 이유로
+     * 첫 기록 날부터 다시 시작한다 — 재설치 직후 기록을 받아 오기 전에 오늘 기준 앵커가 먼저
+     * 저장돼 버린 경우다. 주기 첫날부터 쓰던 사람의 앵커는 주기 첫날에 서 있으므로 건드리지 않는다.
+     *
+     * @param firstSpentDay 이번 주기에서 지출이 있는 가장 이른 날(오늘 제외). 없으면 null
+     */
+    fun startingAnchor(
+        stored: BudgetState?,
+        monthlyBudget: Long,
+        today: LocalDate,
+        payDay: Int,
+        firstSpentDay: LocalDate?,
+    ): BudgetState {
+        val cycle: BudgetCycle = Payday.cycleOf(today, payDay)
+        val earlier: LocalDate? =
+            firstSpentDay?.takeIf { cycle.contains(it) && it.isBefore(today) }
+        if (stored == null) return start(monthlyBudget, earlier ?: today, payDay)
+        if (earlier != null && earlier.isBefore(stored.settledThrough.plusDays(1))) {
+            return start(monthlyBudget, earlier, payDay)
+        }
+        return stored
     }
 
     /** 두 값 모두 양수일 때만 쓴다. */

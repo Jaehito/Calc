@@ -235,6 +235,13 @@ class HomeActivity : ComponentActivity() {
         refreshInbox(show = fromBanner || !inboxAsked)
         republishNotification()
         resyncInBackground()
+        // 다시 설치했으면 가정 연결을 되찾는다. 되찾으면 공용 곳간이 바로 보이게 다시 그린다.
+        HouseholdSync.restoreIfMissing(this) { restored ->
+            if (!restored || isFinishing || isDestroyed) return@restoreIfMissing
+            refresh()
+            republishNotification()
+            resyncInBackground()
+        }
         checkCycleGrade()
         checkDailyGrade()
         // 카테고리를 펼쳐 다시 분류하고 돌아오면 도넛이 달라져 있어야 한다. 대조(resync)
