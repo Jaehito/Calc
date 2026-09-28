@@ -32,6 +32,11 @@ import kotlin.math.abs
  *
  * 누르면 수집함, 옆·아래로 밀면 닫힘. 결제가 잇따라 오면 떠 있는 팝업의 글자만 바꾸고 시간을
  * 다시 센다(두 장 겹쳐 뜨지 않는다).
+ *
+ * **은행 앱 위에서는 안 보인다.** 금융 앱은 보안 때문에 자기 화면이 떠 있는 동안 다른 앱 위의
+ * 창을 전부 숨긴다. 그때는 창을 붙여 둔 채 기다리다가, 그 앱을 나가는 순간 뜬다
+ * ([waitUntilDrawn]). 한계: 폰 설정에서 애니메이션을 꺼 두면 가려졌는지 알아챌 수 없어
+ * 가려진 채 5초가 지날 수 있다.
  */
 object PaymentOverlay {
 
@@ -39,8 +44,15 @@ object PaymentOverlay {
     private const val SHOW_MS = 5_000L
     private const val ANIM_MS = 180L
 
-    /** 띄우고 이만큼 지나도 떠오르는 연출이 안 끝났으면 안 그려지는 것으로 본다. */
-    private const val VERIFY_MS = 1_000L
+    /** 그려지는지 다시 보는 간격. */
+    private const val POLL_MS = 400L
+
+    /**
+     * 은행 앱 등에 가려진 팝업을 이만큼까지 기다린다. 그 안에 그 앱을 나가면(홈·다른 앱) 그때
+     * 뜨고, 넘으면 조용히 치운다 — 한참 뒤에 뜬 결제 팝업은 무슨 결제인지 헷갈린다. 결제는
+     * 수집함에 남아 있다.
+     */
+    private const val WAIT_HIDDEN_MS = 60_000L
     private const val RISE_DP = 24f
 
     private val main = Handler(Looper.getMainLooper())
@@ -50,8 +62,8 @@ object PaymentOverlay {
     private var lastAmount: Long = 0L
     private var lastMerchant: String = ""
 
-    /** 사람이 이 팝업을 한 번이라도 만졌는지. 만졌다면 화면에 보였던 것이다. */
-    private var touched: Boolean = false
+    /** 화면에 그려지기 시작했는지. 그 전까지는 5초를 세지 않고, 터치도 받지 않는다. */
+    private var live: Boolean = false
     private val autoHide = Runnable { hide() }
 
     /** 권한이 있고 사람이 화면을 보고 있는지. 아니면 배너를 쓴다. */
@@ -140,18 +152,20 @@ object PaymentOverlay {
         val existing: View? = card
         if (existing != null) {
             bind(existing, title, action)
-            restartTimer(existing)
+            // 가려져 기다리는 중이면 그대로 기다린다 — 보이기 시작할 때 5초를 센다.
+            if (live) restartTimer(existing)
             return true
         }
 
-        touched = false
+        live = false
         val view: View = LayoutInflater.from(app).inflate(R.layout.overlay_payment, null)
         view.clipToOutline = true
         bind(view, title, action)
         attachGestures(app, view)
 
         val wm: WindowManager = app.getSystemService(WindowManager::class.java) ?: return false
-        wm.addView(view, layoutParams(app))
+        // 보이기 전까지는 터치를 통과시킨다 — 가려진 채 기다리는 투명한 창이 그 자리 터치를 막지 않게.
+        wm.addView(view, layoutParams(app, touchable = false))
         card = view
 
         // 떠오르는 연출이 곧 «그려지고 있나» 의 증거다. 은행 앱처럼 다른 앱 위의 창을 숨기는 앱이
@@ -160,26 +174,45 @@ object PaymentOverlay {
         view.alpha = 0f
         view.translationY = RISE_DP * app.resources.displayMetrics.density
         view.animate().alpha(1f).translationY(0f).setDuration(ANIM_MS).start()
-        restartTimer(view)
-        main.postDelayed({ verifyDrawn(app, view) }, VERIFY_MS)
+        val addedAt: Long = System.currentTimeMillis()
+        main.postDelayed({ waitUntilDrawn(app, view, addedAt) }, POLL_MS)
         return true
     }
 
     /**
-     * 띄우고 [VERIFY_MS] 뒤에도 연출이 끝나지 않았으면 화면에 안 그려지는 것이다 — 창을 떼고
-     * 배너로 알린다. 배너는 시스템 줄을 서서 늦지만, 아무것도 안 뜨는 것보다 낫다.
-     * 투명한 창을 남겨 두면 보이지도 않는데 그 자리의 터치를 가로챈다.
+     * 팝업이 실제로 그려질 때까지 기다린다.
+     *
+     * 은행 앱처럼 다른 앱 위의 창을 숨기는 앱이 앞에 있으면 우리 창은 붙어 있어도 안 그려진다.
+     * 그 앱을 나가는(홈·다른 앱) 순간 그려지기 시작하므로, 그때부터 5초를 센다. 배너를 대신
+     * 띄우지 않는다 — 은행 앱 안에서는 조용하고, 나오자마자 하단에 뜬다.
      */
-    private fun verifyDrawn(app: Context, view: View) {
+    private fun waitUntilDrawn(app: Context, view: View, addedAt: Long) {
         if (card !== view) return
-        // 만지고 있다면 보이는 것이다. 밀 때 흐려지는 투명도를 안 그려진 것으로 오해하지 않는다.
-        if (touched) return
-        if (view.alpha >= 0.99f) return
-        PaymentOverlayLog.add(app, "안 그려짐(투명도 ${"%.1f".format(view.alpha)}) → 창 떼고 배너")
-        card = null
-        main.removeCallbacks(autoHide)
-        remove(view)
-        NotificationHelper.showPaymentBanner(app, lastAmount, lastMerchant)
+        val waited: Long = System.currentTimeMillis() - addedAt
+        if (view.alpha >= 0.99f) {
+            live = true
+            setTouchable(app, view)
+            restartTimer(view)
+            if (waited > POLL_MS * 2) PaymentOverlayLog.add(app, "가려졌다가 ${waited / 1000}초 뒤 보임 → 5초")
+            return
+        }
+        if (waited >= WAIT_HIDDEN_MS) {
+            PaymentOverlayLog.add(app, "1분 동안 가려져 치움(수집함에는 있음)")
+            card = null
+            remove(view)
+            return
+        }
+        // 멈춘 연출을 다시 건다. 가려진 동안은 여전히 멈춰 있고, 보이기 시작하면 이어서 돈다.
+        view.animate().alpha(1f).translationY(0f).setDuration(ANIM_MS).start()
+        main.postDelayed({ waitUntilDrawn(app, view, addedAt) }, POLL_MS)
+    }
+
+    private fun setTouchable(app: Context, view: View) {
+        try {
+            app.getSystemService(WindowManager::class.java)?.updateViewLayout(view, layoutParams(app, touchable = true))
+        } catch (e: Exception) {
+            Log.w(TAG, "팝업을 누를 수 있게 바꾸지 못함", e)
+        }
     }
 
     private fun bind(view: View, title: String, action: String) {
@@ -199,7 +232,7 @@ object PaymentOverlay {
         main.postDelayed(autoHide, SHOW_MS)
     }
 
-    private fun layoutParams(app: Context): WindowManager.LayoutParams {
+    private fun layoutParams(app: Context, touchable: Boolean): WindowManager.LayoutParams {
         val density: Float = app.resources.displayMetrics.density
         val side: Int = (12 * density).toInt()
         val params = WindowManager.LayoutParams(
@@ -207,7 +240,8 @@ object PaymentOverlay {
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             // 포커스를 뺏지 않는다 — 보던 앱의 키보드·입력이 그대로다. 창 밖 터치는 그 앱으로 간다.
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                (if (touchable) 0 else WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE),
             PixelFormat.TRANSLUCENT,
         )
         params.gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
@@ -235,7 +269,6 @@ object PaymentOverlay {
         view.setOnTouchListener { v, event ->
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
-                    touched = true
                     downX = event.rawX
                     downY = event.rawY
                     dragging = false
