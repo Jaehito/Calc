@@ -219,6 +219,7 @@ cd C:/Calc/android && ./gradlew.bat assembleDebug
 ## 보안
 
 - 지출은 Firestore 의 내 계정 아래에만 저장됩니다(공용 곳간은 묶인 가정 아래). 규칙은 `firestore-rules-to-add.txt` 참고.
+- 개인 설정(개인 예산·곳간 이름·월급날·카테고리 칩·고정비와 월급)도 내 계정 문서(`users/{uid}` 의 `personal`)에 맡겨 둡니다. 재설치하고 로그인하면 되찾아 온보딩 없이 이어 씁니다. 개인 예산을 정하기 전의 빈 설정은 올리지 않습니다.
 - 설정은 `EncryptedSharedPreferences`(AES-256)로 저장하며, 기기 키스토어 초기화에 실패하면 앱 전용 평문 저장으로 내려앉고 설정 화면에 경고를 띄웁니다.
 - `ReplyReceiver` 는 `exported=false` 라 다른 앱이 호출할 수 없습니다.
 - 디버그 서명 APK입니다. 배포용이 아니라 개인 사용 목적입니다.

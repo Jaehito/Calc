@@ -90,6 +90,8 @@ object SettingsStore {
         edit.remove(LEGACY_MONTHLY_BUDGET)
         for (key in LEGACY_NOTION_KEYS) edit.remove(key)
         edit.apply()
+        // 개인 예산·이름·월급날을 계정에도 맡긴다([PersonalBackupSync]). 재설치하면 되찾는다.
+        PersonalBackupSync.schedulePush(context)
     }
 
     /** 계정이 바뀔 때. 예산·곳간 이름·월급날은 그 사람의 것이라 남기지 않는다. */

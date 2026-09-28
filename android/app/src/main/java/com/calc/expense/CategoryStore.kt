@@ -27,5 +27,7 @@ object CategoryStore {
 
     fun save(context: Context, list: List<String>) {
         prefs(context).edit().putString(KEY, list.joinToString(SEP)).apply()
+        // 계정에도 맡긴다 — 재설치하면 되찾는다.
+        PersonalBackupSync.schedulePush(context)
     }
 }

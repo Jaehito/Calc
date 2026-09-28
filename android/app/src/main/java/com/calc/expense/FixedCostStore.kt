@@ -32,6 +32,8 @@ object FixedCostStore {
             .putString(KEY_PLAN, FixedCostCodec.encode(cleaned))
             .putBoolean(KEY_ASKED, true)
             .apply()
+        // 계정에도 맡긴다 — 재설치하면 되찾는다.
+        PersonalBackupSync.schedulePush(context)
     }
 
     /**
@@ -45,6 +47,7 @@ object FixedCostStore {
     /** 건너뛰었을 때. 계획은 비워 두고 «물어봤다»만 남긴다. */
     fun markAsked(context: Context) {
         prefs(context).edit().putBoolean(KEY_ASKED, true).apply()
+        PersonalBackupSync.schedulePush(context)
     }
 
     /** 계정이 바뀌면 월급도 고정비도 «물어봤다»도 전부 남의 것이다. */

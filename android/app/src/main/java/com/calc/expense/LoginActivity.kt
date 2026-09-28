@@ -51,12 +51,16 @@ class LoginActivity : ComponentActivity() {
 
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
 
+    /** 계정에 맡겨 둔 개인 설정을 되찾는 중. 버튼 자리에 도는 표시를 띄운다. */
+    private var restoring: Boolean by mutableStateOf(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         if (auth.currentUser != null) {
             goNext()
-            return
+            // 되찾을 것이 없으면 goNext 가 이미 다음 화면으로 넘겼다. 되찾는 중이면 아래 화면을 그린다.
+            if (isFinishing) return
         }
 
         setContent {
@@ -65,7 +69,7 @@ class LoginActivity : ComponentActivity() {
             val scope = rememberCoroutineScope()
 
             LoginScreen(
-                signingIn = signingIn,
+                signingIn = signingIn || restoring,
                 errorMessage = errorMessage,
                 onSignIn = {
                     if (signingIn) return@LoginScreen
@@ -119,11 +123,27 @@ class LoginActivity : ComponentActivity() {
         // 남의 챌린지 금액을 물려받고, «이미 물어봤다»로 온보딩까지 건너뛴다.
         AccountScope.syncTo(this, auth.currentUser?.uid)
 
-        val show: Boolean = Onboarding.shouldShow(
-            wasAsked = FixedCostStore.wasAsked(this),
-            hasBudget = SettingsStore.load(this).personal.hasBudget,
-        )
-        startActivity(if (show) OnboardingActivity.firstRun(this) else Intent(this, HomeActivity::class.java))
+        if (!onboardingNeeded()) {
+            route()
+            return
+        }
+        // 이 폰에는 예산이 없다 — 처음 쓰는 사람이거나 다시 설치한 사람이다. 계정에 맡겨 둔
+        // 개인 설정이 있으면 되찾아 온보딩을 건너뛴다([PersonalBackupSync]).
+        restoring = true
+        PersonalBackupSync.restoreIfEmpty(this) {
+            if (isFinishing || isDestroyed) return@restoreIfEmpty
+            restoring = false
+            route()
+        }
+    }
+
+    private fun onboardingNeeded(): Boolean = Onboarding.shouldShow(
+        wasAsked = FixedCostStore.wasAsked(this),
+        hasBudget = SettingsStore.load(this).personal.hasBudget,
+    )
+
+    private fun route() {
+        startActivity(if (onboardingNeeded()) OnboardingActivity.firstRun(this) else Intent(this, HomeActivity::class.java))
         finish()
     }
 }

@@ -235,6 +235,8 @@ class HomeActivity : ComponentActivity() {
         refreshInbox(show = fromBanner || !inboxAsked)
         republishNotification()
         resyncInBackground()
+        // 개인 설정을 계정에 맡겨 둔다(프로세스마다 한 번). 재설치하면 로그인 때 되찾는다.
+        PersonalBackupSync.ensureBackedUp(this)
         // 다시 설치했으면 가정 연결을 되찾는다. 되찾으면 공용 곳간이 바로 보이게 다시 그린다.
         HouseholdSync.restoreIfMissing(this) { restored ->
             if (!restored || isFinishing || isDestroyed) return@restoreIfMissing
