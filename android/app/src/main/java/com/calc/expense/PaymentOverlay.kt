@@ -39,10 +39,19 @@ object PaymentOverlay {
     private const val SHOW_MS = 5_000L
     private const val ANIM_MS = 180L
 
+    /** 띄우고 이만큼 지나도 떠오르는 연출이 안 끝났으면 안 그려지는 것으로 본다. */
+    private const val VERIFY_MS = 1_000L
+    private const val RISE_DP = 24f
+
     private val main = Handler(Looper.getMainLooper())
 
     // 메인 스레드에서만 만진다.
     private var card: View? = null
+    private var lastAmount: Long = 0L
+    private var lastMerchant: String = ""
+
+    /** 사람이 이 팝업을 한 번이라도 만졌는지. 만졌다면 화면에 보였던 것이다. */
+    private var touched: Boolean = false
     private val autoHide = Runnable { hide() }
 
     /** 권한이 있고 사람이 화면을 보고 있는지. 아니면 배너를 쓴다. */
@@ -125,6 +134,9 @@ object PaymentOverlay {
         val title: String = if (merchant.isBlank()) StatusText.won(amount) else StatusText.won(amount) + " · " + merchant
         val action: String = tr("눌러서 기록", "Tap to log", "Toca para anotar")
 
+        lastAmount = amount
+        lastMerchant = merchant
+
         val existing: View? = card
         if (existing != null) {
             bind(existing, title, action)
@@ -132,6 +144,7 @@ object PaymentOverlay {
             return true
         }
 
+        touched = false
         val view: View = LayoutInflater.from(app).inflate(R.layout.overlay_payment, null)
         view.clipToOutline = true
         bind(view, title, action)
@@ -141,13 +154,32 @@ object PaymentOverlay {
         wm.addView(view, layoutParams(app))
         card = view
 
+        // 떠오르는 연출이 곧 «그려지고 있나» 의 증거다. 은행 앱처럼 다른 앱 위의 창을 숨기는 앱이
+        // 앞에 있으면, 창은 붙어도 그려지지 않아 연출이 멈춘다(실측: 붙음·보임은 true 인데 투명도 0).
+        // view.post 에 기대지 않고 바로 시작한다 — 숨겨진 창에서는 post 도 늦게 돈다.
         view.alpha = 0f
-        view.post {
-            view.translationY = view.height * 0.6f
-            view.animate().alpha(1f).translationY(0f).setDuration(ANIM_MS).start()
-        }
+        view.translationY = RISE_DP * app.resources.displayMetrics.density
+        view.animate().alpha(1f).translationY(0f).setDuration(ANIM_MS).start()
         restartTimer(view)
+        main.postDelayed({ verifyDrawn(app, view) }, VERIFY_MS)
         return true
+    }
+
+    /**
+     * 띄우고 [VERIFY_MS] 뒤에도 연출이 끝나지 않았으면 화면에 안 그려지는 것이다 — 창을 떼고
+     * 배너로 알린다. 배너는 시스템 줄을 서서 늦지만, 아무것도 안 뜨는 것보다 낫다.
+     * 투명한 창을 남겨 두면 보이지도 않는데 그 자리의 터치를 가로챈다.
+     */
+    private fun verifyDrawn(app: Context, view: View) {
+        if (card !== view) return
+        // 만지고 있다면 보이는 것이다. 밀 때 흐려지는 투명도를 안 그려진 것으로 오해하지 않는다.
+        if (touched) return
+        if (view.alpha >= 0.99f) return
+        PaymentOverlayLog.add(app, "안 그려짐(투명도 ${"%.1f".format(view.alpha)}) → 창 떼고 배너")
+        card = null
+        main.removeCallbacks(autoHide)
+        remove(view)
+        NotificationHelper.showPaymentBanner(app, lastAmount, lastMerchant)
     }
 
     private fun bind(view: View, title: String, action: String) {
@@ -203,6 +235,7 @@ object PaymentOverlay {
         view.setOnTouchListener { v, event ->
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
+                    touched = true
                     downX = event.rawX
                     downY = event.rawY
                     dragging = false
@@ -266,6 +299,7 @@ object PaymentOverlay {
         view.animate().translationX(target).alpha(0f).setDuration(ANIM_MS)
             .withEndAction { remove(view) }
             .start()
+        removeSoon(view)
     }
 
     private fun hide(immediate: Boolean = false) {
@@ -279,6 +313,15 @@ object PaymentOverlay {
         view.animate().alpha(0f).translationY(view.height * 0.6f).setDuration(ANIM_MS)
             .withEndAction { remove(view) }
             .start()
+        removeSoon(view)
+    }
+
+    /**
+     * 연출이 끝나기를 기다리지 않고도 창을 뗀다. 숨겨진 창에서는 연출이 멈춰 withEndAction 이
+     * 영영 안 불릴 수 있다 — 그러면 투명한 창이 남아 터치를 막는다. [remove] 는 두 번 불려도 된다.
+     */
+    private fun removeSoon(view: View) {
+        main.postDelayed({ remove(view) }, ANIM_MS + 120L)
     }
 
     private fun remove(view: View) {
