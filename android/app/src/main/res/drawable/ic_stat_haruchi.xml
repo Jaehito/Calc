@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    알림 작은 아이콘. 앱 아이콘(일력 한 장)을 한 색으로 줄인 것 — 위 띠는 채우고 몸통은 테두리, 가운데 1.
+    알림 작은 아이콘. 앱 아이콘(지갑과 하루치 한 장)의 한 색 판을 24dp 로 줄인 것 —
+    테마 아이콘 레이어([ic_launcher_monochrome])의 가운데 60칸을 그대로 옮겼다.
     알림 아이콘은 모양(알파)만 쓰이고 색은 시스템이 칠한다.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -8,18 +9,19 @@
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-    <path android:fillColor="#FFFFFF" android:pathData="M6,3 H18 A3,3 0 0 1 21,6 V9 H3 V6 A3,3 0 0 1 6,3 Z" />
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="2"
-        android:strokeLineJoin="round"
-        android:pathData="M4,8 V18 A2,2 0 0 0 6,20 H18 A2,2 0 0 0 20,18 V8" />
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="2"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M10.5,13 L12.5,11.8 V17" />
+    <group android:scaleX="0.4" android:scaleY="0.4" android:translateX="-9.6" android:translateY="-9.6">
+        <group android:rotation="-9" android:pivotX="52" android:pivotY="42">
+            <path
+                android:fillColor="#00000000"
+                android:strokeColor="#FFFFFF"
+                android:strokeWidth="4.5"
+                android:pathData="M41 30H65A3 3 0 0 1 68 33V49A3 3 0 0 1 65 52H41A3 3 0 0 1 38 49V33A3 3 0 0 1 41 30Z" />
+        </group>
+        <!-- 지갑 몸통에서 잠금 부분을 뚫어 낸다(evenOdd). -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M35 48H73A7 7 0 0 1 80 55V73A7 7 0 0 1 73 80H35A7 7 0 0 1 28 73V55A7 7 0 0 1 35 48ZM67 57H79A5 5 0 0 1 84 62V65A5 5 0 0 1 79 70H67A5 5 0 0 1 62 65V62A5 5 0 0 1 67 57Z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M66.6 63.5a2.4 2.4 0 1 0 4.8 0a2.4 2.4 0 1 0 -4.8 0Z" />
+    </group>
 </vector>

@@ -1,20 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    앱 아이콘 앞 레이어: 일력의 고리 구멍 둘과 숫자 1. 종이(뒤 레이어) 위에 얹힌다.
-    숫자는 날짜가 아니라 «하루 한 장»의 뜻이라 매일 바뀌지 않는다.
+    앱 아이콘 앞 레이어: 민트 지갑과 그 위로 지폐처럼 삐져나온 일력 한 장(하루치).
+    일력의 금색 띠는 앱 안에서 곳간을 나타내는 색이다. 지갑 잠금 부분은 일부러
+    오른쪽 가장자리에서 잘리게 크게 그렸다 — 가운데 작은 기호처럼 보이지 않게.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:fillColor="#15352B" android:pathData="M37.8,31 a3.2,3.2 0 1,0 6.4,0 a3.2,3.2 0 1,0 -6.4,0 Z" />
-    <path android:fillColor="#15352B" android:pathData="M63.8,31 a3.2,3.2 0 1,0 6.4,0 a3.2,3.2 0 1,0 -6.4,0 Z" />
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#15352B"
-        android:strokeWidth="9"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M47,56 L57,49.5 V75" />
+    <group android:rotation="-9" android:pivotX="52" android:pivotY="40">
+        <path android:fillColor="#FBFAF6" android:pathData="M36 22H68A4 4 0 0 1 72 26V52A4 4 0 0 1 68 56H36A4 4 0 0 1 32 52V26A4 4 0 0 1 36 22Z" />
+        <path android:fillColor="#E9A23B" android:pathData="M36 22H68A4 4 0 0 1 72 26V31H32V26A4 4 0 0 1 36 22Z" />
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#15352B"
+            android:strokeWidth="4"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M48 42L53 39V52" />
+    </group>
+    <path android:fillColor="#12C08B" android:pathData="M29 46H79A9 9 0 0 1 88 55V79A9 9 0 0 1 79 88H29A9 9 0 0 1 20 79V55A9 9 0 0 1 29 46Z" />
+    <path android:fillColor="#0E9A6F" android:pathData="M67 58H87A7 7 0 0 1 94 65V69A7 7 0 0 1 87 76H67A7 7 0 0 1 60 69V65A7 7 0 0 1 67 58Z" />
+    <path android:fillColor="#E9A23B" android:pathData="M66.4 67a3.6 3.6 0 1 0 7.2 0a3.6 3.6 0 1 0 -7.2 0Z" />
 </vector>

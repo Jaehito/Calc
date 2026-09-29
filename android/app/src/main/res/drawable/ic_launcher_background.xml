@@ -1,18 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    앱 아이콘 뒤 레이어: 하루에 한 장씩 뜯는 일력 종이.
-    위는 민트 띠, 아래는 뜯긴 자국과 그 밑의 다음 장. 가장자리까지 꽉 채워
-    기기가 원·둥근 사각 어느 모양으로 잘라도 종이가 보이게 한다.
--->
+<!-- 앱 아이콘 뒤 레이어: 짙은 초록 바탕. 그림(지갑·하루치 한 장)은 앞 레이어에 있다. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- 다음 장 -->
-    <path android:fillColor="#DCE5E0" android:pathData="M0,0 H108 V108 H0 Z" />
-    <!-- 오늘 장. 아래 끝이 톱니 모양으로 뜯겼다. -->
-    <path android:fillColor="#FBFAF6" android:pathData="M0,0 H108 V81 L108,81 L104,84.5 L100,81 L96,84.5 L92,81 L88,84.5 L84,81 L80,84.5 L76,81 L72,84.5 L68,81 L64,84.5 L60,81 L56,84.5 L52,81 L48,84.5 L44,81 L40,84.5 L36,81 L32,84.5 L28,81 L24,84.5 L20,81 L16,84.5 L12,81 L8,84.5 L4,81 L0,84.5 Z" />
-    <!-- 민트 띠 -->
-    <path android:fillColor="#12C08B" android:pathData="M0,0 H108 V38 H0 Z" />
+    <path android:fillColor="#15352B" android:pathData="M0 0H108V108H0Z" />
 </vector>
