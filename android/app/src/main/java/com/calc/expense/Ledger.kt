@@ -59,6 +59,7 @@ object Ledger {
             monthlyBudget = config.monthlyBudget,
             targetDay = cycle.lastDay,
             daysLeft = cycle.daysLeftFrom(today),
+            cycleDays = cycle.length,
             vsLastCycle = compareToLastCycle(context, purse, cycle, today, cycleSpent, settings.payDay),
         )
     }

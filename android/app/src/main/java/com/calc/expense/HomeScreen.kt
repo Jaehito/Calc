@@ -16,10 +16,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,7 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -57,19 +57,18 @@ fun HomeScreen(
     onRecord: () -> Unit,
     onSetBudget: () -> Unit = {},
 ) {
-    // 위(카드·내역)는 스크롤하고, 기록하기 버튼은 아래에 고정한다.
-    // 곳간 카드가 둘이면 스크롤이 길어지는데, 버튼이 스크롤 안에 있으면 하단 탭에 가려진다.
-    Column(
+    // 기록 버튼은 오른쪽 아래에 떠 있는 둥근 버튼이다. 예전의 가로 긴 버튼은 카드 두 장이
+    // 뜨면 두 번째 카드를 가렸고, 화면의 주인공인 숫자보다 더 커 보였다.
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(HomePalette.Ground),
     ) {
         Column(
             modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
+                .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 4.dp),
+                .padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 96.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -88,7 +87,7 @@ fun HomeScreen(
                 EmptyCard(onSetBudget)
             } else {
                 for (snapshot in snapshots) {
-                    PurseCard(snapshot, showLabel = snapshots.size > 1, onClick = { onOpenHistory(snapshot.purse) })
+                    PurseCard(snapshot, onClick = { onOpenHistory(snapshot.purse) })
                     Spacer(Modifier.height(12.dp))
                 }
                 if (fixedTotal > 0L) {
@@ -103,166 +102,186 @@ fun HomeScreen(
             }
         }
 
-        // 하단 고정 — 늘 보인다.
-        Button(
-            onClick = onRecord,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 16.dp)
-                .height(52.dp),
-            shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = HomePalette.AccentBright),
-        ) {
-            Text(text = tr("기록하기", "Log spending", "Anotar gasto"), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-        }
+        RecordButton(onRecord, Modifier.align(Alignment.BottomEnd).padding(end = 20.dp, bottom = 20.dp))
     }
 }
 
-/** 곳간 하나. 큰 숫자 하나와 그 숫자가 어떻게 나왔는지. 카드를 누르면 그 곳간 내역이 열린다. */
+/** 기록하기. 연필 하나 — 이 앱에서 가장 자주 누르는 버튼이라 글자 없이 모양으로 알아보게 한다. */
 @Composable
-private fun PurseCard(snapshot: LedgerSnapshot, showLabel: Boolean, onClick: () -> Unit) {
-    val tone: Tone = if (snapshot.isOver) Tone.OVER else Tone.REMAINING
-    val caption: String = when {
-        snapshot.isOver && showLabel -> "${snapshot.label} · " + tr("오늘 초과", "Over today", "Exceso de hoy")
-        snapshot.isOver -> tr("오늘 초과", "Over today", "Exceso de hoy")
-        showLabel -> "${snapshot.label} · " + tr("오늘 쓸 수 있는 돈", "Left to spend today", "Disponible hoy")
-        else -> tr("오늘 쓸 수 있는 돈", "Left to spend today", "Disponible hoy")
+private fun RecordButton(onClick: () -> Unit, modifier: Modifier) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .size(58.dp)
+            .shadow(elevation = 8.dp, shape = CircleShape, ambientColor = HomePalette.Accent, spotColor = HomePalette.Accent)
+            .clip(CircleShape)
+            .background(HomePalette.AccentBright)
+            .clickable(onClick = onClick),
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_pencil),
+            contentDescription = tr("기록하기", "Log spending", "Anotar gasto"),
+            tint = Color.White,
+            modifier = Modifier.size(24.dp),
+        )
     }
-    // 넘긴 날은 음수 대신 초과액으로 말한다. 마이너스 부호는 읽는 데 한 박자 더 걸린다.
-    val amount: Long = if (snapshot.isOver) -snapshot.available else snapshot.available
+}
 
-    // 홈에서 가장 무거운 카드. 둥글기와 그림자로 다른 카드(고정비 등)보다 한 층 위에 둔다 —
-    // 모든 카드가 같은 흰 상자면 어디부터 봐야 할지 화면이 말해 주지 않는다.
+/**
+ * 지갑 하나. 개인과 공용이 **같은 모양**이다 — 위의 작은 이름표로만 가른다.
+ *
+ * 큰 숫자 아래에는 그 숫자가 어디서 왔는지 세 줄(하루치 · 곳간 · 오늘 쓴 돈)을 아이콘과 함께
+ * 둔다. 예전에는 계산식 타일에 부호(+, −)와 뜻 없는 색 점이 붙어 «−0» 같은 글자가 나왔다.
+ * 맨 아래는 월급날까지 남은 돈과 날, 그리고 주기가 얼마나 지났는지 보여 주는 막대다.
+ */
+@Composable
+private fun PurseCard(snapshot: LedgerSnapshot, onClick: () -> Unit) {
+    val over: Boolean = snapshot.isOver
+    // 넘긴 날은 음수 대신 초과액으로 말한다. 마이너스 부호는 읽는 데 한 박자 더 걸린다.
+    val amount: Long = if (over) -snapshot.available else snapshot.available
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(
-                elevation = 10.dp,
-                shape = RoundedCornerShape(24.dp),
-                ambientColor = HomePalette.Accent.copy(alpha = 0.18f),
-                spotColor = HomePalette.Accent.copy(alpha = 0.22f),
+                elevation = 6.dp,
+                shape = RoundedCornerShape(22.dp),
+                ambientColor = HomePalette.Ink.copy(alpha = 0.10f),
+                spotColor = HomePalette.Ink.copy(alpha = 0.10f),
             )
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(22.dp))
             .background(HomePalette.Card)
             .clickable(onClick = onClick)
-            .padding(22.dp),
+            .padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 18.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = caption, color = HomePalette.Ink2, fontSize = 13.sp, modifier = Modifier.weight(1f))
-            // 카드를 눌러 내역으로 갈 수 있다는 표시.
             Text(
-                text = tr("내역", "History", "Historial"),
+                text = snapshot.label,
                 color = HomePalette.Accent,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
+                fontSize = 12.5f.sp,
+                fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 modifier = Modifier
                     .clip(RoundedCornerShape(999.dp))
                     .background(HomePalette.Soft)
-                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                    .padding(horizontal = 10.dp, vertical = 3.dp),
             )
+            Spacer(Modifier.weight(1f))
+            // 카드 전체가 내역으로 가는 문이다. 여기는 그걸 알려 주는 표시일 뿐이다.
+            Text(text = tr("내역", "History", "Historial"), color = HomePalette.Muted, fontSize = 13.sp, maxLines = 1)
+            Chevron(size = 16.dp)
         }
-        Spacer(Modifier.height(2.dp))
+
+        Spacer(Modifier.height(12.dp))
+        Text(
+            text = if (over) tr("오늘 초과", "Over today", "Exceso de hoy") else tr("오늘 쓸 수 있는 돈", "Left to spend today", "Disponible hoy"),
+            color = HomePalette.Ink2,
+            fontSize = 13.5f.sp,
+        )
         Row(verticalAlignment = Alignment.Bottom) {
             Text(
                 text = L10n.wonPrefix + StatusText.figure(amount),
-                color = HomePalette.of(tone),
-                fontSize = 40.sp,
-                fontWeight = FontWeight.Bold,
+                color = HomePalette.of(if (over) Tone.OVER else Tone.REMAINING),
+                fontSize = 38.sp,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = (-1).sp,
                 style = Figures,
             )
             if (L10n.wonSuffix.isNotEmpty()) {
                 Text(
                     text = " " + L10n.wonSuffix,
                     color = HomePalette.Ink2,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 6.dp),
                 )
             }
         }
 
-        Spacer(Modifier.height(16.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            // 칸이 좁아 영어·스페인어는 짧은 말을 쓴다(«Spent today»는 두 줄로 부풀었다).
-            FactCell(tr("하루치", "Daily", "Diario"), StatusText.figure(snapshot.dailyRate), HomePalette.Ink, HomePalette.AccentBright, Modifier.weight(1f))
-            FactCell(tr("곳간", "Savings", "Ahorro"), "+" + StatusText.figure(snapshot.vault), HomePalette.Accent, HomePalette.Gold, Modifier.weight(1f))
-            FactCell(tr("오늘 씀", "Spent", "Gastado"), "−" + StatusText.figure(snapshot.todaySpent), HomePalette.Ink, HomePalette.Over, Modifier.weight(1f))
-        }
+        Spacer(Modifier.height(10.dp))
+        FactRow(R.drawable.ic_calendar, HomePalette.AccentBright, tr("하루치", "Daily", "Diario"), snapshot.dailyRate, HomePalette.Ink)
+        RowLine()
+        FactRow(R.drawable.ic_piggy, HomePalette.Gold, tr("곳간", "Savings", "Ahorro"), snapshot.vault, HomePalette.Accent)
+        RowLine()
+        FactRow(R.drawable.ic_receipt, HomePalette.Over, tr("오늘 쓴 돈", "Spent today", "Gastado hoy"), snapshot.todaySpent, HomePalette.Ink)
 
-        Spacer(Modifier.height(16.dp))
-        VaultBar(snapshot)
-
-        Spacer(Modifier.height(16.dp))
-        Text(
-            text = StatusText.untilTarget(snapshot),
-            color = HomePalette.Muted,
-            fontSize = 12.sp,
-            style = Figures,
-        )
-
-        // 지난 주기 이맘때와의 비교. 견줄 기록이 없으면 줄 자체가 없다.
-        val comparison: String? = StatusText.comparison(snapshot)
-        if (comparison != null) {
-            Spacer(Modifier.height(10.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                // 지난 주기보다 덜 썼으면 초록, 더 썼으면 빨강 — 과거의 나와 겨루는 신호.
-                val diff: Long = snapshot.vsLastCycle ?: 0L
-                val dot: Color = when {
-                    diff < 0L -> HomePalette.Accent
-                    diff > 0L -> HomePalette.Over
-                    else -> HomePalette.Muted
-                }
-                Box(
-                    modifier = Modifier
-                        .size(7.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(dot),
-                )
-                Spacer(Modifier.width(7.dp))
-                Text(text = comparison, color = HomePalette.Ink2, fontSize = 12.sp, style = Figures)
-            }
-        }
+        Spacer(Modifier.height(14.dp))
+        PeriodLine(snapshot)
     }
 }
 
-/**
- * 곳간에 얼마나 찼는지.
- *
- * 상한은 하루치의 [Budget.VAULT_CAP_DAYS] 배다 — 무한히 쌓여 예산이 무의미해지는 것과
- * 주기 끝에 "어차피 사라지니 쓰자"가 되는 것을 둘 다 막는 값이다.
- */
+/** 세 줄 중 하나. 연한 색 동그라미 안의 아이콘 + 이름 + 오른쪽 끝 금액. */
 @Composable
-private fun VaultBar(snapshot: LedgerSnapshot) {
-    val cap: Long = snapshot.dailyRate * Budget.VAULT_CAP_DAYS
-    val filled: Float =
-        if (cap > 0L) (snapshot.vault.toFloat() / cap.toFloat()).coerceIn(0f, 1f) else 0f
-
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(text = tr("곳간", "Savings", "Ahorro"), color = HomePalette.Ink2, fontSize = 13.sp, modifier = Modifier.weight(1f))
+private fun FactRow(icon: Int, tint: Color, label: String, value: Long, valueColor: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 7.dp)) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(30.dp)
+                .clip(CircleShape)
+                .background(tint.copy(alpha = 0.14f)),
+        ) {
+            Icon(painterResource(icon), contentDescription = null, tint = tint, modifier = Modifier.size(16.dp))
+        }
+        Spacer(Modifier.width(10.dp))
+        Text(text = label, color = HomePalette.Ink2, fontSize = 13.5f.sp, modifier = Modifier.weight(1f))
         Text(
-            text = tr("상한 ", "Cap ", "Tope ") + StatusText.won(cap),
-            color = HomePalette.Muted,
-            fontSize = 12.sp,
+            text = StatusText.won(value),
+            color = valueColor,
+            fontSize = 14.5f.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
             style = Figures,
         )
     }
-    Spacer(Modifier.height(8.dp))
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(10.dp)
-            .clip(RoundedCornerShape(5.dp))
-            .background(HomePalette.Soft),
-    ) {
-        // 0 이면 폭이 0 이라 아무것도 안 그려진다 — 빈 곳간을 빈 막대로 보여주는 게 맞다.
+}
+
+@Composable
+private fun RowLine() {
+    Box(Modifier.fillMaxWidth().height(1.dp).background(HomePalette.Line))
+}
+
+/** 월급날까지 남은 돈과 날, 그리고 주기가 얼마나 지났는지. */
+@Composable
+private fun PeriodLine(snapshot: LedgerSnapshot) {
+    val target: String = snapshot.targetDay.format(L10n.monthDay())
+    val left: Long = snapshot.untilTarget
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text =
+                if (left >= 0L) tr("${target}까지 ${StatusText.won(left)}", "${StatusText.won(left)} until $target", "${StatusText.won(left)} hasta el $target")
+                else tr("${target}까지 ${StatusText.won(-left)} 초과", "${StatusText.won(-left)} over until $target", "${StatusText.won(-left)} de más hasta el $target"),
+            color = if (left >= 0L) HomePalette.Ink2 else HomePalette.Over,
+            fontSize = 13.sp,
+            style = Figures,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = tr("${snapshot.daysLeft}일 남음", "${L10n.days(snapshot.daysLeft)} left", "quedan ${L10n.days(snapshot.daysLeft)}"),
+            color = HomePalette.Accent,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+        )
+    }
+    if (snapshot.cycleDays > 0) {
+        Spacer(Modifier.height(7.dp))
         Box(
             modifier = Modifier
-                .fillMaxWidth(filled)
-                .fillMaxHeight()
-                .clip(RoundedCornerShape(5.dp))
-                .background(HomePalette.AccentBright),
-        )
+                .fillMaxWidth()
+                .height(8.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(HomePalette.Soft),
+        ) {
+            // 주기 첫날이면 폭이 0 이라 아무것도 안 그려진다 — 아직 지나간 날이 없다는 뜻 그대로다.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(snapshot.cycleElapsed)
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(HomePalette.AccentBright),
+            )
+        }
     }
 }
 
@@ -362,36 +381,5 @@ private fun CardBox(content: @Composable () -> Unit) {
             .padding(20.dp),
     ) {
         content()
-    }
-}
-
-/** 큰 숫자의 근거 한 칸. 바탕색을 깔아 카드 안에서 한 덩어리로 읽히게 한다. */
-@Composable
-private fun FactCell(label: String, value: String, valueColor: Color, dot: Color, modifier: Modifier) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
-            .background(HomePalette.Chip)
-            .padding(horizontal = 11.dp, vertical = 11.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(7.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(dot),
-            )
-            Spacer(Modifier.width(6.dp))
-            Text(text = label, color = HomePalette.Muted, fontSize = 11.sp, maxLines = 1)
-        }
-        Spacer(Modifier.height(4.dp))
-        Text(
-            text = value,
-            color = valueColor,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-            style = Figures,
-        )
     }
 }

@@ -3,33 +3,40 @@
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-    <!-- 하단 탭 — 통계. Lucide «chart-column» (ISC). 선 아이콘이라 색은 Compose 의 Icon tint 가 정한다. -->
+    <!-- 카테고리 — 주거. Lucide «building-2» (ISC). 선 아이콘이라 색은 Compose 의 Icon tint 가 정한다. -->
     <path
         android:fillColor="#00000000"
         android:strokeColor="#000000"
         android:strokeWidth="2"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:pathData="M3 3v16a2 2 0 0 0 2 2h16" />
+        android:pathData="M10 12h4" />
     <path
         android:fillColor="#00000000"
         android:strokeColor="#000000"
         android:strokeWidth="2"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:pathData="M18 17V9" />
+        android:pathData="M10 8h4" />
     <path
         android:fillColor="#00000000"
         android:strokeColor="#000000"
         android:strokeWidth="2"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:pathData="M13 17V5" />
+        android:pathData="M14 21v-3a2 2 0 0 0-4 0v3" />
     <path
         android:fillColor="#00000000"
         android:strokeColor="#000000"
         android:strokeWidth="2"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:pathData="M8 17v-3" />
+        android:pathData="M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#000000"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16" />
 </vector>

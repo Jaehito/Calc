@@ -215,4 +215,23 @@ class StatusTextTest {
         assertEquals("지난 7일 기록이 없어요", lines.summary)
         assertEquals(lines.summary, lines.detail)
     }
+
+    @Test
+    fun `어림한 금액은 사람이 말하듯 만 단위로 줄인다`() {
+        assertEquals("61만 원", StatusText.approxWon(606_662L))
+        assertEquals("17만 원", StatusText.approxWon(174_460L))
+        assertEquals("8.7만 원", StatusText.approxWon(86_666L))
+        assertEquals("3만 원", StatusText.approxWon(30_020L))
+        assertEquals("9,800원", StatusText.approxWon(9_800L))
+        assertEquals("17만 원", StatusText.approxWon(-174_460L))
+    }
+
+    @Test
+    fun `막대 위 짧은 금액은 소수 한 자리까지`() {
+        assertEquals("12만", StatusText.approxShort(120_400L))
+        assertEquals("11.9만", StatusText.approxShort(119_200L))
+        assertEquals("8.7만", StatusText.approxShort(86_666L))
+        assertEquals("152만", StatusText.approxShort(1_520_000L))
+        assertEquals("4,300", StatusText.approxShort(4_300L))
+    }
 }

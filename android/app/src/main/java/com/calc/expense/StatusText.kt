@@ -31,6 +31,45 @@ object StatusText {
     fun cycleRange(cycle: BudgetCycle): String =
         cycle.start.format(DAY_FORMAT) + " ~ " + cycle.lastDay.format(DAY_FORMAT)
 
+    /**
+     * 어림한 금액 — 문장 속에서 읽는 숫자. «17만 원», «8.7만 원», «9,800원».
+     *
+     * 통계의 목표(606,662원)처럼 원 단위까지 딱 떨어지는 숫자는 사람이 정한 목표로 읽히지 않는다.
+     * 10만 원부터는 만 단위 정수, 1만~10만은 소수 한 자리, 그 아래는 그대로 적는다. 부호는 떼고 쓴다.
+     */
+    fun approxWon(amount: Long): String {
+        val a: Long = kotlin.math.abs(amount)
+        return when (L10n.lang) {
+            Lang.KO -> if (a < 10_000L) won(a) else man(a, decimals = if (a < 100_000L) 1 else 0) + "만 원"
+            Lang.EN -> if (a < 1_000L) won(a) else "₩" + kilo(a) + "K"
+            Lang.ES -> if (a < 1_000L) won(a) else "₩" + kilo(a) + " mil"
+        }
+    }
+
+    /** 막대 위처럼 좁은 자리의 짧은 금액. «12만», «11.9만», «8.7만». 만 원 아래는 쉼표 숫자. */
+    fun approxShort(amount: Long): String {
+        val a: Long = kotlin.math.abs(amount)
+        return when (L10n.lang) {
+            Lang.KO -> if (a < 10_000L) figure(a) else man(a, decimals = if (a < 1_000_000L) 1 else 0) + "만"
+            Lang.EN -> if (a < 1_000L) figure(a) else kilo(a) + "K"
+            Lang.ES -> if (a < 1_000L) figure(a) else kilo(a) + " mil"
+        }
+    }
+
+    /** 만 단위로 반올림한 숫자. 소수 자리가 0 이면 떼어 «12.0» 대신 «12». */
+    private fun man(amount: Long, decimals: Int): String = roundTo(amount / 10_000.0, decimals)
+
+    /** 천 단위(K). 100K 부터는 정수, 그 아래는 소수 한 자리. */
+    private fun kilo(amount: Long): String = roundTo(amount / 1_000.0, if (amount < 100_000L) 1 else 0)
+
+    private fun roundTo(value: Double, decimals: Int): String {
+        if (decimals <= 0) return L10n.figure(Math.round(value))
+        val scaled: Long = Math.round(value * 10)
+        val whole: Long = scaled / 10
+        val tenth: Long = scaled % 10
+        return if (tenth == 0L) L10n.figure(whole) else L10n.figure(whole) + "." + tenth
+    }
+
     /** 원을 붙이지 않은 쉼표 숫자. 히어로 숫자처럼 «원» 단위를 따로 붙이는 곳에서 쓴다. */
     fun figure(amount: Long): String = format(amount)
 

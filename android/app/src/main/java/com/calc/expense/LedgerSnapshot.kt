@@ -17,6 +17,8 @@ data class LedgerSnapshot(
     val targetDay: LocalDate,
     /** 오늘을 포함해 목표일까지 남은 날 수. */
     val daysLeft: Int,
+    /** 이번 주기의 날 수. 홈 카드의 «남은 기간» 막대가 지나간 날의 비율을 그린다. 0 이면 막대를 그리지 않는다. */
+    val cycleDays: Int = 0,
     /**
      * 지난 주기 «이맘때»(같은 날짜 수)와 비교한 이번 주기 지출 차이.
      * 양수면 더 썼고 음수면 덜 썼다. 비교할 지난 주기 기록이 없으면 null.
@@ -38,4 +40,8 @@ data class LedgerSnapshot(
     /** 남은 날에 고르게 나눴을 때의 하루 몫. 지금 페이스가 되는지 보는 숫자다. */
     val perDayLeft: Long
         get() = if (daysLeft > 0) untilTarget / daysLeft else untilTarget
+
+    /** 이번 주기에서 지나간 날의 비율(0~1). 오늘은 아직 안 지난 날로 친다. */
+    val cycleElapsed: Float
+        get() = if (cycleDays > 0) ((cycleDays - daysLeft).toFloat() / cycleDays).coerceIn(0f, 1f) else 0f
 }

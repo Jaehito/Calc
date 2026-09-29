@@ -4,8 +4,12 @@
     android:viewportWidth="24"
     android:viewportHeight="24"
     android:autoMirrored="true">
-    <!-- 눌러서 들어가는 줄의 오른쪽 꺾쇠. 색은 Compose 의 Icon tint 가 정한다. -->
+    <!-- 들어가는 줄의 꺾쇠. Lucide «chevron-right» (ISC). 선 아이콘이라 색은 Compose 의 Icon tint 가 정한다. -->
     <path
-        android:fillColor="#000000"
-        android:pathData="M10,6L8.59,7.41 13.17,12l-4.58,4.59L10,18l6,-6z" />
+        android:fillColor="#00000000"
+        android:strokeColor="#000000"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="m9 18 6-6-6-6" />
 </vector>

@@ -2,13 +2,14 @@
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
-    android:viewportHeight="24">
-    <!-- 고른 항목 표시. Lucide «check» (ISC). 선 아이콘이라 색은 Compose 의 Icon tint 가 정한다. -->
+    android:viewportHeight="24"
+    android:autoMirrored="true">
+    <!-- 이전으로 넘기는 꺾쇠. Lucide «chevron-left» (ISC). 선 아이콘이라 색은 Compose 의 Icon tint 가 정한다. -->
     <path
         android:fillColor="#00000000"
         android:strokeColor="#000000"
         android:strokeWidth="2"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:pathData="M20 6 9 17l-5-5" />
+        android:pathData="m15 18-6-6 6-6" />
 </vector>
