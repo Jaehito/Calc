@@ -1,0 +1,68 @@
+name: 기록 창 스모크
+
+# 개발 환경에서는 안드로이드를 돌릴 수 없어, 에뮬레이터에서 기록 창을 실제로 띄워 본다.
+# 앱이 죽으면 잡힌 오류를 로그에 찍고 실패한다. 화면은 smoke-latest 릴리스에 올려
+# 사람이든 Claude 든 브라우저로 볼 수 있게 한다.
+on:
+  push:
+    branches: ["claude/**", "main"]
+    paths: ["android/**", ".github/workflows/smoke.yml", ".github/scripts/smoke-quick-input.sh"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Android SDK 준비
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" > /dev/null
+
+      - name: APK 빌드
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleDebug
+
+      - name: KVM 켜기
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: 에뮬레이터에서 기록 창 띄우기
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          script: bash .github/scripts/smoke-quick-input.sh
+
+      - name: 화면을 릴리스에 올리기
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls smoke || exit 0
+          gh release delete smoke-latest --yes --cleanup-tag || true
+          gh release create smoke-latest \
+            --target "$GITHUB_SHA" \
+            --title "기록 창 스모크 · ${GITHUB_SHA::7}" \
+            --notes "에뮬레이터에서 기록 창을 띄운 화면과 로그. 커밋 \`${GITHUB_SHA::7}\`." \
+            --prerelease \
+            smoke/*
