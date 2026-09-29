@@ -1,6 +1,7 @@
 package com.calc.expense
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -39,6 +40,36 @@ class ExpenseParserTest {
     @Test fun `금액 없음`() = err("커피")
 
     @Test fun `이름 없음`() = err("4500")
+
+    @Test fun `이름 없이 금액만 적으면 대체 이름`() {
+        val r = ExpenseParser.parse("4500", fallbackName = "카페") as ParseResult.Ok
+        assertEquals(Expense("카페", 4500), r.expense)
+        assertFalse(r.named)
+    }
+
+    @Test fun `이름을 적었으면 대체 이름을 쓰지 않는다`() {
+        val r = ExpenseParser.parse("커피 4500", fallbackName = "카페") as ParseResult.Ok
+        assertEquals(Expense("커피", 4500), r.expense)
+        assertTrue(r.named)
+    }
+
+    @Test fun `대체 이름이 비어 있으면 실패`() =
+        assertTrue(ExpenseParser.parse("4500", fallbackName = "  ") is ParseResult.Err)
+
+    @Test fun `줄바꿈 없는 공백도 낱말을 가른다`() =
+        assertEquals(Expense("커피", 4500), ok("커피\u00A04500"))
+
+    @Test fun `금액 위치 - 이름 뒤`() = assertEquals(8..11, ExpenseParser.amountRange("스타벅스 커피 5600"))
+
+    @Test fun `금액 위치 - 앞뒤 공백과 쉼표`() = assertEquals(5..11, ExpenseParser.amountRange("  택시 12,000원 "))
+
+    @Test fun `금액 위치 - 금액이 앞에`() = assertEquals(0..3, ExpenseParser.amountRange("4500 커피"))
+
+    @Test fun `금액 위치 - 금액이 없거나 0원이면 없음`() {
+        assertNull(ExpenseParser.amountRange("스타벅스"))
+        assertNull(ExpenseParser.amountRange("커피 0"))
+        assertNull(ExpenseParser.amountRange(""))
+    }
 
     @Test fun `빈 입력`() = err("   ")
 

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    월급날까지 주기가 얼마나 지났는지 보이는 막대. 홈 카드의 막대와 같은 색이다.
+    clip 대신 scale 을 써서 채운 쪽 끝도 둥글게 남긴다.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/app_soft" />
+            <corners android:radius="3dp" />
+        </shape>
+    </item>
+    <item android:id="@android:id/progress">
+        <scale android:scaleWidth="100%" android:scaleGravity="start">
+            <shape android:shape="rectangle">
+                <solid android:color="@color/app_bright" />
+                <corners android:radius="3dp" />
+            </shape>
+        </scale>
+    </item>
+</layer-list>

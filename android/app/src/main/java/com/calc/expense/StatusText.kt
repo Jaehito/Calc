@@ -74,6 +74,37 @@ object StatusText {
     fun figure(amount: Long): String = format(amount)
 
     /**
+     * 홈 카드와 기록 창 아래의 짧은 기간 줄 왼쪽. «10월 14일까지 67,170원» / «… 초과».
+     * 남은 날은 [daysLeft] 로 따로 그린다 — 오른쪽 끝에 초록으로 붙기 때문이다.
+     */
+    fun periodLeft(snapshot: LedgerSnapshot): String {
+        val target: String = snapshot.targetDay.format(L10n.monthDay())
+        val left: Long = snapshot.untilTarget
+        return if (left >= 0L) {
+            tr("${target}까지 ${won(left)}", "${won(left)} until $target", "${won(left)} hasta el $target")
+        } else {
+            tr("${target}까지 ${won(-left)} 초과", "${won(-left)} over until $target", "${won(-left)} de más hasta el $target")
+        }
+    }
+
+    /** 기간 줄 오른쪽. «15일 남음». */
+    fun daysLeft(snapshot: LedgerSnapshot): String =
+        tr("${snapshot.daysLeft}일 남음", "${L10n.days(snapshot.daysLeft)} left", "quedan ${L10n.days(snapshot.daysLeft)}")
+
+    /**
+     * 기록 창에서 금액을 적는 동안 보이는 줄. 이걸 적으면 오늘 얼마가 남는지(또는 넘는지).
+     * [available] 은 지금 오늘 쓸 수 있는 돈이다(이미 넘었으면 음수).
+     */
+    fun afterRecord(available: Long, amount: Long): String {
+        val left: Long = available - amount
+        return if (left >= 0L) {
+            tr("기록하면 오늘 ${won(left)} 남아요", "After this, ${won(left)} left today", "Después de esto, quedan ${won(left)} hoy")
+        } else {
+            tr("기록하면 오늘 ${won(-left)} 넘어요", "After this, ${won(-left)} over today", "Después de esto, ${won(-left)} de más hoy")
+        }
+    }
+
+    /**
      * 목표일(다음 월급날 전날)까지의 여유. 오늘 하루가 아니라 주기 전체를 보는 줄이다.
      * 오늘 쓸 수 있는 돈이 "지금 괜찮나"라면 이건 "이 페이스로 가도 되나"에 답한다.
      */

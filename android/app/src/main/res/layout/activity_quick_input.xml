@@ -29,9 +29,52 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingStart="20dp"
-        android:paddingTop="20dp"
+        android:paddingTop="18dp"
         android:paddingEnd="20dp"
         android:paddingBottom="16dp">
+
+        <!--
+            개인·공용 탭. 맨 위에 두어 아래 숫자가 어느 지갑 것인지 먼저 보이게 한다.
+            연결된 지갑이 하나뿐이면 숨긴다(코드).
+        -->
+        <LinearLayout
+            android:id="@+id/groupPurse"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/bg_tabs"
+            android:orientation="horizontal"
+            android:padding="3dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tabPersonal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="64dp"
+                android:gravity="center"
+                android:paddingStart="14dp"
+                android:paddingTop="5dp"
+                android:paddingEnd="14dp"
+                android:paddingBottom="5dp"
+                android:text="개인"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tabShared"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="64dp"
+                android:gravity="center"
+                android:paddingStart="14dp"
+                android:paddingTop="5dp"
+                android:paddingEnd="14dp"
+                android:paddingBottom="5dp"
+                android:text="공용"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/textCaption"
@@ -39,96 +82,185 @@
             android:layout_height="wrap_content"
             android:text="오늘 쓸 수 있는 돈"
             android:textColor="@color/app_ink_2"
-            android:textSize="13sp" />
+            android:textSize="13.5sp" />
 
-        <TextView
-            android:id="@+id/textAvailable"
+        <!-- 홈 카드와 같은 숫자. 한국어는 «원»을 작게 따로, 다른 언어는 ₩ 를 숫자 앞에 붙인다. -->
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:fontFamily="@font/figures_bold"
-            android:text="—"
-            android:textColor="@color/app_ink"
-            android:textSize="32sp"
-            android:textStyle="bold" />
+            android:baselineAligned="true"
+            android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/textBreakdown"
+            <TextView
+                android:id="@+id/textAvailable"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/figures_bold"
+                android:letterSpacing="-0.02"
+                android:text="—"
+                android:textColor="@color/app_accent"
+                android:textSize="34sp" />
+
+            <TextView
+                android:id="@+id/textUnit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:text="원"
+                android:textColor="@color/app_ink_2"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/groupPeriod"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:textColor="@color/app_muted"
-            android:textSize="12sp"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/textPeriod"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:fontFamily="@font/figures_regular"
+                android:textColor="@color/app_ink_2"
+                android:textSize="12.5sp" />
+
+            <TextView
+                android:id="@+id/textDaysLeft"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:textColor="@color/app_accent"
+                android:textSize="12.5sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <ProgressBar
+            android:id="@+id/barCycle"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="6dp"
+            android:layout_marginTop="6dp"
+            android:max="1000"
+            android:progressDrawable="@drawable/bg_cycle_bar"
             android:visibility="gone" />
 
-        <EditText
-            android:id="@+id/inputExpense"
+        <!-- 처음 세 번만 뜨는 안내. «알겠어요» 를 누르면 다시 안 뜬다(코드). -->
+        <LinearLayout
+            android:id="@+id/groupTip"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:autofillHints=""
-            android:background="@drawable/bg_input"
-            android:hint="예: 커피 4500"
-            android:imeOptions="actionSend"
-            android:inputType="text"
-            android:maxLines="1"
-            android:paddingStart="14dp"
-            android:paddingTop="13dp"
-            android:paddingEnd="14dp"
-            android:paddingBottom="13dp"
-            android:textColor="@color/app_ink"
-            android:textColorHint="@color/app_muted"
-            android:textSize="16sp" />
+            android:layout_marginTop="14dp"
+            android:orientation="vertical"
+            android:visibility="gone">
 
-        <TextView
-            android:id="@+id/textCategoryLabel"
-            android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_tip"
+                android:gravity="bottom"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingTop="10dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="10dp">
+
+                <TextView
+                    android:id="@+id/textTip"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:lineSpacingExtra="2dp"
+                    android:textColor="@color/app_card"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/buttonTipOk"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:padding="4dp"
+                    android:textColor="@color/app_bright"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <ImageView
+                android:layout_width="14dp"
+                android:layout_height="7dp"
+                android:layout_marginStart="22dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_tip_pointer" />
+        </LinearLayout>
+
+        <!-- 입력 칸 하나 + 칸 안 오른쪽의 기록 버튼. 금액 부분은 칸 안에서 초록 알약으로 그린다. -->
+        <FrameLayout
+            android:id="@+id/groupInput"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="13dp"
-            android:text="카테고리 (선택)"
-            android:textColor="@color/app_muted"
-            android:textSize="11sp" />
+            android:layout_marginTop="14dp">
 
-        <!--
-            여러 줄로 펼친다(singleLine=false) — 시트 아래 여백이 넉넉해 가로 스크롤보다
-            한눈에 다 보이는 편이 고르기 쉽다. «없음» 칩이 항상 맨 앞(코드에서 addView 순서).
-        -->
-        <com.google.android.material.chip.ChipGroup
-            android:id="@+id/groupCategory"
+            <com.calc.expense.AmountEditText
+                android:id="@+id/inputExpense"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:autofillHints=""
+                android:background="@drawable/bg_input"
+                android:hint="예: 커피 4500"
+                android:imeOptions="actionSend"
+                android:inputType="text"
+                android:maxLines="1"
+                android:minHeight="52dp"
+                android:paddingStart="14dp"
+                android:paddingTop="12dp"
+                android:paddingEnd="56dp"
+                android:paddingBottom="12dp"
+                android:textColor="@color/app_ink"
+                android:textColorHint="@color/app_muted"
+                android:textSize="16sp" />
+
+            <ImageButton
+                android:id="@+id/buttonSend"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:layout_gravity="end|center_vertical"
+                android:layout_marginEnd="7dp"
+                android:background="@drawable/bg_send"
+                android:contentDescription="기록"
+                android:enabled="false"
+                android:padding="9dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_arrow_up"
+                app:tint="@color/app_card" />
+        </FrameLayout>
+
+        <!-- 금액이 읽히면: 이걸 적으면 오늘 얼마가 남는지. -->
+        <TextView
+            android:id="@+id/textAfter"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            app:chipSpacingHorizontal="7dp"
-            app:chipSpacingVertical="7dp"
-            app:singleLine="false"
-            app:singleSelection="true"
-            app:selectionRequired="true" />
+            android:fontFamily="@font/figures_medium"
+            android:textColor="@color/app_ink_2"
+            android:textSize="12.5sp"
+            android:visibility="gone" />
 
-        <com.google.android.material.button.MaterialButtonToggleGroup
-            android:id="@+id/groupPurse"
+        <!--
+            카테고리 격자. 한 줄에 다섯 칸, 칸은 코드에서 목록만큼 만든다(item_category_cell).
+            «미분류» 가 맨 앞이고 기본으로 켜져 있다.
+        -->
+        <GridLayout
+            android:id="@+id/groupCategory"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:visibility="gone"
-            app:selectionRequired="true"
-            app:singleSelection="true">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/buttonPursePersonal"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="개인" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/buttonPurseShared"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="공용" />
-        </com.google.android.material.button.MaterialButtonToggleGroup>
+            android:layout_marginTop="12dp"
+            android:columnCount="5"
+            android:useDefaultMargins="false" />
 
         <!-- 방금 한 동작의 짧은 알림 (기록 중 · 실패 · 삭제됨). 한 줄로 갱신해 높이가 출렁이지 않게. -->
         <TextView
@@ -139,13 +271,34 @@
             android:textSize="13sp"
             android:visibility="gone" />
 
-        <!-- 이번에 적은 항목들. 각 줄 오른쪽 ✕ 로 방금 적은 걸 바로 지운다. -->
+        <!-- 이번에 적은 항목들. 첫 항목이 생기면 위에 가는 선과 제목이 보인다. -->
         <LinearLayout
-            android:id="@+id/listEntries"
+            android:id="@+id/groupRecent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:orientation="vertical" />
+            android:layout_marginTop="8dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/app_line" />
+
+            <TextView
+                android:id="@+id/textRecentTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textColor="@color/app_muted"
+                android:textSize="11.5sp" />
+
+            <LinearLayout
+                android:id="@+id/listEntries"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </LinearLayout>
     </LinearLayout>
     </ScrollView>
 </FrameLayout>

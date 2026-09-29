@@ -462,7 +462,7 @@ private fun CategoryRow(group: CategoryGroup, color: Color, onOpenCategory: (Str
 /** 카테고리 아이콘. 기본 카테고리는 그림으로, 사용자가 만든 카테고리는 첫 글자로. */
 @Composable
 private fun CategoryBadge(storedName: String, color: Color) {
-    val icon: Int? = categoryIcon(storedName)
+    val icon: Int? = CategoryIcons.of(storedName)
     if (icon != null) {
         IconBadge(icon, color, size = 34.dp)
         return
@@ -473,24 +473,6 @@ private fun CategoryBadge(storedName: String, color: Color) {
     ) {
         Text(text = L10n.name(storedName).take(1), color = color, fontSize = 14.sp, fontWeight = FontWeight.Bold)
     }
-}
-
-/** 기본 카테고리([Categories.DEFAULT]·미분류)의 아이콘. 이름은 저장되는 한국어 그대로다. */
-private fun categoryIcon(storedName: String): Int? = when (storedName) {
-    "식비" -> R.drawable.ic_cat_food
-    "카페" -> R.drawable.ic_cat_cafe
-    "간식" -> R.drawable.ic_cat_snack
-    "마트" -> R.drawable.ic_cat_mart
-    "교통" -> R.drawable.ic_cat_transport
-    "생활" -> R.drawable.ic_cat_household
-    "건강" -> R.drawable.ic_cat_health
-    "육아" -> R.drawable.ic_cat_kids
-    "문화" -> R.drawable.ic_cat_culture
-    "패션" -> R.drawable.ic_cat_fashion
-    "주거" -> R.drawable.ic_cat_housing
-    "기타" -> R.drawable.ic_cat_other
-    CategoryBreakdown.UNCATEGORIZED -> R.drawable.ic_cat_uncategorized
-    else -> null
 }
 
 /** 연한 색 바탕의 둥근 칸 안에 같은 색 선 아이콘. */

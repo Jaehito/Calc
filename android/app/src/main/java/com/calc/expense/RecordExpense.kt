@@ -42,12 +42,15 @@ object RecordExpense {
         today: LocalDate = LocalDate.now(),
         category: String = "",
     ): RecordResult {
-        val parsed = when (val r = ExpenseParser.parse(text)) {
+        // 금액만 적었으면 고른 카테고리 이름으로 적는다(안 골랐으면 «미분류»). 화면 언어로 적는다 —
+        // 기록 이름은 번역하지 않고 그대로 보이기 때문이다.
+        val fallback: String = L10n.name(category.trim().ifBlank { CategoryBreakdown.UNCATEGORIZED })
+        return when (val r = ExpenseParser.parse(text, fallback)) {
             is ParseResult.Err ->
-                return fail("${r.message} · " + tr("입력", "input", "entrada") + ": \"${text.trim()}\"", now)
-            is ParseResult.Ok -> r.expense.copy(category = category.trim())
+                fail("${r.message} · " + tr("입력", "input", "entrada") + ": \"${text.trim()}\"", now)
+            is ParseResult.Ok ->
+                record(context, r.expense.copy(category = category.trim()), purseKey, now, today, rememberName = r.named)
         }
-        return record(context, parsed, purseKey, now, today)
     }
 
     /**
@@ -63,6 +66,7 @@ object RecordExpense {
         purseKey: String?,
         now: String,
         today: LocalDate = LocalDate.now(),
+        rememberName: Boolean = true,
     ): RecordResult {
         val linked: List<Purse> = PurseAccess.linked(context)
         if (linked.isEmpty()) {
@@ -81,7 +85,8 @@ object RecordExpense {
                 // 방금 적은 것과 같은 결제로 보이는 수집함 후보를 치운다 — 같은 걸 두 번 묻지 않는다.
                 PendingPaymentStore.removeRecorded(context, parsed.amount, at)
                 // 이 이름을 어디에 넣었는지 기억한다. 다음에 같은 이름을 적으면 칩이 저절로 켜진다.
-                CategoryMemoryStore.remember(context, parsed.name, parsed.category)
+                // 금액만 적어 카테고리 이름을 빌려 쓴 기록은 기억하지 않는다 — «카페»→카페는 배울 게 없다.
+                if (rememberName) CategoryMemoryStore.remember(context, parsed.name, parsed.category)
                 // 저장소를 다시 읽지 않는다 — 로컬 사본만으로 계산하고, 대조는 앱을 열 때 한다.
                 RecordResult(
                     ok = true,

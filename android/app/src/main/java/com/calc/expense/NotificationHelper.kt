@@ -201,7 +201,7 @@ object NotificationHelper {
         // 떼어 내려, 한 칸이어도 다른 알림들과 따로 노는 것처럼 보였다. 대신 펼쳤을 때의
         // 본문(detail)을 되찾았다 — 대화 알림은 한 줄밖에 못 보였다.
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_wallet)
+            .setSmallIcon(R.drawable.ic_stat_haruchi)
             .setContentTitle(CARD_TITLE)
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(lines?.detail ?: message))
@@ -275,7 +275,7 @@ object NotificationHelper {
             else StatusText.won(amount) + " · " + merchant
 
         val notification = NotificationCompat.Builder(context, BANNER_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_wallet)
+            .setSmallIcon(R.drawable.ic_stat_haruchi)
             .setContentTitle(title)
             .setContentText(tr("눌러서 기록하기", "Tap to log", "Toca para anotar"))
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)

@@ -244,20 +244,17 @@ private fun RowLine() {
 /** 월급날까지 남은 돈과 날, 그리고 주기가 얼마나 지났는지. */
 @Composable
 private fun PeriodLine(snapshot: LedgerSnapshot) {
-    val target: String = snapshot.targetDay.format(L10n.monthDay())
     val left: Long = snapshot.untilTarget
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
-            text =
-                if (left >= 0L) tr("${target}까지 ${StatusText.won(left)}", "${StatusText.won(left)} until $target", "${StatusText.won(left)} hasta el $target")
-                else tr("${target}까지 ${StatusText.won(-left)} 초과", "${StatusText.won(-left)} over until $target", "${StatusText.won(-left)} de más hasta el $target"),
+            text = StatusText.periodLeft(snapshot),
             color = if (left >= 0L) HomePalette.Ink2 else HomePalette.Over,
             fontSize = 13.sp,
             style = Figures,
             modifier = Modifier.weight(1f),
         )
         Text(
-            text = tr("${snapshot.daysLeft}일 남음", "${L10n.days(snapshot.daysLeft)} left", "quedan ${L10n.days(snapshot.daysLeft)}"),
+            text = StatusText.daysLeft(snapshot),
             color = HomePalette.Accent,
             fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,

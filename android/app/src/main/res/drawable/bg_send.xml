@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 입력 칸 안의 기록 버튼. 금액이 없으면(비활성) 회색, 있으면 민트. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="false">
+        <shape android:shape="oval"><solid android:color="@color/app_line" /></shape>
+    </item>
+    <item>
+        <shape android:shape="oval"><solid android:color="@color/app_bright" /></shape>
+    </item>
+</selector>

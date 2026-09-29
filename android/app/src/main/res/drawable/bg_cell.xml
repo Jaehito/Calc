@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 카테고리 격자 한 칸의 동그라미. 고르면 [bg_cell_on]. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <solid android:color="@color/app_chip" />
+</shape>

@@ -1,6 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.ExpenseLogger" parent="Theme.Material3.DayNight.NoActionBar" />
+    <!--
+        기본 부품(입력 칸 커서·선택 손잡이, 머티리얼 버튼·스위치 등)이 쓰는 색을 앱 초록으로.
+        비워 두면 머티리얼 기본 보라가 나온다 — 기록 창의 칩·토글이 보라였던 이유다.
+        Compose 화면은 색을 직접 주므로 여기와 상관없다.
+    -->
+    <style name="Theme.ExpenseLogger" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/app_accent</item>
+        <item name="colorOnPrimary">@color/app_card</item>
+        <item name="colorPrimaryContainer">@color/app_soft</item>
+        <item name="colorOnPrimaryContainer">@color/app_ink</item>
+        <item name="colorSecondary">@color/app_accent</item>
+        <item name="colorOnSecondary">@color/app_card</item>
+        <item name="colorSecondaryContainer">@color/app_soft</item>
+        <item name="colorOnSecondaryContainer">@color/app_ink</item>
+        <item name="colorTertiary">@color/app_accent</item>
+        <item name="colorControlActivated">@color/app_accent</item>
+        <item name="android:textColorHighlight">@color/app_soft</item>
+    </style>
 
     <!--
         빠른 입력 화면. Dialog 테마를 상속하지 않는다 — 그쪽은 windowIsFloating 과

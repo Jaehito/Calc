@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    카테고리 격자 한 칸. 동그라미 안에 통계 화면과 같은 선 아이콘, 아래에 이름.
+    사용자가 만든 카테고리는 아이콘이 없어 첫 글자를 대신 쓴다(코드).
+    고르면 동그라미가 민트로 차고 아이콘이 흰색, 이름이 초록 굵게 바뀐다.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:background="?attr/selectableItemBackgroundBorderless"
+    android:clickable="true"
+    android:focusable="true"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:paddingTop="4dp"
+    android:paddingBottom="6dp">
+
+    <FrameLayout
+        android:id="@+id/cellCircle"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:background="@drawable/bg_cell">
+
+        <ImageView
+            android:id="@+id/cellIcon"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="center"
+            android:importantForAccessibility="no"
+            app:tint="@color/app_ink_2" />
+
+        <TextView
+            android:id="@+id/cellLetter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:textColor="@color/app_ink_2"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/cellLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:gravity="center"
+        android:maxLines="2"
+        android:paddingStart="2dp"
+        android:paddingEnd="2dp"
+        android:textColor="@color/app_ink_2"
+        android:textSize="11.5sp" />
+</LinearLayout>
