@@ -30,13 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.credentials.CredentialManager
-import androidx.credentials.CustomCredential
-import androidx.credentials.GetCredentialRequest
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -89,23 +83,7 @@ class LoginActivity : ComponentActivity() {
 
     private suspend fun signInWithGoogle(): Result<Unit> {
         return try {
-            val option = GetGoogleIdOption.Builder()
-                .setFilterByAuthorizedAccounts(false)
-                .setServerClientId(getString(R.string.default_web_client_id))
-                .build()
-            val request = GetCredentialRequest.Builder()
-                .addCredentialOption(option)
-                .build()
-            val response = CredentialManager.create(this).getCredential(this, request)
-            val credential = response.credential
-            if (credential !is CustomCredential ||
-                credential.type != GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
-            ) {
-                return Result.failure(IllegalStateException(tr("지원하지 않는 로그인 방식이에요", "Unsupported sign-in method", "Método de inicio de sesión no compatible")))
-            }
-            val idToken: String = GoogleIdTokenCredential.createFrom(credential.data).idToken
-            val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
-            auth.signInWithCredential(firebaseCredential).await()
+            auth.signInWithCredential(GoogleCredentials.fetch(this, onlyAuthorized = false)).await()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -163,7 +141,7 @@ private fun LoginScreen(
             verticalArrangement = Arrangement.Center,
         ) {
             Text(
-                text = tr("지출 기록", "Spending Log", "Registro de gastos"),
+                text = tr("하루치", "Haruchi", "Haruchi"),
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = HomePalette.Ink,
@@ -171,7 +149,7 @@ private fun LoginScreen(
             Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = tr(
-                    "구글 계정으로 로그인하면\n곳간 기록이 안전하게 보관돼요",
+                    "구글 계정으로 로그인하면\n기록이 계정에 저장돼요",
                     "Sign in with Google\nto keep your records safe",
                     "Inicia sesión con Google\npara guardar tus gastos de forma segura",
                 ),

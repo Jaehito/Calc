@@ -39,8 +39,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.format.DateTimeFormatter
 
-private val Figures = TextStyle(fontFeatureSettings = "tnum")
-
 private val DayFormat: DateTimeFormatter get() = L10n.dayWithWeekday()
 
 /** 내역 화면이 그리는 상태 한 벌. 묶기·합계는 [ExpenseHistoryGrouping] 이 이미 끝냈다. */
@@ -85,22 +83,15 @@ fun HistoryScreen(
             .padding(horizontal = 20.dp, vertical = 18.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "←",
-                color = HomePalette.Ink2,
-                fontSize = 22.sp,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(999.dp))
-                    .clickable(onClick = onBack)
-                    .padding(horizontal = 6.dp, vertical = 2.dp),
-            )
-            Spacer(Modifier.width(8.dp))
+            BackButton(onClick = onBack)
+            Spacer(Modifier.width(6.dp))
             Text(text = ui.title, color = HomePalette.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
             Text(
                 text = tr("새로고침", "Refresh", "Actualizar"),
                 color = HomePalette.Accent,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
                 modifier = Modifier
                     .clip(RoundedCornerShape(999.dp))
                     .background(HomePalette.Soft)
@@ -135,6 +126,7 @@ fun HistoryScreen(
                     color = HomePalette.Accent,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
                     modifier = Modifier
                         .clip(RoundedCornerShape(999.dp))
                         .background(HomePalette.Soft)
@@ -156,7 +148,7 @@ fun HistoryScreen(
             ) {
                 Box(modifier = Modifier.width(7.dp).height(7.dp).clip(RoundedCornerShape(4.dp)).background(HomePalette.AccentBright))
                 Spacer(Modifier.width(7.dp))
-                Text(text = tr("공용 곳간을 함께 보는 목록이에요", "This list is shared with your household", "Esta lista se comparte con tu hogar"), color = HomePalette.Ink2, fontSize = 12.sp)
+                Text(text = tr("배우자와 같이 보는 공용 지갑 목록이에요", "This list is shared with your household", "Esta lista se comparte con tu hogar"), color = HomePalette.Ink2, fontSize = 12.sp)
             }
         }
 

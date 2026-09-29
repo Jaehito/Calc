@@ -54,7 +54,7 @@ object FirestoreExpenseStore {
 
     /** 지출 한 줄을 지운다. [add] 와 같은 이유로 서버 응답을 기다리지 않는다. */
     fun archive(context: Context, purse: Purse, id: String): Outcome {
-        if (id.isBlank()) return Outcome.Err(tr("지울 줄을 찾을 수 없습니다", "Couldn't find the entry to delete", "No se encontró el gasto a borrar"))
+        if (id.isBlank()) return Outcome.Err(tr("지울 기록을 못 찾았어요", "Couldn't find the entry to delete", "No se encontró el gasto a borrar"))
         val collection: CollectionReference =
             collectionFor(context, purse) ?: return Outcome.Err(missingReason(purse))
 
@@ -75,7 +75,7 @@ object FirestoreExpenseStore {
      * 카테고리 집계만 달라진다.
      */
     fun updateCategory(context: Context, purse: Purse, id: String, category: String): Outcome {
-        if (id.isBlank()) return Outcome.Err(tr("고칠 줄을 찾을 수 없습니다", "Couldn't find the entry to edit", "No se encontró el gasto a editar"))
+        if (id.isBlank()) return Outcome.Err(tr("고칠 기록을 못 찾았어요", "Couldn't find the entry to edit", "No se encontró el gasto a editar"))
         val collection: CollectionReference =
             collectionFor(context, purse) ?: return Outcome.Err(missingReason(purse))
 
@@ -111,7 +111,7 @@ object FirestoreExpenseStore {
     private fun missingReason(purse: Purse): String = when (purse) {
         Purse.PERSONAL -> StatusText.signedOut()
         Purse.SHARED -> tr(
-            "공용 곳간이 아직 배우자와 묶이지 않았습니다",
+            "공용 지갑이 아직 배우자와 연결되지 않았어요",
             "The shared wallet isn't linked with your partner yet",
             "La cartera compartida aún no está vinculada con tu pareja",
         )

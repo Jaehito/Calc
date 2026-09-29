@@ -35,7 +35,7 @@ object ExpenseExportRepository {
 
     fun write(context: Context, today: LocalDate = LocalDate.now()): ExportResult {
         val purses: List<Purse> = PurseAccess.linked(context)
-        if (purses.isEmpty()) return ExportResult.Err(tr("로그인이 풀렸습니다. 다시 로그인해 주세요", "You've been signed out. Please sign in again", "Se cerró tu sesión. Vuelve a iniciar sesión"))
+        if (purses.isEmpty()) return ExportResult.Err(tr("로그인이 풀렸어요. 다시 로그인해 주세요", "You've been signed out. Please sign in again", "Se cerró tu sesión. Vuelve a iniciar sesión"))
 
         val rows = ArrayList<PursedRow>()
         for (purse in purses) {
@@ -43,7 +43,7 @@ object ExpenseExportRepository {
             // 정작 필요한 날 없는 줄을 모른 채 잃는다.
             val read: List<ExpenseRow> =
                 FirestoreExpenseReader.rowsBetween(context, purse, ExpenseExport.EARLIEST, today)
-                    ?: return ExportResult.Err(tr("불러오지 못했습니다. 인터넷을 확인하고 다시 해 주세요", "Couldn't load. Check your connection and try again", "No se pudo cargar. Revisa la conexión y vuelve a intentarlo"))
+                    ?: return ExportResult.Err(tr("불러오지 못했어요. 인터넷 연결을 확인하고 다시 해 주세요", "Couldn't load. Check your connection and try again", "No se pudo cargar. Revisa la conexión y vuelve a intentarlo"))
             for (row in read) rows.add(PursedRow(purse, row))
         }
 
@@ -53,7 +53,7 @@ object ExpenseExportRepository {
         val cached: File = try {
             cache(context, name, csv)
         } catch (e: Exception) {
-            return ExportResult.Err(tr("파일을 만들지 못했습니다: ", "Couldn't create the file: ", "No se pudo crear el archivo: ") + (e.message ?: e.javaClass.simpleName))
+            return ExportResult.Err(tr("파일을 만들지 못했어요. 폰 저장 공간을 확인해 주세요", "Couldn't create the file. Check your phone's storage", "No se pudo crear el archivo. Revisa el almacenamiento del teléfono"))
         }
 
         return ExportResult.Ok(cached, rows.size, savedTo = download(context, name, csv))

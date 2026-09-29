@@ -43,6 +43,15 @@ object AccountScope {
         return true
     }
 
+    /**
+     * 계정을 지운 뒤 이 폰에 남은 그 계정의 흔적을 비운다([AccountDeletion]). 기억해 둔 uid 도
+     * 지운다 — 같은 구글 계정으로 새로 가입하면 처음 쓰는 사람처럼 시작해야 한다.
+     */
+    fun forget(context: Context) {
+        wipe(context)
+        prefs(context).edit().remove(KEY_UID).apply()
+    }
+
     /** 그 계정의 것이었던 로컬 데이터. 여기 목록이 «계정에 속한 것»의 정의다. */
     private fun wipe(context: Context) {
         SettingsStore.clear(context)

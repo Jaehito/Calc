@@ -32,8 +32,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.format.DateTimeFormatter
 
-private val Figures = TextStyle(fontFeatureSettings = "tnum")
-
 private val DayFormat: DateTimeFormatter get() = L10n.monthDay()
 
 /**
@@ -209,7 +207,7 @@ private fun CandidateCard(
         if (!report.hasCandidates) {
             Text(
                 text = tr(
-                    "아직 찾을 만한 게 없어요. 지출을 적거나 결제 알림이 쌓이면 여기에 나옵니다.",
+                    "아직 찾을 만한 게 없어요. 지출을 적거나 결제 알림이 쌓이면 여기에 나와요.",
                     "Nothing to show yet. It will appear here as you log spending or payment alerts pile up.",
                     "Aún no hay nada. Aparecerá aquí a medida que anotes gastos o lleguen avisos de pago.",
                 ),
@@ -243,9 +241,9 @@ private fun CandidateCard(
             Spacer(Modifier.height(12.dp))
             Text(
                 text = tr(
-                    "«기록»에서 온 건 고정비로 넣은 뒤부터 따로 안 적으셔도 돼요. " +
-                        "고정비는 지출이 아니라 쓸 수 있는 돈을 정하는 재료라, 둘 다 하면 두 번 빠져요.",
-                    "Once an «entry» item is a fixed cost, you don't need to log it anymore. " +
+                    "‘기록’에서 온 건 고정비에 넣은 뒤로는 따로 적지 않아도 돼요. " +
+                        "고정비로도 넣고 지출로도 적으면 같은 돈이 두 번 빠져요.",
+                    "Once an ‘entry’ item is a fixed cost, you don't need to log it anymore. " +
                         "Fixed costs set how much you can spend, so doing both counts it twice.",
                     "Cuando un «gasto» pasa a ser fijo, ya no hace falta anotarlo. " +
                         "Los gastos fijos definen cuánto puedes gastar; si haces ambas cosas, se descuenta dos veces.",
@@ -280,7 +278,7 @@ private fun CandidateCard(
                     .background(HomePalette.Soft)
                     .padding(14.dp),
             ) {
-                Text(tr("이번 주기 챌린지 금액", "This cycle's challenge amount", "Meta de este ciclo"), color = HomePalette.Accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text(tr("이번 주기 예산", "This cycle's budget", "Presupuesto de este ciclo"), color = HomePalette.Accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(3.dp))
                 Text(
                     text = StatusText.won(next),
@@ -303,7 +301,7 @@ private fun CandidateCard(
             Spacer(Modifier.height(10.dp))
             Text(
                 text = tr(
-                    "월급을 적어 두면 여기서 바로 다음 주기 금액까지 정할 수 있어요.",
+                    "월급을 적어 두면 여기서 다음 주기 예산까지 정할 수 있어요.",
                     "Enter your income to set next cycle's amount right here.",
                     "Anota tu sueldo para fijar aquí mismo la meta del próximo ciclo.",
                 ),
@@ -425,7 +423,7 @@ private fun CategoryCard(report: CycleReport, onOpenCategory: (String) -> Unit) 
                             style = Figures,
                         )
                         Spacer(Modifier.width(5.dp))
-                        Text("›", color = HomePalette.Muted, fontSize = 14.sp)
+                        Chevron(size = 16.dp)
                     }
                     Spacer(Modifier.height(6.dp))
                     Box(

@@ -31,8 +31,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val Figures = TextStyle(fontFeatureSettings = "tnum")
-
 /** 「없음」 칩의 이름. 저장되는 값은 빈 문자열이다 ([QuickInputActivity] 와 같은 규칙). */
 private const val NONE = "없음"
 
@@ -95,7 +93,7 @@ fun CategoryDetailScreen(
                 Text(
                     text =
                         if (detail.category.isBlank()) tr(
-                            "분류 안 된 지출이 없어요. 전부 제자리에 있습니다.",
+                            "분류 안 된 지출이 없어요.",
                             "No uncategorized spending. Everything is in place.",
                             "No hay gastos sin categoría. Todo está en su sitio.",
                         )

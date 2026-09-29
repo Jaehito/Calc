@@ -59,13 +59,13 @@
                 tools:text="눌러서 기록" />
         </LinearLayout>
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
             android:layout_marginStart="8dp"
-            android:text="›"
-            android:textColor="#9FE3C8"
-            android:textSize="20sp" />
+            android:contentDescription="@null"
+            android:src="@drawable/ic_chevron_right"
+            android:tint="#9FE3C8" />
     </LinearLayout>
 
     <!-- 남은 시간. 5초 동안 오른쪽에서 왼쪽으로 줄어든다. -->

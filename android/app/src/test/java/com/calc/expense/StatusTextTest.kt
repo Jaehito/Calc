@@ -69,13 +69,13 @@ class StatusTextTest {
     }
 
     @Test
-    fun `펼치면 숫자가 어떻게 나왔는지 보인다`() {
+    fun `펼치면 오늘 쓸 수 있는 돈과 목표일까지의 여유가 보인다`() {
         val lines = StatusText.recorded("커피", 4_500L, personal, "오후 3:21")
 
+        // 계산식(하루치 + 곳간 − 오늘)은 알림에 넣지 않는다 — 근거는 홈 카드가 보여 준다.
         assertEquals(
             "✓ 커피 4,500원 기록됨 · 오후 3:21\n\n" +
                 "오늘 쓸 수 있는 돈 41,000원\n" +
-                "하루치 30,000 + 곳간 23,400 − 오늘 12,400\n\n" +
                 "9월 24일까지 542,400원 · 남은 22일 (하루 24,654)",
             lines.detail,
         )
@@ -89,7 +89,7 @@ class StatusTextTest {
         assertEquals("✓ 장보기 28,700 · 공용 오늘 4,200 초과", lines.summary)
         assertTrue(lines.detail.contains("공용 오늘 4,200원 초과"))
         // 벌이 아니라 조정이라는 걸 알려준다
-        assertTrue(lines.detail.contains("남은 날에 나눠 조정됩니다"))
+        assertTrue(lines.detail.contains("남은 날에 나눠서 빼요"))
         // 초과한 날에도 목표일까지의 여유는 그대로 보여준다
         assertTrue(lines.detail.contains("9월 24일까지"))
     }
@@ -112,9 +112,9 @@ class StatusTextTest {
 
     @Test
     fun `실패는 접힌 줄과 펼친 본문이 같다`() {
-        val lines = StatusText.failed("금액을 찾을 수 없습니다", "오후 3:21")
+        val lines = StatusText.failed("금액을 못 찾았어요", "오후 3:21")
 
-        assertEquals("✗ 금액을 찾을 수 없습니다 · 오후 3:21", lines.summary)
+        assertEquals("✗ 금액을 못 찾았어요 · 오후 3:21", lines.summary)
         assertEquals(lines.summary, lines.detail)
     }
 
@@ -126,7 +126,6 @@ class StatusTextTest {
                 "장보기", 90_000L,
                 personal.copy(vault = 0L, todaySpent = 90_000L), "오후 7:05",
             ).detail,
-            StatusText.overview(listOf(personal)),
             StatusText.entered("양파", 5_500L, 2),
         )
 
@@ -138,37 +137,12 @@ class StatusTextTest {
     }
 
     @Test
-    fun `현황에 곳간마다 한 덩어리씩 나온다`() {
-        val shared = LedgerSnapshot(
-            purse = Purse.SHARED,
-            label = "공용",
-            dailyRate = 50_000L,
-            vault = 64_000L,
-            todaySpent = 34_200L,
-            cycleSpent = 1_120_000L,
-            monthlyBudget = 1_550_000L,
-            targetDay = LocalDate.of(2026, 9, 24),
-            daysLeft = 22,
-        )
-
-        assertEquals(
-            "개인 · 오늘 쓸 수 있는 돈  41,000원\n" +
-                "하루치 30,000 + 곳간 23,400 − 오늘 12,400\n" +
-                "9월 24일까지 542,400원 · 남은 22일 (하루 24,654)\n\n" +
-                "공용 · 오늘 쓸 수 있는 돈  79,800원\n" +
-                "하루치 50,000 + 곳간 64,000 − 오늘 34,200\n" +
-                "9월 24일까지 430,000원 · 남은 22일 (하루 19,545)",
-            StatusText.overview(listOf(personal, shared)),
-        )
-    }
-
-    @Test
-    fun `이름을 바꾸면 알림과 현황에 그 이름이 나온다`() {
+    fun `이름을 바꾸면 알림에 그 이름이 나온다`() {
         val renamed = personal.copy(label = "재호 용돈")
 
         val lines = StatusText.recorded("커피", 4_500L, renamed, "오후 3:21", showPurse = true)
         assertEquals("✓ 커피 4,500 · 재호 용돈 오늘 41,000", lines.summary)
-        assertTrue(StatusText.overview(listOf(renamed)).startsWith("재호 용돈 · 오늘 쓸 수 있는 돈"))
+        assertTrue(lines.detail.contains("재호 용돈 오늘 쓸 수 있는 돈 41,000원"))
     }
 
     @Test
@@ -240,13 +214,5 @@ class StatusTextTest {
         val lines = StatusText.weekly(emptyList())
         assertEquals("지난 7일 기록이 없어요", lines.summary)
         assertEquals(lines.summary, lines.detail)
-    }
-
-    @Test
-    fun `곳간이 없으면 현황 대신 안내가 나온다`() {
-        assertEquals(
-            "DB를 연결하고 예산을 정하면 오늘 쓸 수 있는 돈이 여기에 표시됩니다.",
-            StatusText.overview(emptyList()),
-        )
     }
 }

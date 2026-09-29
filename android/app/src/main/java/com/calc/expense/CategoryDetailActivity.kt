@@ -110,7 +110,7 @@ class CategoryDetailActivity : ComponentActivity() {
                 busyName = null
                 detail = reloaded
                 message = when {
-                    moved <= 0 -> tr("옮기지 못했습니다", "Couldn't move", "No se pudo mover")
+                    moved <= 0 -> tr("옮기지 못했어요", "Couldn't move", "No se pudo mover")
                     chosen.isBlank() -> tr(
                         "${group.name} ${moved}건을 미분류로 뒀어요",
                         "Left ${L10n.items(moved)} of ${group.name} uncategorized",

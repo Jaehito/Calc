@@ -140,7 +140,7 @@ private fun FixedStep(
     Question(tr("매달 그냥 나가는 돈", "Money that goes out every month", "Dinero que sale cada mes"))
     Hint(
         tr(
-            "자동이체처럼 손 안 대도 빠져나가는 것만요. 모르는 칸은 비워 두면 빠집니다.",
+            "자동이체처럼 손 안 대도 빠져나가는 것만요. 모르는 칸은 비워 두면 돼요.",
             "Only things that leave on their own, like automatic transfers. Leave unknown rows empty to skip them.",
             "Solo lo que sale solo, como domiciliaciones. Deja vacías las filas que no sepas y se omitirán.",
         ),
@@ -213,9 +213,9 @@ private fun ResultStep(plan: FixedCostPlan) {
         Question(tr("고정비가 월급보다 많아요", "Fixed costs exceed your income", "Los gastos fijos superan tu sueldo"))
         Hint(
             tr(
-                "고정비 ${StatusText.won(plan.fixedTotal)}가 월급 ${StatusText.won(plan.monthlyIncome)}를 넘습니다. " +
-                    "금액을 잘못 적었거나, 이번 달은 앱이 계산해 줄 수 있는 상황이 아닙니다. " +
-                    "뒤로 가서 고치거나 금액을 직접 정해 주세요.",
+                "고정비 ${StatusText.won(plan.fixedTotal)}가 월급 ${StatusText.won(plan.monthlyIncome)}보다 많아요. " +
+                    "금액을 다시 확인해 보고, " +
+                    "맞다면 한 달 예산을 직접 정해 주세요.",
                 "Fixed costs of ${StatusText.won(plan.fixedTotal)} exceed your income of ${StatusText.won(plan.monthlyIncome)}. " +
                     "Either an amount is wrong, or this month isn't something the app can calculate. " +
                     "Go back to fix it, or set the amount yourself.",
@@ -267,7 +267,7 @@ private fun ResultStep(plan: FixedCostPlan) {
     Spacer(Modifier.height(14.dp))
     Hint(
         tr(
-            "이 금액이 곳간·등급·도감의 기준이 됩니다. 나중에 설정에서 언제든 바꿀 수 있어요.",
+            "이 금액으로 하루치와 등급을 계산해요. 설정에서 언제든 바꿀 수 있어요.",
             "This amount drives your savings, grades and garden. You can change it anytime in Settings.",
             "Este importe es la base de tu ahorro, notas y jardín. Puedes cambiarlo cuando quieras en Ajustes.",
         ),
@@ -304,7 +304,7 @@ private fun JoinStep(ui: OnboardingUi, onJoinCodeChange: (String) -> Unit) {
     Question(tr("가정 코드를 넣어 주세요", "Enter the household code", "Introduce el código de hogar"))
     Hint(
         tr(
-            "배우자가 설정 › 가정에서 만든 ${HouseholdCode.LENGTH}자리 코드예요. 묶이면 공용 곳간 예산과 월급날을 같이 써요.",
+            "배우자가 설정의 ‘공용 지갑’에서 만든 ${HouseholdCode.LENGTH}자리 코드예요. 연결되면 공용 예산과 월급날을 같이 써요.",
             "The ${HouseholdCode.LENGTH}-character code your partner made in Settings › Household. Once linked, you share the shared wallet's budget and payday.",
             "El código de ${HouseholdCode.LENGTH} caracteres que tu pareja creó en Ajustes › Hogar. Al vincularos, compartís el presupuesto y el día de cobro de la cartera compartida.",
         ),
@@ -351,8 +351,8 @@ private fun NotifyStep() {
     Question(tr("잠금화면에서 바로 적어요", "Log right from the lock screen", "Anota desde la pantalla de bloqueo"))
     Hint(
         tr(
-            "알림을 켜 두면 잠금화면에 오늘 쓸 수 있는 돈이 보이고, 눌러서 «커피 4500»처럼 바로 적을 수 있어요.",
-            "With the notification on, the lock screen shows what you can spend today; tap it and type e.g. «coffee 4500».",
+            "알림을 켜 두면 잠금화면에서 오늘 쓸 수 있는 돈을 보고, 눌러서 ‘커피 4500’처럼 적을 수 있어요.",
+            "With the notification on, the lock screen shows what you can spend today; tap it and type e.g. ‘coffee 4500’.",
             "Con la notificación activada, la pantalla de bloqueo muestra lo que puedes gastar hoy; tócala y escribe p. ej. «café 4500».",
         ),
     )
@@ -373,7 +373,7 @@ private fun NotifyStep() {
                 .background(Color.White.copy(alpha = 0.10f))
                 .padding(14.dp),
         ) {
-            Text(text = tr("곳간 · 지금", "Wallet · now", "Cartera · ahora"), color = LockPreviewMuted, fontSize = 11.sp)
+            Text(text = tr("하루치 · 지금", "Haruchi · now", "Haruchi · ahora"), color = LockPreviewMuted, fontSize = 11.sp)
             Spacer(Modifier.height(4.dp))
             Text(text = tr("오늘 31,000원 남았어요", "₩31,000 left today", "Quedan ₩31,000 hoy"), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
             Text(text = tr("이번 주기 612,400원 남음", "₩612,400 left this cycle", "Quedan ₩612,400 este ciclo"), color = LockPreviewText, fontSize = 12.sp)
@@ -533,7 +533,7 @@ private fun LinkRow(text: String, onClick: () -> Unit) {
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.weight(1f),
         )
-        Text(text = "›", color = HomePalette.Muted, fontSize = 18.sp)
+        Chevron()
     }
 }
 

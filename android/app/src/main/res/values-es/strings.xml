@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Registro de gastos</string>
+    <string name="app_name">Haruchi</string>
     <string name="label_cycle_report">Informe del ciclo anterior</string>
     <string name="label_category">Categoría</string>
     <string name="label_history">Historial</string>
     <string name="label_settings">Ajustes</string>
-    <string name="label_reminder_service">Recordatorio de gastos</string>
+    <string name="label_reminder_service">Avisos de pago de Haruchi</string>
 </resources>

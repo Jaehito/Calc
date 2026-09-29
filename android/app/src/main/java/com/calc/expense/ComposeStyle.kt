@@ -11,8 +11,14 @@ import androidx.compose.material3.TextFieldColors
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
@@ -52,3 +58,50 @@ fun SettingsGear(onClick: () -> Unit) {
         )
     }
 }
+
+/**
+ * 화면 머리의 뒤로가기. 예전에는 «←» 글자였다 — 글꼴마다 굵기·높이가 달라 화면마다 어긋났다.
+ */
+@Composable
+fun BackButton(onClick: () -> Unit) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(38.dp)
+            .clip(CircleShape)
+            .clickable(onClick = onClick),
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_back),
+            contentDescription = tr("뒤로", "Back", "Atrás"),
+            tint = HomePalette.Ink2,
+            modifier = Modifier.size(22.dp),
+        )
+    }
+}
+
+/** 눌러서 들어가는 줄의 오른쪽 꺾쇠. 예전의 «›» 글자를 대신한다. */
+@Composable
+fun Chevron(tint: Color = HomePalette.Muted, size: Dp = 20.dp) {
+    Icon(
+        painter = painterResource(R.drawable.ic_chevron_right),
+        contentDescription = null,
+        tint = tint,
+        modifier = Modifier.size(size),
+    )
+}
+
+/**
+ * 금액 숫자 글꼴. Pretendard 에서 숫자·금액 기호만 잘라 이름을 바꾼 것이다
+ * (`android/third_party/figures-font`). 한글은 이 글꼴에 없어 시스템 글꼴로 넘어간다 —
+ * 같은 줄에서도 숫자만 이 글꼴로 보인다.
+ */
+val FiguresFont: FontFamily = FontFamily(
+    Font(R.font.figures_regular, FontWeight.Normal),
+    Font(R.font.figures_medium, FontWeight.Medium),
+    Font(R.font.figures_semibold, FontWeight.SemiBold),
+    Font(R.font.figures_bold, FontWeight.Bold),
+)
+
+/** 금액 글자 모양. 자릿수가 바뀌어도 폭이 흔들리지 않게 고정폭 숫자(tnum)를 쓴다. */
+val Figures: TextStyle = TextStyle(fontFamily = FiguresFont, fontFeatureSettings = "tnum")

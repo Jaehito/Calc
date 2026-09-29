@@ -3,6 +3,7 @@ package com.calc.expense
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -86,7 +87,7 @@ fun CycleGradeDialog(
                             .padding(14.dp),
                     ) {
                         Text(
-                            text = tr("이번 주기 챌린지 금액", "This cycle's challenge amount", "Meta de este ciclo"),
+                            text = tr("이번 주기 예산", "This cycle's budget", "Presupuesto de este ciclo"),
                             color = HomePalette.Accent,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
@@ -109,18 +110,23 @@ fun CycleGradeDialog(
                 }
 
                 Spacer(Modifier.height(if (recommended > 0L) 12.dp else 18.dp))
-                Text(
-                    text =
-                        if (recommended > 0L) tr("고정비 다시 찾아보기 ›", "Review fixed costs ›", "Revisar gastos fijos ›")
-                        else tr("고정비가 뭔지 모르겠어요 ›", "What are fixed costs? ›", "¿Qué son los gastos fijos? ›"),
-                    color = HomePalette.Accent,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .clip(RoundedCornerShape(10.dp))
                         .clickable(onClick = onOpenReport)
                         .padding(horizontal = 10.dp, vertical = 6.dp),
-                )
+                ) {
+                    Text(
+                        text =
+                            if (recommended > 0L) tr("고정비 다시 찾아보기", "Review fixed costs", "Revisar gastos fijos")
+                            else tr("고정비가 뭔지 모르겠어요", "What are fixed costs?", "¿Qué son los gastos fijos?"),
+                        color = HomePalette.Accent,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Chevron(tint = HomePalette.Accent, size = 16.dp)
+                }
             }
         },
         confirmButton = {

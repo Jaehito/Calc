@@ -55,13 +55,16 @@ object NotificationHelper {
     private const val GRADE_CHANNEL_ID = "daily_grade"
 
     private val IDLE_TEXT: String
-        get() = tr("눌러서 기록하세요 · 예: 커피 4500", "Tap to log · e.g. coffee 4500", "Toca para anotar · p. ej. café 4500")
+        get() = tr("눌러서 기록 (예: 커피 4500)", "Tap to log (e.g. coffee 4500)", "Toca para anotar (p. ej. café 4500)")
 
     /** 앱 아이콘을 길게 눌렀을 때 나오는 «지출 기록» 바로가기의 id. */
     private const val SHORTCUT_ID = "gotgan_record"
 
-    /** 카드 제목. 이 앱의 말로 «곳간» 이다. */
-    private val CARD_TITLE: String get() = tr("곳간", "Wallet", "Cartera")
+    /**
+     * 카드 제목. 알림 머리에 앱 이름(하루치)이 이미 붙으므로 제목은 카드가 하는 일을 말한다.
+     * (예전 제목 «곳간»은 이제 아껴 쌓인 돈만 가리키는 말이라 쓸 수 없다.)
+     */
+    private val CARD_TITLE: String get() = tr("지출 기록", "Log spending", "Anotar gasto")
 
     private const val REQUEST_OPEN_INPUT = 1
     private const val REQUEST_DISMISSED = 2
@@ -85,7 +88,7 @@ object NotificationHelper {
             NotificationManager.IMPORTANCE_HIGH,
         ).apply {
             description = tr(
-                "잠금화면에서 지출을 바로 기록하는 상시 알림",
+                "잠금화면에서 지출을 적는 알림",
                 "Always-on notification to log spending from the lock screen",
                 "Notificación fija para anotar gastos desde la pantalla de bloqueo",
             )
@@ -299,7 +302,7 @@ object NotificationHelper {
             NotificationManager.IMPORTANCE_HIGH,
         ).apply {
             description = tr(
-                "결제를 보면 금액과 가게 이름을 잠깐 띄움 (몇 초 뒤 사라짐)",
+                "결제 금액과 가게 이름을 몇 초 동안 보여 줌",
                 "Briefly shows the amount and store when a payment is seen (disappears after a few seconds)",
                 "Muestra brevemente el importe y la tienda al detectar un pago (desaparece en unos segundos)",
             )

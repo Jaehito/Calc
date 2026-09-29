@@ -22,7 +22,7 @@ object ExpenseExport {
             tr("이름", "Name", "Nombre"),
             tr("금액", "Amount", "Importe"),
             tr("카테고리", "Category", "Categoría"),
-            tr("곳간", "Wallet", "Cartera"),
+            tr("지갑", "Wallet", "Cartera"),
         )
 
     /**
@@ -69,7 +69,7 @@ object ExpenseExport {
     }
 
     /** 파일 이름. 언제 뽑은 것인지 이름만 보고 알 수 있어야 여러 개 쌓였을 때 구별된다. */
-    fun fileName(today: LocalDate): String = tr("곳간-지출", "spending", "gastos") + "-$today.csv"
+    fun fileName(today: LocalDate): String = tr("하루치-지출", "spending", "gastos") + "-$today.csv"
 
     /**
      * 내보내기가 훑을 가장 이른 날. 이 앱보다 앞선 기록은 없다.

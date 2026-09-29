@@ -25,7 +25,7 @@ object ExpenseParser {
      */
     fun parse(raw: String): ParseResult {
         val tokens = raw.trim().split(' ', '\t', '\n', ' ').filter { it.isNotEmpty() }
-        if (tokens.isEmpty()) return ParseResult.Err(tr("내용이 비어 있습니다", "Nothing entered", "No hay nada escrito"))
+        if (tokens.isEmpty()) return ParseResult.Err(tr("아무것도 적지 않았어요", "Nothing entered", "No hay nada escrito"))
 
         var amountIndex = -1
         var amount = 0L
@@ -38,12 +38,12 @@ object ExpenseParser {
             }
         }
 
-        if (amountIndex < 0) return ParseResult.Err(tr("금액을 찾을 수 없습니다", "No amount found", "No se encontró el importe"))
-        if (amount <= 0) return ParseResult.Err(tr("금액은 0보다 커야 합니다", "The amount must be greater than 0", "El importe debe ser mayor que 0"))
-        if (amount > MAX_AMOUNT) return ParseResult.Err(tr("금액이 너무 큽니다", "The amount is too large", "El importe es demasiado grande"))
+        if (amountIndex < 0) return ParseResult.Err(tr("금액을 못 찾았어요", "No amount found", "No se encontró el importe"))
+        if (amount <= 0) return ParseResult.Err(tr("금액은 0보다 커야 해요", "The amount must be greater than 0", "El importe debe ser mayor que 0"))
+        if (amount > MAX_AMOUNT) return ParseResult.Err(tr("금액이 너무 커요", "The amount is too large", "El importe es demasiado grande"))
 
         val name = tokens.filterIndexed { i, _ -> i != amountIndex }.joinToString(" ")
-        if (name.isBlank()) return ParseResult.Err(tr("지출 이름이 없습니다", "The expense has no name", "Falta el nombre del gasto"))
+        if (name.isBlank()) return ParseResult.Err(tr("무엇에 썼는지 적어 주세요", "The expense has no name", "Falta el nombre del gasto"))
 
         return ParseResult.Ok(Expense(name, amount))
     }

@@ -34,7 +34,7 @@ class ExpenseExportTest {
         )
 
         val out: List<String> = lines(csv)
-        assertEquals("날짜,이름,금액,카테고리,곳간", out[0])
+        assertEquals("날짜,이름,금액,카테고리,지갑", out[0])
         assertEquals("2026-09-05,월세,550000,주거,개인", out[1])
         assertEquals("2026-09-10,스타벅스,5500,카페,개인", out[2])
     }
@@ -82,11 +82,11 @@ class ExpenseExportTest {
     @Test
     fun `비어 있어도 머리글은 남는다`() {
         // 빈 파일을 받으면 「내보내기가 실패했나」를 알 수 없다.
-        assertEquals(listOf("날짜,이름,금액,카테고리,곳간"), lines(ExpenseExport.toCsv(emptyList())))
+        assertEquals(listOf("날짜,이름,금액,카테고리,지갑"), lines(ExpenseExport.toCsv(emptyList())))
     }
 
     @Test
     fun `파일 이름에 날짜가 들어간다`() {
-        assertEquals("곳간-지출-2026-09-16.csv", ExpenseExport.fileName(LocalDate.of(2026, 9, 16)))
+        assertEquals("하루치-지출-2026-09-16.csv", ExpenseExport.fileName(LocalDate.of(2026, 9, 16)))
     }
 }

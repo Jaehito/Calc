@@ -297,8 +297,8 @@ class DogamTest {
 
     @Test
     fun `꽃말과 조사를 붙인다`() {
-        assertEquals("꽃말 「침묵」", Plant.LAVENDER.meaningText)
-        assertEquals("뜻 「구멍 난 잎」", Plant.MONSTERA.meaningText)
+        assertEquals("꽃말 ‘침묵’", Plant.LAVENDER.meaningText)
+        assertEquals("뜻 ‘구멍 난 잎’", Plant.MONSTERA.meaningText)
         assertEquals("이", Plant.subjectParticle("새싹"))
         assertEquals("가", Plant.subjectParticle("라벤더"))
         assertEquals("가", Plant.subjectParticle("S"))

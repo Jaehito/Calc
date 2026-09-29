@@ -90,7 +90,7 @@ fun PendingInboxDialog(
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = tr(
-                        "알림에서 읽은 값이라 맞는지 확인하고 기록하세요",
+                        "알림에서 읽은 값이에요. 맞는지 보고 기록해 주세요",
                         "Read from notifications — check before logging",
                         "Leído de las notificaciones — revísalo antes de anotar",
                     ),

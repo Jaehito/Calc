@@ -36,49 +36,49 @@ object DogamText {
 
     private val PLANTS: Map<String, Pair<List<String>, List<String>>> = mapOf(
         "sprout" to (
-            listOf("Sprout", "Beginning", "Everything starts with one line", "The first day you log spending", "First entry") to
-                listOf("Brote", "Comienzo", "Todo empieza con una línea", "El primer día que anotas un gasto", "Primer gasto")
+            listOf("Sprout", "Beginning", "You logged for the first time", "The first day you log spending", "First entry") to
+                listOf("Brote", "Comienzo", "Anotaste por primera vez", "El primer día que anotas un gasto", "Primer gasto")
             ),
         "rosemary" to (
-            listOf("Rosemary", "Remembrance", "Writing it down becomes memory", "Log every day for 7 days in a row", "7 days in a row") to
-                listOf("Romero", "Recuerdo", "Anotar se convierte en recuerdo", "Anota todos los días durante 7 días seguidos", "7 días seguidos")
+            listOf("Rosemary", "Remembrance", "You logged every day for a week", "Log every day for 7 days in a row", "7 days in a row") to
+                listOf("Romero", "Recuerdo", "Anotaste todos los días durante una semana", "Anota todos los días durante 7 días seguidos", "7 días seguidos")
             ),
         "forget_me_not" to (
             listOf("Forget-me-not", "Forget me not", "Not a single day forgotten for a month", "Log every day for 30 days in a row", "30 days in a row") to
                 listOf("Nomeolvides", "No me olvides", "Ni un día olvidado en un mes", "Anota todos los días durante 30 días seguidos", "30 días seguidos")
             ),
         "violet" to (
-            listOf("Violet", "Diligence", "Day after day, it piled up", "30 logged days in total (gaps allowed)", "30 logged days") to
-                listOf("Violeta", "Constancia", "Día a día, se fue acumulando", "30 días anotados en total (aunque haya huecos)", "30 días anotados")
+            listOf("Violet", "Diligence", "You've logged on 30 days", "30 logged days in total (gaps allowed)", "30 logged days") to
+                listOf("Violeta", "Constancia", "Llevas 30 días anotados", "30 días anotados en total (aunque haya huecos)", "30 días anotados")
             ),
         "cosmos" to (
             listOf("Cosmos", "Harmony", "Spending and logging became second nature", "100 logged days in total (gaps allowed)", "100 logged days") to
                 listOf("Cosmos", "Armonía", "Gastar y anotar ya es natural", "100 días anotados en total (aunque haya huecos)", "100 días anotados")
             ),
         "edelweiss" to (
-            listOf("Edelweiss", "Precious memories", "A year of records is a memory in itself", "365 logged days in total (gaps allowed)", "365 logged days") to
-                listOf("Edelweiss", "Recuerdos preciados", "Un año de registros ya es un recuerdo", "365 días anotados en total (aunque haya huecos)", "365 días anotados")
+            listOf("Edelweiss", "Precious memories", "You've logged on a year's worth of days", "365 logged days in total (gaps allowed)", "365 logged days") to
+                listOf("Edelweiss", "Recuerdos preciados", "Llevas un año de días anotados", "365 días anotados en total (aunque haya huecos)", "365 días anotados")
             ),
         "daisy" to (
-            listOf("Daisy", "Hope", "Your first S — a sign it can be done", "Get a daily S grade for the first time", "First S") to
-                listOf("Margarita", "Esperanza", "Tu primera S: señal de que se puede", "Consigue por primera vez una nota diaria S", "Primera S")
+            listOf("Daisy", "Hope", "You got your first S", "Get a daily S grade for the first time", "First S") to
+                listOf("Margarita", "Esperanza", "Conseguiste tu primera S", "Consigue por primera vez una nota diaria S", "Primera S")
             ),
         "sunflower" to (
             listOf("Sunflower", "Turns to follow the sun", "S keeps coming back", "Get a daily S grade 5 times", "S × 5") to
                 listOf("Girasol", "Sigue al sol", "La S vuelve una y otra vez", "Consigue la nota diaria S 5 veces", "S × 5")
             ),
         "laurel" to (
-            listOf("Laurel wreath", "Victory", "Twenty S grades means you've won", "Get a daily S grade 20 times", "S × 20") to
-                listOf("Corona de laurel", "Victoria", "Veinte S significa que has ganado", "Consigue la nota diaria S 20 veces", "S × 20")
+            listOf("Laurel wreath", "Victory", "You've had twenty S grades", "Get a daily S grade 20 times", "S × 20") to
+                listOf("Corona de laurel", "Victoria", "Llevas veinte notas S", "Consigue la nota diaria S 20 veces", "S × 20")
             ),
         "clover" to (
             listOf(
                 "Three-leaf clover", "Happiness",
-                "Three leaves, not four (luck). Not luck — you kept it every day",
+                "Three days in a row within your daily amount",
                 "Stay within the daily amount 3 days in a row", "3 days on budget",
             ) to listOf(
                 "Trébol de tres hojas", "Felicidad",
-                "Tres hojas, no cuatro (suerte). No fue suerte: lo cumpliste cada día",
+                "Tres días seguidos dentro de tu cantidad diaria",
                 "Mantente dentro de la cantidad diaria 3 días seguidos", "3 días en presupuesto",
             )
             ),
@@ -87,8 +87,8 @@ object DogamText {
                 listOf("Flor de ciruelo", "Paciencia", "Aguanta el frío y florece primero", "Mantente dentro de la cantidad diaria 7 días seguidos", "7 días en presupuesto")
             ),
         "bamboo" to (
-            listOf("Bamboo", "Integrity", "Two weeks without bending", "Stay within the daily amount 14 days in a row", "14 days on budget") to
-                listOf("Bambú", "Integridad", "Dos semanas sin doblarse", "Mantente dentro de la cantidad diaria 14 días seguidos", "14 días en presupuesto")
+            listOf("Bamboo", "Integrity", "Two weeks in a row within your daily amount", "Stay within the daily amount 14 days in a row", "14 days on budget") to
+                listOf("Bambú", "Integridad", "Dos semanas seguidas dentro de tu cantidad diaria", "Mantente dentro de la cantidad diaria 14 días seguidos", "14 días en presupuesto")
             ),
         "chamomile" to (
             listOf(
@@ -108,29 +108,29 @@ object DogamText {
                 listOf("Rosa de Siria", "Perseverancia", "Florece, se marchita y vuelve a florecer", "Vuelve al plan tras pasarte, 15 veces", "Recuperado × 15")
             ),
         "lavender" to (
-            listOf("Lavender", "Silence", "It bloomed on a day your money stayed quiet", "End a day with ₩0 in your personal wallet", "No-spend day") to
-                listOf("Lavanda", "Silencio", "Floreció un día en que tu dinero estuvo en calma", "Termina un día con ₩0 en tu cartera personal", "Día sin gastos")
+            listOf("Lavender", "Silence", "A whole day without spending", "End a day with ₩0 in your personal wallet", "No-spend day") to
+                listOf("Lavanda", "Silencio", "Un día entero sin gastar", "Termina un día con ₩0 en tu cartera personal", "Día sin gastos")
             ),
         "lily_of_the_valley" to (
-            listOf("Lily of the valley", "Happiness will surely come", "Five quiet days have piled up", "5 no-spend days", "No-spend × 5") to
-                listOf("Lirio de los valles", "La felicidad llegará", "Se han acumulado cinco días tranquilos", "5 días sin gastos", "Sin gastos × 5")
+            listOf("Lily of the valley", "Happiness will surely come", "Five no-spend days", "5 no-spend days", "No-spend × 5") to
+                listOf("Lirio de los valles", "La felicidad llegará", "Cinco días sin gastos", "5 días sin gastos", "Sin gastos × 5")
             ),
         "evening_primrose" to (
-            listOf("Evening primrose", "Waiting", "Twenty quiet nights have piled up", "20 no-spend days", "No-spend × 20") to
-                listOf("Onagra", "Espera", "Se han acumulado veinte noches tranquilas", "20 días sin gastos", "Sin gastos × 20")
+            listOf("Evening primrose", "Waiting", "Twenty no-spend days", "20 no-spend days", "No-spend × 20") to
+                listOf("Onagra", "Espera", "Veinte días sin gastos", "20 días sin gastos", "Sin gastos × 20")
             ),
         "marigold" to (
             listOf(
-                "Marigold", "Happiness that is bound to come", "A reward for keeping a whole week",
+                "Marigold", "Happiness that is bound to come", "A whole week within budget",
                 "Keep a Monday–Sunday week within 7 days' worth", "Keep a week",
             ) to listOf(
-                "Caléndula", "La felicidad que sin duda llegará", "El premio por cumplir una semana entera",
+                "Caléndula", "La felicidad que sin duda llegará", "Una semana entera dentro del presupuesto",
                 "Mantén una semana de lunes a domingo dentro de 7 días de presupuesto", "Cumplir una semana",
             )
             ),
         "olive" to (
-            listOf("Olive", "Peace", "A month of weeks went peacefully", "Keep a week 4 times", "Week × 4") to
-                listOf("Olivo", "Paz", "Un mes de semanas en paz", "Cumple una semana 4 veces", "Semana × 4")
+            listOf("Olive", "Peace", "Four weeks within budget", "Keep a week 4 times", "Week × 4") to
+                listOf("Olivo", "Paz", "Cuatro semanas dentro del presupuesto", "Cumple una semana 4 veces", "Semana × 4")
             ),
         "money_tree" to (
             listOf(
@@ -147,10 +147,10 @@ object DogamText {
             ),
         "monstera" to (
             listOf(
-                "Monstera", "Leaves with holes", "Like the holes in its leaves, you found the leaks (fixed costs)",
+                "Monstera", "Leaves with holes", "You sorted out what goes out every month",
                 "Set your fixed costs", "Set fixed costs",
             ) to listOf(
-                "Costilla de Adán", "Hojas con agujeros", "Como los agujeros de sus hojas, encontraste las fugas (gastos fijos)",
+                "Costilla de Adán", "Hojas con agujeros", "Ordenaste lo que sale cada mes",
                 "Define tus gastos fijos", "Definir gastos fijos",
             )
             ),

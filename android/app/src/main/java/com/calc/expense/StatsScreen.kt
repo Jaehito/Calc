@@ -32,8 +32,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val Figures = TextStyle(fontFeatureSettings = "tnum")
-
 /**
  * 통계 탭. 위는 주간 추이 막대 그래프, 아래는 카테고리 도넛.
  *
@@ -106,7 +104,7 @@ private fun ReportCard(onOpenReport: () -> Unit) {
                 )
             }
             Spacer(Modifier.width(12.dp))
-            Text("›", color = HomePalette.Muted, fontSize = 22.sp)
+            Chevron(size = 24.dp)
         }
     }
 }
@@ -216,7 +214,7 @@ private fun TrendCard(data: StatsData) {
             Spacer(Modifier.height(11.dp))
             Text(
                 text = tr(
-                    "설정에서 예산을 정하면 목표 대비로 보여드려요",
+                    "설정에서 예산을 정하면 목표와 비교해 보여 드려요",
                     "Set a budget in Settings to compare against a target",
                     "Define un presupuesto en Ajustes para compararlo con una meta",
                 ),
@@ -254,16 +252,18 @@ private fun CategoryCard(data: StatsData, onToggle: () -> Unit, onOpenCategory: 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = tr("카테고리", "Categories", "Categorías") + " · ${data.categoryCycleLabel}",
+                    text = tr("카테고리", "Categories", "Categorías"),
                     color = HomePalette.Ink,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                 )
                 // 월급날이 달 중간이면 「이번 주기」가 달력 달과 어긋난다. 어느 날부터
                 // 어느 날까지인지 밝히지 않으면 이 숫자가 무엇을 센 것인지 알 수 없다.
+                // 주기 이름은 제목이 아니라 이 줄에 둔다 — 제목에 붙이면 오른쪽 버튼에 밀려
+                // 영어·스페인어에서 두 줄이 됐다(«Categorías · Ciclo anterior»).
                 Spacer(Modifier.height(3.dp))
                 Text(
-                    text = data.categoryCycleRange,
+                    text = "${data.categoryCycleLabel} · ${data.categoryCycleRange}",
                     color = HomePalette.Muted,
                     fontSize = 11.5f.sp,
                     style = Figures,
@@ -277,6 +277,7 @@ private fun CategoryCard(data: StatsData, onToggle: () -> Unit, onOpenCategory: 
                 color = HomePalette.Accent,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
                 modifier = Modifier
                     .clip(RoundedCornerShape(999.dp))
                     .background(HomePalette.Soft)
@@ -294,7 +295,7 @@ private fun CategoryCard(data: StatsData, onToggle: () -> Unit, onOpenCategory: 
             data.categories.isEmpty() ->
                 Text(
                     text = tr(
-                        "이 주기에는 기록이 없습니다. 지출을 적으면 여기에 나옵니다.",
+                        "이 주기에는 기록이 없어요. 지출을 적으면 여기에 나와요.",
                         "Nothing logged this cycle. Your spending will show up here.",
                         "No hay gastos en este ciclo. Aquí aparecerán cuando anotes.",
                     ),
@@ -336,7 +337,7 @@ private fun DonutAndLegend(data: StatsData, onOpenCategory: (String) -> Unit) {
                     }
                     Text("${slice.percent}%", color = HomePalette.Ink, fontSize = 13.sp, fontWeight = FontWeight.Bold, style = Figures)
                     Spacer(Modifier.width(5.dp))
-                    Text("›", color = HomePalette.Muted, fontSize = 15.sp)
+                    Chevron(size = 18.dp)
                 }
             }
         }

@@ -76,13 +76,13 @@ enum class Plant(
     SPROUT(
         key = "sprout", label = "새싹", shelf = Shelf.RECORD,
         meaning = "시작", isFlowerLanguage = false,
-        story = "모든 건 한 줄에서 시작해요",
+        story = "처음으로 적었어요",
         condition = "처음으로 지출을 적은 날", short = "첫 기록",
     ),
     ROSEMARY(
         key = "rosemary", label = "로즈마리", shelf = Shelf.RECORD,
         meaning = "기억", isFlowerLanguage = true,
-        story = "적는 게 곧 기억이 돼요",
+        story = "일주일 내내 빠짐없이 적었어요",
         condition = "7일 이어서 하루도 빠짐없이 적기", short = "7일 이어 적기",
     ),
     FORGET_ME_NOT(
@@ -94,7 +94,7 @@ enum class Plant(
     VIOLET(
         key = "violet", label = "제비꽃", shelf = Shelf.PILE,
         meaning = "성실", isFlowerLanguage = true,
-        story = "하루하루 성실하게 쌓였어요",
+        story = "적은 날이 30일이 됐어요",
         condition = "적은 날이 모두 30일 (끊겨도 이어서 셈)", short = "적은 날 30일",
         tally = Tally.RECORDED_DAYS, target = 30,
     ),
@@ -108,14 +108,14 @@ enum class Plant(
     EDELWEISS(
         key = "edelweiss", label = "에델바이스", shelf = Shelf.PILE,
         meaning = "소중한 추억", isFlowerLanguage = true,
-        story = "1년치 기록은 그 자체로 추억이에요",
+        story = "적은 날이 1년 치가 됐어요",
         condition = "적은 날이 모두 365일 (끊겨도 이어서 셈)", short = "적은 날 365일",
         tally = Tally.RECORDED_DAYS, target = 365,
     ),
     DAISY(
         key = "daisy", label = "데이지", shelf = Shelf.GRADE_S,
         meaning = "희망", isFlowerLanguage = true,
-        story = "첫 S, 해볼 만하다는 신호예요",
+        story = "처음으로 S를 받았어요",
         condition = "하루 등급 S를 처음 받기", short = "S 첫 번째",
         tally = Tally.S_DAYS, target = 1,
     ),
@@ -129,14 +129,14 @@ enum class Plant(
     LAUREL(
         key = "laurel", label = "월계관", shelf = Shelf.GRADE_S,
         meaning = "승리", isFlowerLanguage = true,
-        story = "S 스무 번이면 이긴 거예요",
+        story = "S를 스무 번 받았어요",
         condition = "하루 등급 S를 20번 받기", short = "S 20번",
         tally = Tally.S_DAYS, target = 20,
     ),
     CLOVER(
         key = "clover", label = "세잎클로버", shelf = Shelf.KEEP,
         meaning = "행복", isFlowerLanguage = true,
-        story = "네잎(행운)이 아니라 세잎이에요. 운이 아니라 매일 지킨 거예요",
+        story = "사흘 연속 하루치를 지켰어요",
         condition = "하루치 안에서 3일 이어 쓰기", short = "3일 이어 지킴",
     ),
     PLUM(
@@ -148,7 +148,7 @@ enum class Plant(
     BAMBOO(
         key = "bamboo", label = "대나무", shelf = Shelf.KEEP,
         meaning = "절개", isFlowerLanguage = true,
-        story = "2주를 꺾이지 않고 버텼어요",
+        story = "2주 연속 하루치를 지켰어요",
         condition = "하루치 안에서 14일 이어 쓰기", short = "14일 이어 지킴",
     ),
     CHAMOMILE(
@@ -175,35 +175,35 @@ enum class Plant(
     LAVENDER(
         key = "lavender", label = "라벤더", shelf = Shelf.NO_SPEND,
         meaning = "침묵", isFlowerLanguage = true,
-        story = "돈이 조용했던 하루에 피었어요",
-        condition = "개인 곳간을 0원으로 마친 날", short = "무지출의 날",
+        story = "하루 동안 한 푼도 안 썼어요",
+        condition = "개인 지갑을 0원으로 마친 날", short = "무지출한 날",
         tally = Tally.NO_SPEND_DAYS, target = 1,
     ),
     LILY_OF_THE_VALLEY(
         key = "lily_of_the_valley", label = "은방울꽃", shelf = Shelf.NO_SPEND,
         meaning = "틀림없이 행복해진다", isFlowerLanguage = true,
-        story = "조용한 날이 다섯 번 쌓였어요",
-        condition = "무지출의 날 5번", short = "무지출 5번",
+        story = "무지출한 날이 다섯 번이에요",
+        condition = "무지출한 날 5번", short = "무지출 5번",
         tally = Tally.NO_SPEND_DAYS, target = 5,
     ),
     EVENING_PRIMROSE(
         key = "evening_primrose", label = "달맞이꽃", shelf = Shelf.NO_SPEND,
         meaning = "기다림", isFlowerLanguage = true,
-        story = "조용한 밤이 스무 번 쌓였어요",
-        condition = "무지출의 날 20번", short = "무지출 20번",
+        story = "무지출한 날이 스무 번이에요",
+        condition = "무지출한 날 20번", short = "무지출 20번",
         tally = Tally.NO_SPEND_DAYS, target = 20,
     ),
     MARIGOLD(
         key = "marigold", label = "메리골드", shelf = Shelf.PERIOD,
         meaning = "반드시 오고야 말 행복", isFlowerLanguage = true,
-        story = "일주일을 지켜 낸 보상이에요",
+        story = "한 주를 예산 안에서 보냈어요",
         condition = "월요일~일요일 한 주를 7일치 안에서 쓰기", short = "한 주 지키기",
         tally = Tally.KEPT_WEEKS, target = 1,
     ),
     OLIVE(
         key = "olive", label = "올리브", shelf = Shelf.PERIOD,
         meaning = "평화", isFlowerLanguage = true,
-        story = "한 달치 주가 평화로웠어요",
+        story = "네 주를 예산 안에서 보냈어요",
         condition = "한 주 지키기 4번", short = "한 주 4번",
         tally = Tally.KEPT_WEEKS, target = 4,
     ),
@@ -223,7 +223,7 @@ enum class Plant(
     MONSTERA(
         key = "monstera", label = "몬스테라", shelf = Shelf.TIDY,
         meaning = "구멍 난 잎", isFlowerLanguage = false,
-        story = "잎의 구멍처럼, 새는 돈(고정비)을 찾아냈어요",
+        story = "매달 나가는 돈을 정리했어요",
         condition = "고정비를 정해 두기", short = "고정비 정하기",
     ),
     BABYS_BREATH(
@@ -248,7 +248,7 @@ enum class Plant(
         get() = (
             if (isFlowerLanguage) tr("꽃말", "Flower meaning", "Significado")
             else tr("뜻", "Meaning", "Sentido")
-            ) + tr(" 「" + meaning + "」", ": “$meaning”", ": «$meaning»")
+            ) + tr(" ‘" + meaning + "’", ": “$meaning”", ": «$meaning»")
 
     companion object {
         fun ofKey(key: String): Plant? = entries.firstOrNull { it.key == key }

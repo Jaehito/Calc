@@ -1,6 +1,7 @@
 package com.calc.expense
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -31,9 +33,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-
-/** 자릿수가 바뀌어도 폭이 흔들리지 않게 고정폭 숫자를 쓴다. */
-private val Figures = TextStyle(fontFeatureSettings = "tnum")
 
 private val DateFormat: DateTimeFormatter get() = L10n.fullDay()
 
@@ -132,22 +131,31 @@ private fun PurseCard(snapshot: LedgerSnapshot, showLabel: Boolean, onClick: () 
     // 넘긴 날은 음수 대신 초과액으로 말한다. 마이너스 부호는 읽는 데 한 박자 더 걸린다.
     val amount: Long = if (snapshot.isOver) -snapshot.available else snapshot.available
 
+    // 홈에서 가장 무거운 카드. 둥글기와 그림자로 다른 카드(고정비 등)보다 한 층 위에 둔다 —
+    // 모든 카드가 같은 흰 상자면 어디부터 봐야 할지 화면이 말해 주지 않는다.
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .shadow(
+                elevation = 10.dp,
+                shape = RoundedCornerShape(24.dp),
+                ambientColor = HomePalette.Accent.copy(alpha = 0.18f),
+                spotColor = HomePalette.Accent.copy(alpha = 0.22f),
+            )
+            .clip(RoundedCornerShape(24.dp))
             .background(HomePalette.Card)
             .clickable(onClick = onClick)
-            .padding(20.dp),
+            .padding(22.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(text = caption, color = HomePalette.Ink2, fontSize = 13.sp, modifier = Modifier.weight(1f))
             // 카드를 눌러 내역으로 갈 수 있다는 표시.
             Text(
-                text = tr("내역 ›", "History ›", "Historial ›"),
+                text = tr("내역", "History", "Historial"),
                 color = HomePalette.Accent,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
                 modifier = Modifier
                     .clip(RoundedCornerShape(999.dp))
                     .background(HomePalette.Soft)
@@ -176,9 +184,10 @@ private fun PurseCard(snapshot: LedgerSnapshot, showLabel: Boolean, onClick: () 
 
         Spacer(Modifier.height(16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // 칸이 좁아 영어·스페인어는 짧은 말을 쓴다(«Spent today»는 두 줄로 부풀었다).
             FactCell(tr("하루치", "Daily", "Diario"), StatusText.figure(snapshot.dailyRate), HomePalette.Ink, HomePalette.AccentBright, Modifier.weight(1f))
             FactCell(tr("곳간", "Savings", "Ahorro"), "+" + StatusText.figure(snapshot.vault), HomePalette.Accent, HomePalette.Gold, Modifier.weight(1f))
-            FactCell(tr("오늘 씀", "Spent today", "Gastado hoy"), "−" + StatusText.figure(snapshot.todaySpent), HomePalette.Ink, HomePalette.Over, Modifier.weight(1f))
+            FactCell(tr("오늘 씀", "Spent", "Gastado"), "−" + StatusText.figure(snapshot.todaySpent), HomePalette.Ink, HomePalette.Over, Modifier.weight(1f))
         }
 
         Spacer(Modifier.height(16.dp))
@@ -261,7 +270,7 @@ private fun VaultBar(snapshot: LedgerSnapshot) {
 private fun EmptyCard(onSetBudget: () -> Unit) {
     CardBox {
         Text(
-            text = tr("아직 챌린지 금액을 안 정했어요", "No challenge amount set yet", "Aún no has fijado tu meta"),
+            text = tr("아직 한 달 예산을 정하지 않았어요", "No monthly budget yet", "Aún no tienes presupuesto mensual"),
             color = HomePalette.Ink,
             fontSize = 17.sp,
             fontWeight = FontWeight.SemiBold,
@@ -269,8 +278,8 @@ private fun EmptyCard(onSetBudget: () -> Unit) {
         Spacer(Modifier.height(8.dp))
         Text(
             text = tr(
-                "월급에서 고정비를 빼면 한 달에 쓸 수 있는 돈이 나옵니다. " +
-                    "정하고 나면 오늘 쓸 수 있는 돈이 여기에 뜹니다.",
+                "월급에서 고정비를 빼면 한 달 예산이 나와요. " +
+                    "정하면 오늘 쓸 수 있는 돈이 여기에 보여요.",
                 "Your income minus fixed costs is what you can spend in a month. " +
                     "Once set, what you can spend today shows up here.",
                 "Tu sueldo menos los gastos fijos es lo que puedes gastar al mes. " +
@@ -282,7 +291,7 @@ private fun EmptyCard(onSetBudget: () -> Unit) {
         )
         Spacer(Modifier.height(14.dp))
         Text(
-            text = tr("챌린지 금액 정하기", "Set challenge amount", "Fijar meta"),
+            text = tr("한 달 예산 정하기", "Set monthly budget", "Fijar presupuesto"),
             color = Color.White,
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
@@ -301,7 +310,7 @@ private fun EmptyCard(onSetBudget: () -> Unit) {
  */
 @Composable
 private fun FixedCostCard(fixedTotal: Long, onEdit: () -> Unit) {
-    CardBox {
+    QuietBox {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = tr("이번 달 고정비", "Fixed costs this month", "Gastos fijos del mes"), color = HomePalette.Ink2, fontSize = 13.sp)
@@ -318,6 +327,7 @@ private fun FixedCostCard(fixedTotal: Long, onEdit: () -> Unit) {
                 color = HomePalette.Accent,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
                 modifier = Modifier
                     .clip(RoundedCornerShape(999.dp))
                     .background(HomePalette.Soft)
@@ -325,6 +335,20 @@ private fun FixedCostCard(fixedTotal: Long, onEdit: () -> Unit) {
                     .padding(horizontal = 14.dp, vertical = 7.dp),
             )
         }
+    }
+}
+
+/** 근거·보조 정보용 카드. 흰 바탕 대신 옅은 테두리만 둬서 곳간 카드보다 한 단계 낮게 보인다. */
+@Composable
+private fun QuietBox(content: @Composable () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .border(1.dp, HomePalette.Line, RoundedCornerShape(16.dp))
+            .padding(horizontal = 18.dp, vertical = 14.dp),
+    ) {
+        content()
     }
 }
 
@@ -358,7 +382,7 @@ private fun FactCell(label: String, value: String, valueColor: Color, dot: Color
                     .background(dot),
             )
             Spacer(Modifier.width(6.dp))
-            Text(text = label, color = HomePalette.Muted, fontSize = 11.sp)
+            Text(text = label, color = HomePalette.Muted, fontSize = 11.sp, maxLines = 1)
         }
         Spacer(Modifier.height(4.dp))
         Text(
@@ -366,6 +390,7 @@ private fun FactCell(label: String, value: String, valueColor: Color, dot: Color
             color = valueColor,
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
+            maxLines = 1,
             style = Figures,
         )
     }

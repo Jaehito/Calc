@@ -113,7 +113,7 @@ object RecordExpense {
         amount: Long,
     ): DeleteResult {
         val purse: Purse = PurseAccess.linked(context).firstOrNull { it.key == purseKey }
-            ?: return DeleteResult(ok = false, message = tr("곳간을 찾을 수 없습니다", "Couldn't find that wallet", "No se encontró esa cartera"))
+            ?: return DeleteResult(ok = false, message = tr("지갑을 못 찾았어요", "Couldn't find that wallet", "No se encontró esa cartera"))
 
         return when (val r = FirestoreExpenseStore.archive(context, purse, rowId)) {
             is FirestoreExpenseStore.Outcome.Err -> DeleteResult(ok = false, message = r.message)
@@ -151,7 +151,7 @@ object RecordExpense {
                     is FirestoreExpenseStore.Outcome.Err -> EditResult(
                         ok = false,
                         message = tr(
-                            "새 값은 저장됐지만 옛 줄을 지우지 못했습니다: ",
+                            "새 값은 저장했지만 예전 기록을 지우지 못했어요: ",
                             "Saved the new value but couldn't remove the old entry: ",
                             "Se guardó el nuevo valor, pero no se pudo borrar el anterior: ",
                         ) + archived.message,

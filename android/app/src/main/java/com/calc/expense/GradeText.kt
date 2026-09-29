@@ -25,7 +25,7 @@ object GradeText {
         }
         SpendingGrade.NoRecord -> {
             val line = tr(
-                "오늘은 기록이 없어요 — 등급을 매길 수 없습니다",
+                "오늘은 기록이 없어서 등급이 없어요",
                 "Nothing logged today — no grade to give",
                 "Hoy no hay gastos anotados — no hay nota",
             )
@@ -33,7 +33,7 @@ object GradeText {
         }
         SpendingGrade.NoBudget -> {
             val line = tr(
-                "예산을 정하면 오늘 등급이 나옵니다",
+                "예산을 정하면 오늘 등급이 나와요",
                 "Set a budget to get today's grade",
                 "Define un presupuesto para ver la nota de hoy",
             )

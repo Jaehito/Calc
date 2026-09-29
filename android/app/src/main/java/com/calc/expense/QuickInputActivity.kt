@@ -280,7 +280,7 @@ class QuickInputActivity : AppCompatActivity() {
         val snapshot: LedgerSnapshot? = Ledger.snapshot(this, selected)
 
         if (snapshot == null) {
-            ui.textCaption.text = tr("예산을 정하지 않은 곳간", "No budget set for this wallet", "Esta cartera no tiene presupuesto")
+            ui.textCaption.text = tr("예산을 정하지 않은 지갑", "No budget set for this wallet", "Esta cartera no tiene presupuesto")
             ui.textAvailable.text = "—"
             ui.textAvailable.setTextColor(colorOf(Tone.NEUTRAL))
             ui.textBreakdown.visibility = View.GONE

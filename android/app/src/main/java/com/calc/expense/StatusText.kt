@@ -80,7 +80,7 @@ object StatusText {
             return StatusLines(
                 summary = head,
                 detail = head + "\n\n" + tr(
-                    "앱에서 예산을 정하면 오늘 쓸 수 있는 돈이 함께 표시됩니다.",
+                    "앱에서 예산을 정하면 오늘 쓸 수 있는 돈도 같이 보여요.",
                     "Set a budget in the app to see what you can spend today.",
                     "Define un presupuesto en la app para ver lo que puedes gastar hoy.",
                 ),
@@ -97,7 +97,7 @@ object StatusText {
                 ),
                 detail = head + "\n\n" + tr(
                     "${tag}오늘 ${won(-available)} 초과" +
-                        "\n곳간을 다 쓰고 넘은 만큼은 남은 날에 나눠 조정됩니다.",
+                        "\n곳간을 다 쓰고 넘친 만큼은 남은 날에 나눠서 빼요.",
                     "${tag}today ${won(-available)} over" +
                         "\nThe savings are used up; the extra is spread over the remaining days.",
                     "${tag}hoy ${won(-available)} de más" +
@@ -114,20 +114,21 @@ object StatusText {
                     "disponible hoy ${format(available)}",
                 )
                 else tr("${tag}오늘 ${format(available)}", "${tag}today ${format(available)}", "${tag}hoy ${format(available)}"),
-            detail = head + "\n\n" + breakdown(tag, snapshot) + "\n\n" + untilTarget(snapshot),
+            detail = head + "\n\n" + leftToday(tag, snapshot) + "\n" + untilTarget(snapshot),
         )
     }
 
-    /** «오늘 쓸 수 있는 돈 = 하루치 + 곳간 − 오늘» 두 줄. */
-    private fun breakdown(tag: String, snapshot: LedgerSnapshot): String {
-        val parts: String = "${format(snapshot.dailyRate)} + " + tr("곳간", "savings", "ahorro") +
-            " ${format(snapshot.vault)} − " + tr("오늘", "today", "hoy") + " ${format(snapshot.todaySpent)}"
-        return tr(
-            "${tag}오늘 쓸 수 있는 돈 ${won(snapshot.available)}\n하루치 $parts",
-            "${tag}Left to spend today ${won(snapshot.available)}\nDaily ${parts}",
-            "${tag}Disponible hoy ${won(snapshot.available)}\nDiario $parts",
-        )
-    }
+    /**
+     * 펼친 알림의 «오늘 쓸 수 있는 돈» 한 줄.
+     *
+     * 예전에는 «하루치 + 곳간 − 오늘» 계산식 줄을 붙였다. 알림에서는 식이 설명이 아니라
+     * 소음이었다 — 근거는 홈 카드의 세 칸(하루치·곳간·오늘 씀)이 이미 보여 준다.
+     */
+    private fun leftToday(tag: String, snapshot: LedgerSnapshot): String = tr(
+        "${tag}오늘 쓸 수 있는 돈 ${won(snapshot.available)}",
+        "${tag}Left to spend today ${won(snapshot.available)}",
+        "${tag}Disponible hoy ${won(snapshot.available)}",
+    )
 
     /**
      * 빠른 입력 화면의 결과 줄. 한 줄 고정이라 카드 높이가 출렁이지 않는다.
@@ -174,20 +175,28 @@ object StatusText {
 
     /** 곳간 하나를 읽지 못했을 때. */
     fun loadFailed(label: String): String = tr(
-        "$label 곳간을 불러오지 못했습니다",
+        "$label 지갑을 불러오지 못했어요",
         "Couldn't load the $label wallet",
         "No se pudo cargar la cartera $label",
     )
 
     /** 로그인이 풀려 기록할 곳이 없을 때. */
     fun signedOut(): String = tr(
-        "로그인이 풀렸습니다. 앱을 열어 다시 로그인해 주세요",
+        "로그인이 풀렸어요. 앱을 열어 다시 로그인해 주세요",
         "You've been signed out. Open the app and sign in again",
         "Se cerró tu sesión. Abre la app y vuelve a iniciar sesión",
     )
 
-    /** 예외를 그대로 보여줄 때 앞에 붙이는 말. */
-    fun error(e: Throwable): String = tr("오류: ", "Error: ", "Error: ") + (e.message ?: e.javaClass.simpleName)
+    /**
+     * 예상하지 못한 실패를 사람 말로. 예외 원문(대개 영어 스택 메시지)은 사용자에게 아무 뜻이
+     * 없어서 보이지 않는다 — 할 수 있는 일(잠시 뒤 다시)만 말한다.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    fun error(e: Throwable): String = tr(
+        "잠깐 문제가 생겼어요. 조금 뒤 다시 해 주세요",
+        "Something went wrong. Please try again in a moment",
+        "Algo salió mal. Vuelve a intentarlo en un momento",
+    )
 
     /** 지난 며칠간 한 곳간이 쓴 합계. 주간 돌아보기에 쓴다. */
     data class WeeklySpend(val label: String, val total: Long)
@@ -218,28 +227,5 @@ object StatusText {
         }
         val title: String = tr("지난 ${days}일 돌아보기", "Your last $days days", "Tus últimos $days días")
         return StatusLines(summary = summary, detail = "$title\n\n$body")
-    }
-
-    /** 설정 화면에 보여줄 현재 상태. 홈 화면이 생기기 전까지 곳간을 눈으로 확인하는 창구다. */
-    fun overview(snapshots: List<LedgerSnapshot>): String {
-        if (snapshots.isEmpty()) {
-            return tr(
-                "DB를 연결하고 예산을 정하면 오늘 쓸 수 있는 돈이 여기에 표시됩니다.",
-                "Set a budget to see what you can spend today here.",
-                "Define un presupuesto para ver aquí lo que puedes gastar hoy.",
-            )
-        }
-
-        return snapshots.joinToString("\n\n") { snapshot -> block(snapshot) }
-    }
-
-    private fun block(snapshot: LedgerSnapshot): String {
-        val available: Long = snapshot.available
-        val headline: String =
-            if (available >= 0L) "${snapshot.label} · " + tr("오늘 쓸 수 있는 돈 ", "Left to spend today ", "Disponible hoy ") + " ${won(available)}"
-            else "${snapshot.label} · " + tr("오늘 ${won(-available)} 초과", "today ${won(-available)} over", "hoy ${won(-available)} de más")
-
-        return headline + "\n" + breakdown("", snapshot).substringAfter('\n') +
-            "\n" + untilTarget(snapshot)
     }
 }
