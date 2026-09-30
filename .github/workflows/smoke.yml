@@ -59,6 +59,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           ls smoke || exit 0
+          # 빈 파일(죽지 않았을 때의 crash.txt)은 릴리스에 올릴 수 없어(Bad Content-Length) 뺀다.
+          find smoke -type f -empty -print -delete
           gh release delete smoke-latest --yes --cleanup-tag || true
           gh release create smoke-latest \
             --target "$GITHUB_SHA" \
