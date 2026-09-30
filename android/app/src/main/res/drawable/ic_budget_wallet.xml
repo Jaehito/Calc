@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 홈 — 한 달 예산 칸 (지폐 든 지갑). 하루치가 직접 그린 그림 — 색이 들어 있어 tint 없이 쓴다. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="26"
+    android:viewportHeight="26">
+    <group android:translateX="1" android:translateY="1">
+        <path android:fillColor="#9FE0C5" android:strokeColor="#15352B" android:strokeWidth="1.1" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M7.2,4 H15.8 A1.2,1.2 0 0 1 17,5.2 V11.8 A1.2,1.2 0 0 1 15.8,13 H7.2 A1.2,1.2 0 0 1 6,11.8 V5.2 A1.2,1.2 0 0 1 7.2,4 Z" />
+        <path android:fillColor="#00000000" android:strokeColor="#15352B" android:strokeWidth="1.1" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M9.7,7.6 A1.8,1.8 0 1 0 13.3,7.6 A1.8,1.8 0 1 0 9.7,7.6 Z" />
+        <path android:fillColor="#12C08B" android:strokeColor="#15352B" android:strokeWidth="1.1" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M5.4,9.5 H18.6 A2.4,2.4 0 0 1 21,11.9 V18.1 A2.4,2.4 0 0 1 18.6,20.5 H5.4 A2.4,2.4 0 0 1 3,18.1 V11.9 A2.4,2.4 0 0 1 5.4,9.5 Z" />
+        <path android:fillColor="#0E9A6F" android:strokeColor="#15352B" android:strokeWidth="1.1" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M16.1,12.8 H19.4 A1.6,1.6 0 0 1 21,14.4 V15.6 A1.6,1.6 0 0 1 19.4,17.2 H16.1 A1.6,1.6 0 0 1 14.5,15.6 V14.4 A1.6,1.6 0 0 1 16.1,12.8 Z" />
+        <path android:fillColor="#15352B" android:pathData="M16,15 A1,1 0 1 0 18,15 A1,1 0 1 0 16,15 Z" />
+    </group>
+</vector>

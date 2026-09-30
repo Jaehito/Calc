@@ -139,9 +139,13 @@ fun SettingsScreen(
     onForgetName: (String) -> Unit,
     onToastShown: () -> Unit,
     onLanguageChange: (Lang?) -> Unit,
+    /** 홈 두 칸에서 들어왔으면 그 값의 편집 창 이름([EditField]). 창을 닫으면 [onQuickEditClosed]. */
+    startEdit: String? = null,
+    onQuickEditClosed: () -> Unit = {},
 ) {
     var page: SettingsPage by rememberSaveable { mutableStateOf(SettingsPage.MAIN) }
-    var editing: EditField? by rememberSaveable { mutableStateOf<EditField?>(null) }
+    val quickEdit: EditField? = remember(startEdit) { EditField.entries.firstOrNull { it.name == startEdit } }
+    var editing: EditField? by rememberSaveable { mutableStateOf<EditField?>(quickEdit) }
 
     // 하위 화면에서 뒤로가기는 첫 화면으로. 첫 화면에서는 Activity 의 기본 동작(닫기)에 맡긴다.
     BackHandler(enabled = page != SettingsPage.MAIN) { page = SettingsPage.MAIN }
@@ -216,7 +220,11 @@ fun SettingsScreen(
             onFieldDone = onFieldDone,
             onLanguageChange = onLanguageChange,
             onOpenFixedCosts = onOpenFixedCosts,
-            onDismiss = { editing = null },
+            onDismiss = {
+                editing = null
+                // 홈에서 값 하나만 고치러 왔으면 설정 화면을 거치지 않고 바로 돌아간다.
+                if (quickEdit != null) onQuickEditClosed()
+            },
         )
     }
 }
@@ -237,15 +245,36 @@ private fun MainPage(
     val form: SettingsFormUi = ui.form
     AccountCard(email = ui.accountEmail, sub = tr("구글 계정", "Google account", "Cuenta de Google"), onClick = { onOpenPage(SettingsPage.ACCOUNT) })
 
+    // 개인·공용 예산과 월급날을 한 묶음에 둔다. 공용 예산이 «공용 지갑» 안쪽 화면에만 있을 때는
+    // 설정에 없는 것처럼 보였다. 월급날은 하나 — 개인·공용이 같은 날에 끊긴다.
     Group(tr("예산", "Budget", "Presupuesto")) {
-        ValueRow(tr("한 달 예산", "Monthly budget", "Presupuesto mensual"), budgetLabel(form.personalBudgetText)) { onEdit(EditField.BUDGET) }
-        RowDivider()
-        ValueRow(tr("월급날", "Payday", "Día de cobro"), paydayLabel(form.payDayText)) { onEdit(EditField.PAYDAY) }
+        ValueRow(
+            if (ui.householdPaired) tr("개인 한 달 예산", "Personal monthly budget", "Presupuesto mensual personal")
+            else tr("한 달 예산", "Monthly budget", "Presupuesto mensual"),
+            budgetLabel(form.personalBudgetText),
+        ) { onEdit(EditField.BUDGET) }
         RowDivider()
         ValueRow(
             tr("고정비", "Fixed costs", "Gastos fijos"),
             if (ui.fixedTotal > 0L) StatusText.won(ui.fixedTotal) else tr("정하지 않음", "Not set", "Sin definir"),
             onClick = onOpenFixedCosts,
+        )
+        if (ui.householdPaired) {
+            RowDivider()
+            ValueRow(tr("공용 한 달 예산", "Shared monthly budget", "Presupuesto mensual compartido"), budgetLabel(form.sharedBudgetText)) {
+                onEdit(EditField.SHARED_BUDGET)
+            }
+        }
+        RowDivider()
+        ValueRow(tr("월급날", "Payday", "Día de cobro"), paydayLabel(form.payDayText)) { onEdit(EditField.PAYDAY) }
+    }
+    if (ui.householdPaired) {
+        Note(
+            tr(
+                "월급날은 개인·공용이 같은 날에 끊겨요. 공용 예산·월급날은 배우자 폰에도 같이 바뀌어요.",
+                "Personal and shared cycles end on the same payday. The shared budget and payday also change on your partner's phone.",
+                "Los ciclos personal y compartido terminan el mismo día de cobro. El presupuesto compartido y el día de cobro también cambian en el teléfono de tu pareja.",
+            ),
         )
     }
 

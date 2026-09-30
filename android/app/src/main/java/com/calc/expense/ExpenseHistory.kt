@@ -1,7 +1,6 @@
 package com.calc.expense
 
 import android.content.Context
-import java.time.YearMonth
 
 /**
  * 내역 화면이 지출을 읽어 오는 **유일한 진입점(seam)**.
@@ -19,8 +18,9 @@ object ExpenseHistory {
         data class Err(val message: String) : Result()
     }
 
-    fun load(context: Context, purse: Purse, month: YearMonth): Result {
-        val rows: List<ExpenseRow> = FirestoreExpenseReader.monthRows(context, purse, month)
+    /** [cycle] 한 주기(월급날 ~ 다음 월급날 전날)의 지출. */
+    fun load(context: Context, purse: Purse, cycle: BudgetCycle): Result {
+        val rows: List<ExpenseRow> = FirestoreExpenseReader.rowsBetween(context, purse, cycle.start, cycle.lastDay)
             ?: return Result.Err(StatusText.loadFailed(SettingsStore.load(context).labelOf(purse)))
 
         return Result.Ok(ExpenseHistoryGrouping.groupByDay(rows), ExpenseHistoryGrouping.total(rows))

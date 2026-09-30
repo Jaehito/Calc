@@ -27,6 +27,14 @@ import kotlinx.coroutines.launch
  */
 class MainActivity : ComponentActivity() {
 
+    companion object {
+        /** 홈 두 칸에서 들어올 때 바로 띄울 편집 창. 창을 닫으면 설정을 거치지 않고 홈으로 돌아간다. */
+        const val EXTRA_EDIT = "edit"
+        const val EDIT_BUDGET = "BUDGET"
+        const val EDIT_SHARED_BUDGET = "SHARED_BUDGET"
+        const val EDIT_PAYDAY = "PAYDAY"
+    }
+
     private val io = Executors.newSingleThreadExecutor()
 
     private var form: SettingsFormUi by mutableStateOf(SettingsFormUi())
@@ -127,6 +135,8 @@ class MainActivity : ComponentActivity() {
                 },
                 onToastShown = { toast = null },
                 onLanguageChange = { lang -> changeLanguage(lang) },
+                startEdit = intent.getStringExtra(EXTRA_EDIT),
+                onQuickEditClosed = { finish() },
             )
         }
     }

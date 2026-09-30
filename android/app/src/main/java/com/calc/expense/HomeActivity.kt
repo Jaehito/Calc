@@ -4,22 +4,31 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.LocalDate
@@ -38,15 +47,21 @@ class HomeActivity : ComponentActivity() {
         /** 결제 배너로 들어왔다는 표시. 수집함을 반드시 한 번 연다([NotificationHelper]). */
         const val EXTRA_OPEN_INBOX = "openInbox"
         private const val STATE_INBOX_ASKED = "inboxAsked"
+        private const val PREFS = "home"
+        private const val KEY_PURSE = "purse"
     }
 
     private val io = Executors.newSingleThreadExecutor()
 
     private var tab: Int by mutableStateOf(0)
-    private var snapshots: List<LedgerSnapshot> by mutableStateOf(emptyList())
+    /** 연결된 지갑들과 각 지갑의 오늘 숫자(예산이 없으면 null). */
+    private var purses: List<Purse> by mutableStateOf(emptyList())
+    private var snapshots: Map<Purse, LedgerSnapshot?> by mutableStateOf(emptyMap())
+    private var purseLabels: Map<Purse, String> by mutableStateOf(emptyMap())
+    private var payDay: Int by mutableStateOf(Payday.DEFAULT)
 
-    /** 이번 달 고정비 합계. 0 이면 홈에 그 카드를 그리지 않는다. */
-    private var fixedTotal: Long by mutableStateOf(0L)
+    /** 홈 토글로 고른 지갑. 마지막에 고른 쪽을 기억한다. */
+    private var purse: Purse by mutableStateOf(Purse.PERSONAL)
     private var notice: String? by mutableStateOf(null)
 
     private var stats: StatsData? by mutableStateOf(null)
@@ -106,18 +121,23 @@ class HomeActivity : ComponentActivity() {
                         )
                         2 -> DogamScreen(ui = dogam, today = LocalDate.now(), onOpenSettings = { openSettings() })
                         else -> HomeScreen(
-                            today = LocalDate.now(),
-                            snapshots = snapshots,
+                            snapshot = snapshots[purse],
+                            purse = purse,
+                            purses = purses,
+                            purseLabels = purseLabels,
+                            payDay = payDay,
                             notice = notice,
-                            fixedTotal = fixedTotal,
+                            onSelectPurse = { selectPurse(it) },
                             onSetBudget = { startActivity(Intent(this@HomeActivity, OnboardingActivity::class.java)) },
                             onOpenSettings = { openSettings() },
-                            onOpenHistory = { purse -> openHistory(purse) },
+                            onOpenHistory = { p -> openHistory(p) },
                             onRecord = {
                                 startActivity(
                                     Intent(this@HomeActivity, QuickInputActivity::class.java),
                                 )
                             },
+                            onEditBudget = { p -> openSettings(if (p == Purse.SHARED) MainActivity.EDIT_SHARED_BUDGET else MainActivity.EDIT_BUDGET) },
+                            onEditPayday = { openSettings(MainActivity.EDIT_PAYDAY) },
                         )
                     }
 
@@ -175,41 +195,36 @@ class HomeActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * 하단 탭. 머티리얼 기본 모양(고른 탭 뒤 알약)은 ‘기본 틀’로 읽혀서, 채운 아이콘에
+     * 고른 탭만 짙은 글자로 가른다.
+     */
     @androidx.compose.runtime.Composable
     private fun BottomBar() {
-        NavigationBar(containerColor = HomePalette.Card) {
-            NavigationBarItem(
-                selected = tab == 0,
-                onClick = { tab = 0 },
-                icon = { Icon(painterResource(R.drawable.ic_tab_home), contentDescription = tr("홈", "Home", "Inicio"), modifier = Modifier.size(23.dp)) },
-                label = { Text(tr("홈", "Home", "Inicio")) },
-                colors = navColors(),
-            )
-            NavigationBarItem(
-                selected = tab == 1,
-                onClick = { selectStats() },
-                icon = { Icon(painterResource(R.drawable.ic_tab_stats), contentDescription = tr("통계", "Stats", "Estadísticas"), modifier = Modifier.size(23.dp)) },
-                label = { Text(tr("통계", "Stats", "Estadísticas")) },
-                colors = navColors(),
-            )
-            NavigationBarItem(
-                selected = tab == 2,
-                onClick = { selectDogam() },
-                icon = { Icon(painterResource(R.drawable.ic_tab_dogam), contentDescription = tr("도감", "Garden", "Jardín"), modifier = Modifier.size(23.dp)) },
-                label = { Text(tr("도감", "Garden", "Jardín")) },
-                colors = navColors(),
-            )
+        Column(modifier = Modifier.fillMaxWidth().background(HomePalette.Card).navigationBarsPadding()) {
+            Box(Modifier.fillMaxWidth().height(1.dp).background(HomePalette.Ground))
+            Row(modifier = Modifier.fillMaxWidth().height(62.dp), verticalAlignment = Alignment.CenterVertically) {
+                TabItem(R.drawable.ic_tab_home, tr("홈", "Home", "Inicio"), tab == 0) { tab = 0 }
+                TabItem(R.drawable.ic_tab_stats, tr("통계", "Stats", "Estadísticas"), tab == 1) { selectStats() }
+                TabItem(R.drawable.ic_tab_dogam, tr("도감", "Garden", "Jardín"), tab == 2) { selectDogam() }
+            }
         }
     }
 
     @androidx.compose.runtime.Composable
-    private fun navColors() = NavigationBarItemDefaults.colors(
-        selectedIconColor = HomePalette.AccentBright,
-        selectedTextColor = HomePalette.Accent,
-        indicatorColor = HomePalette.Soft,
-        unselectedIconColor = HomePalette.Muted,
-        unselectedTextColor = HomePalette.Muted,
-    )
+    private fun androidx.compose.foundation.layout.RowScope.TabItem(icon: Int, label: String, selected: Boolean, onClick: () -> Unit) {
+        val color: Color = if (selected) HomePalette.Ink else TabIdle
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .weight(1f)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick),
+        ) {
+            Icon(painterResource(icon), contentDescription = label, tint = color, modifier = Modifier.size(25.dp))
+            Spacer(Modifier.height(3.dp))
+            Text(label, color = color, fontSize = 11.5f.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium, maxLines = 1)
+        }
+    }
 
     /** singleTop 이라 이미 떠 있으면 여기로 온다. 새 인텐트를 받아 둬야 수집함 표시가 살아난다. */
     override fun onNewIntent(intent: Intent) {
@@ -444,9 +459,17 @@ class HomeActivity : ComponentActivity() {
         super.onDestroy()
     }
 
-    /** 곳간 카드를 누르면 그 곳간의 내역 화면을 연다. */
-    private fun openSettings() {
-        startActivity(Intent(this, MainActivity::class.java))
+    /** 설정을 연다. [edit] 를 주면 그 값을 고치는 창이 바로 뜨고, 닫으면 홈으로 돌아온다. */
+    private fun openSettings(edit: String? = null) {
+        val intent = Intent(this, MainActivity::class.java)
+        if (edit != null) intent.putExtra(MainActivity.EXTRA_EDIT, edit)
+        startActivity(intent)
+    }
+
+    /** 홈 토글. 고른 쪽을 기억해 다음에 열어도 같은 지갑이 보인다. */
+    private fun selectPurse(next: Purse) {
+        purse = next
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(KEY_PURSE, next.key).apply()
     }
 
     private fun openHistory(purse: Purse) {
@@ -581,9 +604,15 @@ class HomeActivity : ComponentActivity() {
     /** 로컬 캐시만으로 즉시 그린다. 저장소 대조는 그 뒤에 따라온다. */
     private fun refresh() {
         val today: LocalDate = LocalDate.now()
-        snapshots = PurseAccess.linked(this)
-            .mapNotNull { Ledger.snapshot(this, it, today) }
-        fixedTotal = FixedCostStore.load(this).fixedTotal
+        val settings: Settings = SettingsStore.load(this)
+        val linked: List<Purse> = PurseAccess.linked(this)
+        purses = linked
+        snapshots = linked.associateWith { Ledger.snapshot(this, it, today) }
+        purseLabels = linked.associateWith { settings.labelOf(it) }
+        payDay = settings.payDay
+        // 기억해 둔 지갑이 연결에서 빠졌으면(가정 연결 해제 등) 개인으로 돌아온다.
+        val saved: String? = getSharedPreferences(PREFS, MODE_PRIVATE).getString(KEY_PURSE, null)
+        purse = linked.firstOrNull { it.key == saved } ?: linked.firstOrNull() ?: Purse.PERSONAL
     }
 
     /**
@@ -634,3 +663,6 @@ class HomeActivity : ComponentActivity() {
         }
     }
 }
+
+/** 하단 탭에서 고르지 않은 탭의 아이콘·글자 색. */
+private val TabIdle = Color(0xFFB0B8C1)

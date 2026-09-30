@@ -6,8 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import java.time.YearMonth
-import java.time.format.DateTimeFormatter
+import java.time.LocalDate
 import java.util.concurrent.Executors
 
 /**
@@ -27,11 +26,10 @@ class PurseHistoryActivity : ComponentActivity() {
     }
 
     private val io = Executors.newSingleThreadExecutor()
-    private val monthFormat: DateTimeFormatter = L10n.month()
 
     private lateinit var purse: Purse
-    /** 0 = 이번 달, 1 = 지난 달. */
-    private var monthBack: Int by mutableStateOf(0)
+    /** 0 = 이번 주기, 1 = 지난 주기. 달력 달이 아니라 월급날 기준이다. */
+    private var cycleBack: Int by mutableStateOf(0)
     private var ui: HistoryUi by mutableStateOf(HistoryUi(loading = true))
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,7 +44,7 @@ class PurseHistoryActivity : ComponentActivity() {
                 categories = CategoryStore.load(this@PurseHistoryActivity),
                 onBack = { finish() },
                 onToggleMonth = {
-                    monthBack = if (monthBack == 0) 1 else 0
+                    cycleBack = if (cycleBack == 0) 1 else 0
                     load()
                 },
                 onRefresh = { load() },
@@ -69,14 +67,16 @@ class PurseHistoryActivity : ComponentActivity() {
     private fun load() {
         val settings: Settings = SettingsStore.load(this)
         val title: String = tr("${settings.labelOf(purse)} 내역", "${settings.labelOf(purse)} history", "Historial de ${settings.labelOf(purse)}")
-        val month: YearMonth = YearMonth.now().minusMonths(monthBack.toLong())
-        val monthName: String = month.atDay(1).format(monthFormat)
+        val cycle: BudgetCycle = Payday.cycleBefore(LocalDate.now(), settings.payDay, cycleBack)
+        val periodName: String = if (cycleBack == 0) tr("이번 주기", "This cycle", "Este ciclo") else tr("지난 주기", "Last cycle", "Ciclo anterior")
+        val periodRange: String = StatusText.cycleRange(cycle)
         val shared: Boolean = purse == Purse.SHARED
 
         ui = HistoryUi(
             title = title,
-            monthName = monthName,
-            isThisMonth = monthBack == 0,
+            periodName = periodName,
+            periodRange = periodRange,
+            isThisPeriod = cycleBack == 0,
             shared = shared,
             loading = true,
         )
@@ -84,7 +84,7 @@ class PurseHistoryActivity : ComponentActivity() {
         val app = applicationContext
         io.execute {
             val result: ExpenseHistory.Result = try {
-                ExpenseHistory.load(app, purse, month)
+                ExpenseHistory.load(app, purse, cycle)
             } catch (e: Exception) {
                 ExpenseHistory.Result.Err(StatusText.error(e))
             }
@@ -94,8 +94,9 @@ class PurseHistoryActivity : ComponentActivity() {
                 ui = when (result) {
                     is ExpenseHistory.Result.Ok -> HistoryUi(
                         title = title,
-                        monthName = monthName,
-                        isThisMonth = monthBack == 0,
+                        periodName = periodName,
+                        periodRange = periodRange,
+                        isThisPeriod = cycleBack == 0,
                         shared = shared,
                         loading = false,
                         total = result.total,
@@ -104,8 +105,9 @@ class PurseHistoryActivity : ComponentActivity() {
                     )
                     is ExpenseHistory.Result.Err -> HistoryUi(
                         title = title,
-                        monthName = monthName,
-                        isThisMonth = monthBack == 0,
+                        periodName = periodName,
+                        periodRange = periodRange,
+                        isThisPeriod = cycleBack == 0,
                         shared = shared,
                         loading = false,
                         error = result.message,

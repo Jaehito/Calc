@@ -12,7 +12,8 @@ import androidx.compose.ui.graphics.Color
  * **채움용**(버튼·막대·게이지·도넛). 밝은 민트를 작은 글자에 쓰면 흰 바탕에서 잘 안 읽힌다.
  */
 object HomePalette {
-    val Ground = Color(0xFFEEF3F1)
+    /** 화면 바탕. 색이 섞이지 않은 중립 회색 — 초록은 강조에만 남긴다. */
+    val Ground = Color(0xFFF2F4F6)
     val Card = Color(0xFFFFFFFF)
     val Ink = Color(0xFF0F1A17)
     val Ink2 = Color(0xFF5A6B64)
@@ -30,6 +31,9 @@ object HomePalette {
     val Gold = Color(0xFFE9A23B)
 
     val Over = Color(0xFFF0544B)
+
+    /** 앱 아이콘(웃는 지갑)의 크림 바탕. 홈 머리 줄의 작은 앱 아이콘이 쓴다. */
+    val Cream = Color(0xFFFFF1D6)
 
     /** 판정은 [Tone] 이 한다. 여기서는 색만 고른다 — XML 화면과 같은 규칙을 쓰기 위해서다. */
     fun of(tone: Tone): Color = when (tone) {

@@ -23,6 +23,28 @@ object StatusText {
     fun won(amount: Long): String = L10n.won(amount)
 
     /**
+     * 홈 첫 줄 문장 — «오늘은 112,300원까지 써도 괜찮아요», 넘겼으면 «오늘 8,000원 넘게 썼어요».
+     * 금액만 따로 칠할 수 있게 앞·금액·뒤 세 조각으로 준다. 넘긴 날은 음수 대신 넘긴 금액으로 말한다.
+     */
+    fun headline(available: Long): Headline {
+        val over: Boolean = available < 0L
+        val amount: String = won(if (over) -available else available)
+        return if (over) {
+            Headline(tr("오늘 ", "You're ", "Hoy llevas "), amount, tr("\n넘게 썼어요", " over today", " de más"), over = true)
+        } else {
+            Headline(tr("오늘은 ", "You can spend up to ", "Hoy puedes gastar hasta "), amount, tr("까지\n써도 괜찮아요", " today", ""), over = false)
+        }
+    }
+
+    data class Headline(val before: String, val amount: String, val after: String, val over: Boolean)
+
+    /** 월급날 한 줄 — «매달 15일». 홈 두 칸과 설정이 같은 말을 쓴다. */
+    fun payday(day: Int): String {
+        val d: Int = Payday.normalize(day)
+        return tr("매달 ${d}일", "Every ${L10n.ordinal(d)}", "Cada día $d")
+    }
+
+    /**
      * 주기를 사람이 읽는 한 줄로 — «9월 15일 ~ 10월 14일».
      *
      * 월급날이 달 중간이면 「이번 주기」가 달력 달과 어긋난다. 어느 날짜부터 어느 날짜까지인지

@@ -234,4 +234,16 @@ class StatusTextTest {
         assertEquals("152만", StatusText.approxShort(1_520_000L))
         assertEquals("4,300", StatusText.approxShort(4_300L))
     }
+
+    @Test
+    fun `홈 첫 줄은 남은 돈을 문장으로, 넘긴 날은 넘긴 금액으로 말한다`() {
+        L10n.lang = Lang.KO
+        val left = StatusText.headline(112_300L)
+        assertEquals("오늘은 112,300원까지\n써도 괜찮아요", left.before + left.amount + left.after)
+        assertEquals(false, left.over)
+
+        val over = StatusText.headline(-8_000L)
+        assertEquals("오늘 8,000원\n넘게 썼어요", over.before + over.amount + over.after)
+        assertEquals(true, over.over)
+    }
 }

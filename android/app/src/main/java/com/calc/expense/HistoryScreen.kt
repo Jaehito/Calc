@@ -44,9 +44,14 @@ private val DayFormat: DateTimeFormatter get() = L10n.dayWithWeekday()
 /** 내역 화면이 그리는 상태 한 벌. 묶기·합계는 [ExpenseHistoryGrouping] 이 이미 끝냈다. */
 data class HistoryUi(
     val title: String = "",
-    /** 요약 줄에 쓰는 달 이름(예: 8월). */
-    val monthName: String = "",
-    val isThisMonth: Boolean = true,
+    /**
+     * 요약 줄에 쓰는 기간. 달력 달이 아니라 **월급 주기**다 — 홈 숫자가 주기로 세는데 내역만 달력 달이면,
+     * 월급날이 15일인 사람은 1일 아침마다 기록이 있는데도 빈 화면을 본다.
+     */
+    val periodName: String = "",
+    /** «9월 15일 ~ 10월 14일». */
+    val periodRange: String = "",
+    val isThisPeriod: Boolean = true,
     /** 공용 곳간이면 "함께 보는 목록" 안내를 띄운다. */
     val shared: Boolean = false,
     val loading: Boolean = false,
@@ -102,7 +107,7 @@ fun HistoryScreen(
 
         Spacer(Modifier.height(14.dp))
 
-        // 요약 — 이 달 합계 + 달 토글
+        // 요약 — 이 주기 합계 + 주기 토글
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -112,7 +117,8 @@ fun HistoryScreen(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(text = tr("${ui.monthName} 지출", "${ui.monthName} spending", "Gastos de ${ui.monthName}"), color = HomePalette.Ink2, fontSize = 12.sp)
+                    Text(text = tr("${ui.periodName} 지출", "${ui.periodName} spending", "Gastos · ${ui.periodName}"), color = HomePalette.Ink2, fontSize = 12.sp)
+                    Text(text = ui.periodRange, color = HomePalette.Muted, fontSize = 11.5f.sp, style = Figures)
                     Spacer(Modifier.height(2.dp))
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(text = L10n.wonPrefix + StatusText.figure(ui.total), color = HomePalette.Ink, fontSize = 30.sp, fontWeight = FontWeight.Bold, style = Figures)
@@ -122,7 +128,7 @@ fun HistoryScreen(
                     }
                 }
                 Text(
-                    text = if (ui.isThisMonth) tr("지난 달", "Last month", "Mes anterior") else tr("이번 달", "This month", "Este mes"),
+                    text = if (ui.isThisPeriod) tr("지난 주기", "Last cycle", "Ciclo anterior") else tr("이번 주기", "This cycle", "Este ciclo"),
                     color = HomePalette.Accent,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -157,7 +163,7 @@ fun HistoryScreen(
         when {
             ui.loading -> Note(tr("불러오는 중…", "Loading…", "Cargando…"))
             ui.error != null -> Note(ui.error, HomePalette.Over)
-            ui.groups.isEmpty() -> EmptyMonth(tr("이 달에는 기록이 없어요.", "Nothing logged this month.", "No hay gastos este mes."))
+            ui.groups.isEmpty() -> EmptyMonth(tr("이 주기에는 기록이 없어요.", "Nothing logged this cycle.", "No hay gastos en este ciclo."))
             else -> for (group in ui.groups) {
                 DaySection(group, onRowClick = { row -> editingRow = row })
             }
