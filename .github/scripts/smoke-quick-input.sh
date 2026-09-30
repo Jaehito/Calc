@@ -19,6 +19,17 @@ adb shell input text "coffee%s4500"
 sleep 3
 adb exec-out screencap -p > smoke/2-typed.png
 
+# 엔터로 기록 → 결과 문구가 입력 칸 아래 한 줄 자리에 떠야 하고, 숫자·입력 칸은 그대로여야 한다.
+# (로그인 없는 에뮬레이터라 기록 자체는 실패 문구가 뜬다 — 자리만 본다.)
+adb shell input keyevent 66
+sleep 3
+adb exec-out screencap -p > smoke/3-submitted.png
+
+# 뒤로 가기 한 번 = 키보드만 내림. 숫자·입력 칸이 키보드 있을 때와 같은 자리여야 한다.
+adb shell input keyevent 4
+sleep 2
+adb exec-out screencap -p > smoke/4-keyboard-hidden.png
+
 adb logcat -d -b crash > smoke/crash.txt
 adb logcat -d > smoke/logcat.txt
 adb shell dumpsys activity activities | grep -E "mResumedActivity|topResumedActivity" > smoke/top.txt || true

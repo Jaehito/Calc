@@ -5,6 +5,7 @@ import android.os.Build
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
@@ -73,6 +74,12 @@ class QuickInputActivity : AppCompatActivity() {
     /** 입력 칸에서 지금 금액으로 읽히는 값. 없으면 null — 기록 버튼이 회색이다. */
     private var typedAmount: Long? = null
 
+    /** 방금 한 동작의 결과(기록됨·실패·삭제됨). 입력 칸 아래 한 줄 자리에 뜬다. */
+    private var lastResult: Pair<String, Tone>? = null
+
+    /** 결과가 방금 나왔는지. 사용자가 금액을 다시 고치기 전까지는 «남아요» 대신 결과를 보여 준다. */
+    private var resultFresh: Boolean = false
+
     /** 이 화면을 연 뒤로 기록한 건수. 결과 줄에 «2건째» 를 붙일지 정한다. */
     private var recorded: Int = 0
 
@@ -124,15 +131,19 @@ class QuickInputActivity : AppCompatActivity() {
         ui.inputExpense.onAmountChanged = { amount ->
             typedAmount = amount
             ui.buttonSend.isEnabled = amount != null
-            refreshAfterLine()
+            // 기록 뒤 입력 칸을 비우는 것도 금액 변화라, 그때는 결과를 그대로 둔다.
+            if (amount != null) resultFresh = false
+            refreshStatus()
         }
         ui.buttonSend.setOnClickListener { submit() }
 
         ui.inputExpense.requestFocus()
         // actionSend 로 둔다. actionDone 은 일부 키보드가 처리 후 키보드를 내려버려
         // 다음 건을 이어 적을 수 없다.
-        ui.inputExpense.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_SEND || actionId == EditorInfo.IME_ACTION_DONE) {
+        // 하드웨어 키보드의 엔터(IME_NULL)도 받는다 — 에뮬레이터 검사가 엔터로 기록을 누른다.
+        ui.inputExpense.setOnEditorActionListener { _, actionId, event ->
+            val hardwareEnter: Boolean = actionId == EditorInfo.IME_NULL && event?.action == KeyEvent.ACTION_DOWN
+            if (actionId == EditorInfo.IME_ACTION_SEND || actionId == EditorInfo.IME_ACTION_DONE || hardwareEnter) {
                 submit()
                 true
             } else {
@@ -147,14 +158,15 @@ class QuickInputActivity : AppCompatActivity() {
     }
 
     /**
-     * 키보드와 내비게이션 바가 카드를 가리지 않게 아래 여백을 직접 준다.
+     * 창 위쪽을 화면 위에 고정하고, 키보드·내비게이션 바는 스크롤 아래 여백으로만 받는다.
      *
-     * targetSdk 35 라 안드로이드 15 에서는 창이 무조건 시스템 바 아래까지 그려지고,
-     * 3버튼 내비게이션이면 시스템이 그 위에 **반투명 회색 띠**를 덮는다 — 이게 결과 줄을
-     * 가리던 바다. 게다가 반투명 창에서는 adjustResize 가 먹지 않아 키보드가 입력창을 덮는다.
+     * targetSdk 35 라 안드로이드 15 에서는 창이 무조건 시스템 바 아래까지 그려지고, 반투명 창에서는
+     * adjustResize 도 먹지 않는다. 그래서 인셋을 직접 나눠 받는다.
+     * - 위: 상태 표시줄 높이 + 24dp 만큼 띄운 자리에 창 위쪽을 고정한다. 이 값은 키보드와 상관없다.
+     * - 아래: 키보드와 내비게이션 바 중 큰 값을 **스크롤의 아래 여백**으로 준다. 창을 밀어 올리지
+     *   않으니 숫자·입력 칸은 키보드가 뜨고 져도 그 자리에 있고, 가려진 아래쪽은 스크롤해서 본다.
      *
-     * 그래서 회색 띠를 끄고(카드가 흰색이라 대비 보정이 필요 없다) 인셋만큼 카드 아래
-     * 여백을 직접 준다. 키보드가 올라오면 그 높이가 내비 바보다 크므로 둘 중 큰 값만 쓴다.
+     * 3버튼 내비게이션의 반투명 회색 띠는 끈다(카드가 흰색이라 대비 보정이 필요 없다).
      */
     private fun keepSheetAboveSystemBars() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -165,15 +177,20 @@ class QuickInputActivity : AppCompatActivity() {
         // 카드가 항상 흰색이므로(values-night 없음) 내비 버튼·제스처 바는 어둡게 그린다.
         WindowCompat.getInsetsController(window, ui.root).isAppearanceLightNavigationBars = true
 
-        val basePadding: Int = ui.sheet.paddingBottom
-        ViewCompat.setOnApplyWindowInsetsListener(ui.sheet) { view, insets ->
+        val gap: Int = (24 * resources.displayMetrics.density).toInt()
+        ViewCompat.setOnApplyWindowInsetsListener(ui.sheetScroll) { view, insets ->
+            val top: Int = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top + gap
+            val params = view.layoutParams as android.widget.FrameLayout.LayoutParams
+            if (params.topMargin != top) {
+                params.topMargin = top
+                view.layoutParams = params
+            }
             val ime: Int = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
-            val navigation: Int =
-                insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
-            view.updatePadding(bottom = basePadding + maxOf(ime, navigation))
+            val navigation: Int = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+            view.updatePadding(bottom = maxOf(ime, navigation))
             insets
         }
-        ViewCompat.requestApplyInsets(ui.sheet)
+        ViewCompat.requestApplyInsets(ui.sheetScroll)
     }
 
     /** 잠금 해제 없이 뜨도록 요청한다. 제조사 정책이 막으면 인증을 먼저 요구할 수 있다. */
@@ -322,7 +339,7 @@ class QuickInputActivity : AppCompatActivity() {
     private fun refreshNumbers(): LedgerSnapshot? {
         val snapshot: LedgerSnapshot? = Ledger.snapshot(this, selected)
         shownSnapshot = snapshot
-        refreshAfterLine()
+        refreshStatus()
 
         if (snapshot == null) {
             ui.textCaption.text = tr("예산을 정하지 않은 지갑", "No budget set for this wallet", "Esta cartera no tiene presupuesto")
@@ -358,19 +375,24 @@ class QuickInputActivity : AppCompatActivity() {
         return snapshot
     }
 
-    /** 금액이 읽히면 «기록하면 오늘 얼마 남아요». 넘게 되면 빨강. 금액이나 예산이 없으면 숨긴다. */
-    private fun refreshAfterLine() {
+    /**
+     * 입력 칸 아래 한 줄 자리를 채운다. 결과가 방금 나왔으면 그 결과를, 아니면 금액이 읽힐 때
+     * «기록하면 오늘 얼마 남아요»(넘게 되면 빨강)를, 둘 다 없으면 지난 결과를 둔다.
+     * 자리는 늘 보이게 두고 글자만 바꾼다 — 줄이 생겼다 사라지면 아래 격자가 출렁인다.
+     */
+    private fun refreshStatus() {
         val amount: Long? = typedAmount
         val snapshot: LedgerSnapshot? = shownSnapshot
-        if (amount == null || snapshot == null) {
-            ui.textAfter.visibility = View.GONE
+        val result: Pair<String, Tone>? = lastResult
+        if (!resultFresh && amount != null && snapshot != null) {
+            ui.textStatus.text = StatusText.afterRecord(snapshot.available, amount)
+            ui.textStatus.setTextColor(
+                ContextCompat.getColor(this, if (snapshot.available - amount >= 0L) R.color.app_ink_2 else R.color.app_over)
+            )
             return
         }
-        ui.textAfter.visibility = View.VISIBLE
-        ui.textAfter.text = StatusText.afterRecord(snapshot.available, amount)
-        ui.textAfter.setTextColor(
-            ContextCompat.getColor(this, if (snapshot.available - amount >= 0L) R.color.app_ink_2 else R.color.app_over)
-        )
+        ui.textStatus.text = result?.first.orEmpty()
+        if (result != null) ui.textStatus.setTextColor(colorOf(result.second))
     }
 
     /**
@@ -517,9 +539,9 @@ class QuickInputActivity : AppCompatActivity() {
     }
 
     private fun showResult(message: String, tone: Tone) {
-        ui.textResult.visibility = View.VISIBLE
-        ui.textResult.text = message
-        ui.textResult.setTextColor(colorOf(tone))
+        lastResult = message to tone
+        resultFresh = true
+        refreshStatus()
     }
 
     /** [Tone] 을 이 화면의 색으로 옮긴다. 판정은 [Tone.of] 가 하고 여기서는 고르기만 한다. */

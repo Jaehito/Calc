@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 아래에 붙는 입력 카드. 알림 카드를 누르면 이 화면이 뜬다. -->
+<!-- 기록 창. 알림 카드·잠금화면·홈의 연필을 누르면 이 화면이 뜬다. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/sheetRoot"
@@ -7,21 +7,21 @@
     android:layout_height="match_parent">
 
     <!--
-        시트를 스크롤 안에 둔다. 칩 개수는 사용자가 정하는데(최대 20개) 여기에 키보드까지
-        올라오면 내용이 화면보다 길어진다. 예전에는 그냥 잘려서 곳간 고르는 버튼이 키보드
-        뒤로 숨었다 — 스크롤이면 개수가 몇이든, 화면이 작든, 키보드가 있든 끝까지 닿는다.
+        창의 **위쪽 가장자리를 화면 위에 고정**하고 바닥까지 채운다(위 여백은 코드가 상태 표시줄
+        높이 + 24dp 로 준다). 예전에는 아래에 붙고 높이가 내용만큼이라, 한 건 적을 때마다 창이
+        위로 자라고 키보드가 뜨고 질 때마다 창 전체가 키보드 높이만큼 오르내려 숫자·입력 칸을
+        매번 다시 찾아야 했다.
 
-        높이는 wrap_content 라 내용이 짧으면 예전처럼 아래에 붙은 낮은 시트로 보이고,
-        길어질 때만 화면을 채우며 스크롤이 생긴다.
+        키보드는 창을 밀지 않고 아래쪽을 덮는다. 키보드 높이는 스크롤의 아래 여백으로만 받아
+        (clipToPadding=false) 가려진 격자·방금 적은 목록을 키보드 위에서 스크롤해 볼 수 있다.
     -->
     <ScrollView
         android:id="@+id/sheetScroll"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
+        android:layout_height="match_parent"
         android:background="@drawable/bg_sheet"
         android:clipToPadding="false"
-        android:fillViewport="false">
+        android:fillViewport="true">
 
     <LinearLayout
         android:id="@+id/sheet"
@@ -239,16 +239,19 @@
                 app:tint="@color/app_card" />
         </FrameLayout>
 
-        <!-- 금액이 읽히면: 이걸 적으면 오늘 얼마가 남는지. -->
+        <!--
+            입력 칸 아래 한 줄 자리. 늘 보이게 두어(비어 있어도) 글자가 생기고 사라져도 아래가 밀리지 않는다.
+            적는 중에는 «기록하면 오늘 N원 남아요», 기록·삭제·실패 뒤에는 그 결과가 같은 자리에 뜬다.
+        -->
         <TextView
-            android:id="@+id/textAfter"
+            android:id="@+id/textStatus"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
             android:fontFamily="@font/figures_medium"
+            android:minLines="1"
             android:textColor="@color/app_ink_2"
-            android:textSize="12.5sp"
-            android:visibility="gone" />
+            android:textSize="12.5sp" />
 
         <!--
             카테고리 격자. 한 줄에 다섯 칸, 칸은 코드에서 목록만큼 만든다(item_category_cell).
@@ -261,15 +264,6 @@
             android:layout_marginTop="12dp"
             android:columnCount="5"
             android:useDefaultMargins="false" />
-
-        <!-- 방금 한 동작의 짧은 알림 (기록 중 · 실패 · 삭제됨). 한 줄로 갱신해 높이가 출렁이지 않게. -->
-        <TextView
-            android:id="@+id/textResult"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:textSize="13sp"
-            android:visibility="gone" />
 
         <!-- 이번에 적은 항목들. 첫 항목이 생기면 위에 가는 선과 제목이 보인다. -->
         <LinearLayout
