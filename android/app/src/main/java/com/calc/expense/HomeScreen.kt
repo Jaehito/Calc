@@ -1,6 +1,5 @@
 package com.calc.expense
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -131,7 +130,7 @@ private fun RecordButton(onClick: () -> Unit, modifier: Modifier) {
 /**
  * 지갑 하나. 개인과 공용이 **같은 모양**이다 — 위의 작은 이름표로만 가른다.
  *
- * 큰 숫자 아래에는 그 숫자가 어디서 왔는지 세 줄(하루치 · 곳간 · 오늘 쓴 돈)을 아이콘과 함께
+ * 큰 숫자 아래에는 그 숫자가 어디서 왔는지 세 줄(하루치 · 곳간 · 오늘 쓴 돈)을 색 점과 함께
  * 둔다. 예전에는 계산식 타일에 부호(+, −)와 뜻 없는 색 점이 붙어 «−0» 같은 글자가 나왔다.
  * 맨 아래는 월급날까지 남은 돈과 날, 그리고 주기가 얼마나 지났는지 보여 주는 막대다.
  */
@@ -200,11 +199,11 @@ private fun PurseCard(snapshot: LedgerSnapshot, onClick: () -> Unit) {
         }
 
         Spacer(Modifier.height(10.dp))
-        FactRow(R.drawable.ic_envelope, IconHues.DAILY, tr("하루치", "Daily", "Diario"), snapshot.dailyRate, HomePalette.Ink)
+        FactRow(IconHues.DAILY, tr("하루치", "Daily", "Diario"), snapshot.dailyRate, HomePalette.Ink)
         RowLine()
-        FactRow(R.drawable.ic_piggy, IconHues.GOTGAN, tr("곳간", "Savings", "Ahorro"), snapshot.vault, HomePalette.Accent)
+        FactRow(IconHues.GOTGAN, tr("곳간", "Savings", "Ahorro"), snapshot.vault, HomePalette.Accent)
         RowLine()
-        FactRow(R.drawable.ic_bag, IconHues.SPENT, tr("오늘 쓴 돈", "Spent today", "Gastado hoy"), snapshot.todaySpent, HomePalette.Ink)
+        FactRow(IconHues.SPENT, tr("오늘 쓴 돈", "Spent today", "Gastado hoy"), snapshot.todaySpent, HomePalette.Ink)
 
         Spacer(Modifier.height(14.dp))
         PeriodLine(snapshot)
@@ -212,16 +211,14 @@ private fun PurseCard(snapshot: LedgerSnapshot, onClick: () -> Unit) {
 }
 
 /**
- * 세 줄 중 하나. 자리 색 동그라미 안의 직접 그린 그림(용돈 봉투·돼지 저금통·쇼핑백) + 이름 + 오른쪽 끝 금액.
- * 그림 선은 [hue] 를 짙게 한 한 색으로 이미 칠해져 있어 tint 하지 않는다 — 바탕만 [IconHues.back].
+ * 세 줄 중 하나. 작은 색 점 + 이름 + 오른쪽 끝 금액. 아이콘 없이 점 색([hue])만으로 셋을 가른다 —
+ * 하루치 초록 · 곳간 분홍 · 오늘 쓴 돈 주황. 아이콘+글자 줄이 이어지면 다른 화면 목록과 똑같아 보였다.
  */
 @Composable
-private fun FactRow(icon: Int, hue: Int, label: String, value: Long, valueColor: Color) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 7.dp)) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(34.dp).clip(CircleShape).background(Color(IconHues.back(hue)))) {
-            Image(painterResource(icon), contentDescription = null, modifier = Modifier.size(26.dp))
-        }
-        Spacer(Modifier.width(10.dp))
+private fun FactRow(hue: Int, label: String, value: Long, valueColor: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 9.dp)) {
+        Box(Modifier.padding(start = 2.dp).size(9.dp).clip(CircleShape).background(Color(hue)))
+        Spacer(Modifier.width(13.dp))
         Text(text = label, color = HomePalette.Ink2, fontSize = 13.5f.sp, modifier = Modifier.weight(1f))
         Text(
             text = StatusText.won(value),

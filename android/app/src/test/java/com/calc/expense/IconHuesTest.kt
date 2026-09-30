@@ -29,7 +29,6 @@ class IconHuesTest {
 
     @Test fun `그림 선 색이 코드의 자리 색 규칙과 같다`() {
         val places: Map<String, Int> = categoryFiles.entries.associate { (stored, file) -> file to IconHues.category(stored) } + mapOf(
-            "ic_envelope" to IconHues.DAILY, "ic_piggy" to IconHues.GOTGAN, "ic_bag" to IconHues.SPENT,
             "dogam_ic_coin" to IconHues.SAVED_DAY, "dogam_ic_shield" to IconHues.KEEP_RUN, "dogam_ic_moon" to IconHues.NO_SPEND,
             "dogam_ic_week" to IconHues.CHEAP_WEEK, "dogam_ic_pen" to IconHues.RECORD_RUN, "ic_report" to IconHues.REPORT,
         )

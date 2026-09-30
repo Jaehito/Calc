@@ -2,7 +2,7 @@ package com.calc.expense
 
 /**
  * 아이콘 자리마다 정한 색 하나. 동그라미 바탕은 이 색을 흰색 쪽으로 옅게 한 [back],
- * 그림의 선은 이 색을 짙게 한 [ink] 다. 그림 파일(ic_cat_*·ic_envelope 등)에는 선 색이 이미
+ * 그림의 선은 이 색을 짙게 한 [ink] 다. 그림 파일(ic_cat_*·dogam_ic_* 등)에는 선 색이 이미
  * 들어 있으니, 여기 색을 바꾸면 그림도 다시 그려야 한다.
  *
  * 카테고리 색은 기록 창 격자·통계 목록·도넛·리포트가 같이 쓴다 — 같은 카테고리는 어디서나 같은 색.
@@ -12,7 +12,7 @@ package com.calc.expense
  */
 object IconHues {
 
-    /** 홈 세 줄 — 하루치(용돈 봉투)·곳간(돼지 저금통)·오늘 쓴 돈(쇼핑백). 셋이 서로 다른 색. */
+    /** 홈 세 줄 앞의 색 점 — 하루치·곳간·오늘 쓴 돈. 셋이 서로 다른 색. */
     val DAILY: Int = 0xFF12C08B.toInt()
     val GOTGAN: Int = 0xFFE86A9A.toInt()
     val SPENT: Int = 0xFFF08A3C.toInt()
