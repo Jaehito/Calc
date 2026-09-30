@@ -1,21 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 카테고리 — 생활 (두루마리 휴지). 하루치가 직접 그린 그림 — 색이 들어 있어 tint 없이 쓴다. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
-    <!-- 카테고리 — 생활. Lucide «house» (ISC). 선 아이콘이라 색은 Compose 의 Icon tint 가 정한다. -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#000000"
-        android:strokeWidth="2"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M15 21v-8a1 1 0 0 0 -1 -1h-4a1 1 0 0 0 -1 1v8" />
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#000000"
-        android:strokeWidth="2"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M3 10a2 2 0 0 1 .709 -1.528l7 -6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1 -2 2H5a2 2 0 0 1 -2 -2z" />
+    android:viewportWidth="26"
+    android:viewportHeight="26">
+    <group android:translateX="1" android:translateY="1">
+        <path android:fillColor="#FFFFFF" android:strokeColor="#15352B" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M10,5.4 H18.8 V19 H10 Z" />
+        <path android:fillColor="#FFFFFF" android:strokeColor="#15352B" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M3.2,12.2 A6.8,6.8 0 1 0 16.8,12.2 A6.8,6.8 0 1 0 3.2,12.2 Z" />
+        <path android:fillColor="#F4C46E" android:strokeColor="#15352B" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M7.6,12.2 A2.4,2.4 0 1 0 12.4,12.2 A2.4,2.4 0 1 0 7.6,12.2 Z" />
+        <path android:fillColor="#00000000" android:strokeColor="#15352B" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M15,16 H18.8" />
+    </group>
 </vector>

@@ -1,5 +1,6 @@
 package com.calc.expense
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,7 +20,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -113,16 +113,16 @@ private fun RecordButton(onClick: () -> Unit, modifier: Modifier) {
         contentAlignment = Alignment.Center,
         modifier = modifier
             .size(58.dp)
-            .shadow(elevation = 8.dp, shape = CircleShape, ambientColor = HomePalette.Accent, spotColor = HomePalette.Accent)
+            .shadow(elevation = 8.dp, shape = CircleShape, ambientColor = HomePalette.Gold, spotColor = HomePalette.Gold)
             .clip(CircleShape)
-            .background(HomePalette.AccentBright)
+            .background(HomePalette.Cream)
             .clickable(onClick = onClick),
     ) {
-        Icon(
+        // 직접 그린 색연필이라 tint 하지 않는다.
+        Image(
             painter = painterResource(R.drawable.ic_pencil),
             contentDescription = tr("기록하기", "Log spending", "Anotar gasto"),
-            tint = Color.White,
-            modifier = Modifier.size(24.dp),
+            modifier = Modifier.size(32.dp),
         )
     }
 }
@@ -199,29 +199,23 @@ private fun PurseCard(snapshot: LedgerSnapshot, onClick: () -> Unit) {
         }
 
         Spacer(Modifier.height(10.dp))
-        FactRow(R.drawable.ic_calendar, HomePalette.AccentBright, tr("하루치", "Daily", "Diario"), snapshot.dailyRate, HomePalette.Ink)
+        FactRow(R.drawable.ic_calendar, tr("하루치", "Daily", "Diario"), snapshot.dailyRate, HomePalette.Ink)
         RowLine()
-        FactRow(R.drawable.ic_piggy, HomePalette.Gold, tr("곳간", "Savings", "Ahorro"), snapshot.vault, HomePalette.Accent)
+        FactRow(R.drawable.ic_piggy, tr("곳간", "Savings", "Ahorro"), snapshot.vault, HomePalette.Accent)
         RowLine()
-        FactRow(R.drawable.ic_receipt, HomePalette.Over, tr("오늘 쓴 돈", "Spent today", "Gastado hoy"), snapshot.todaySpent, HomePalette.Ink)
+        FactRow(R.drawable.ic_receipt, tr("오늘 쓴 돈", "Spent today", "Gastado hoy"), snapshot.todaySpent, HomePalette.Ink)
 
         Spacer(Modifier.height(14.dp))
         PeriodLine(snapshot)
     }
 }
 
-/** 세 줄 중 하나. 연한 색 동그라미 안의 아이콘 + 이름 + 오른쪽 끝 금액. */
+/** 세 줄 중 하나. 직접 그린 그림(일력·항아리·영수증) + 이름 + 오른쪽 끝 금액. 그림은 색이 들어 있어 tint 하지 않는다. */
 @Composable
-private fun FactRow(icon: Int, tint: Color, label: String, value: Long, valueColor: Color) {
+private fun FactRow(icon: Int, label: String, value: Long, valueColor: Color) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 7.dp)) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(30.dp)
-                .clip(CircleShape)
-                .background(tint.copy(alpha = 0.14f)),
-        ) {
-            Icon(painterResource(icon), contentDescription = null, tint = tint, modifier = Modifier.size(16.dp))
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(30.dp)) {
+            Image(painterResource(icon), contentDescription = null, modifier = Modifier.size(28.dp))
         }
         Spacer(Modifier.width(10.dp))
         Text(text = label, color = HomePalette.Ink2, fontSize = 13.5f.sp, modifier = Modifier.weight(1f))
@@ -285,6 +279,8 @@ private fun PeriodLine(snapshot: LedgerSnapshot) {
 @Composable
 private fun EmptyCard(onSetBudget: () -> Unit) {
     CardBox {
+        Sticker(R.drawable.ic_sticker_haruchi, size = 64.dp)
+        Spacer(Modifier.height(10.dp))
         Text(
             text = tr("아직 한 달 예산을 정하지 않았어요", "No monthly budget yet", "Aún no tienes presupuesto mensual"),
             color = HomePalette.Ink,

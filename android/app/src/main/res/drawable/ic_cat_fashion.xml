@@ -1,14 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 카테고리 — 패션 (티셔츠). 하루치가 직접 그린 그림 — 색이 들어 있어 tint 없이 쓴다. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
-    <!-- 카테고리 — 패션. Lucide «shirt» (ISC). 선 아이콘이라 색은 Compose 의 Icon tint 가 정한다. -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#000000"
-        android:strokeWidth="2"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M20.38 3.46 16 2a4 4 0 0 1 -8 0L3.62 3.46a2 2 0 0 0 -1.34 2.23l.58 3.47a1 1 0 0 0 .99 .84H6v10c0 1.1 .9 2 2 2h8a2 2 0 0 0 2 -2V10h2.15a1 1 0 0 0 .99 -.84l.58 -3.47a2 2 0 0 0 -1.34 -2.23z" />
+    android:viewportWidth="26"
+    android:viewportHeight="26">
+    <group android:translateX="1" android:translateY="1">
+        <path android:fillColor="#FF8A7A" android:strokeColor="#15352B" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M8.2,4 L3.8,7 L5.8,11.2 L7.6,10.3 V20.5 H16.4 V10.3 L18.2,11.2 L20.2,7 L15.8,4 C14.8,5.9 9.2,5.9 8.2,4 Z" />
+    </group>
 </vector>

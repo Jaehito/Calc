@@ -1,35 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 카테고리 — 문화 (팝콘). 하루치가 직접 그린 그림 — 색이 들어 있어 tint 없이 쓴다. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
-    <!-- 카테고리 — 문화. Lucide «ticket» (ISC). 선 아이콘이라 색은 Compose 의 Icon tint 가 정한다. -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#000000"
-        android:strokeWidth="2"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2 -2v-2a3 3 0 0 1 0 -6V7a2 2 0 0 0 -2 -2H4a2 2 0 0 0 -2 2Z" />
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#000000"
-        android:strokeWidth="2"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M13 5v2" />
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#000000"
-        android:strokeWidth="2"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M13 17v2" />
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#000000"
-        android:strokeWidth="2"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M13 11v2" />
+    android:viewportWidth="26"
+    android:viewportHeight="26">
+    <group android:translateX="1" android:translateY="1">
+        <path android:fillColor="#FFF1D6" android:strokeColor="#15352B" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M5.6,9 A2.4,2.4 0 1 0 10.4,9 A2.4,2.4 0 1 0 5.6,9 Z" />
+        <path android:fillColor="#FFF1D6" android:strokeColor="#15352B" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M13.6,9 A2.4,2.4 0 1 0 18.4,9 A2.4,2.4 0 1 0 13.6,9 Z" />
+        <path android:fillColor="#FFF1D6" android:strokeColor="#15352B" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M8.2,7 A2.4,2.4 0 1 0 13,7 A2.4,2.4 0 1 0 8.2,7 Z" />
+        <path android:fillColor="#FFF1D6" android:strokeColor="#15352B" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M11.2,7.2 A2.4,2.4 0 1 0 16,7.2 A2.4,2.4 0 1 0 11.2,7.2 Z" />
+        <path android:fillColor="#FFF1D6" android:strokeColor="#15352B" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M9.6,5 A2.4,2.4 0 1 0 14.4,5 A2.4,2.4 0 1 0 9.6,5 Z" />
+        <path android:fillColor="#FFFFFF" android:strokeColor="#15352B" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M5.6,10 H18.4 L16.7,21 H7.3 Z" />
+        <path android:fillColor="#000000" android:strokeColor="#FF8A7A" android:strokeWidth="2" android:pathData="M9.6,10.4 L10.1,20.6 M14.4,10.4 L13.9,20.6" />
+        <path android:fillColor="#00000000" android:strokeColor="#15352B" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M5.6,10 H18.4 L16.7,21 H7.3 Z" />
+    </group>
 </vector>

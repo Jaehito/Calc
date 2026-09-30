@@ -15,11 +15,10 @@
 
         <ImageView
             android:id="@+id/entryIcon"
-            android:layout_width="15dp"
-            android:layout_height="15dp"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
             android:layout_gravity="center"
-            android:importantForAccessibility="no"
-            app:tint="@color/app_accent" />
+            android:importantForAccessibility="no" />
 
         <TextView
             android:id="@+id/entryLetter"

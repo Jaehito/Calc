@@ -1,5 +1,6 @@
 package com.calc.expense
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -20,6 +21,15 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+
+/**
+ * 직접 그린 스티커(흰 테두리·그림자·살짝 기울임). 빈 화면·등급 창처럼 앱이 말을 거는 자리에만 쓴다 —
+ * 매일 보는 목록·격자는 테두리 없는 같은 그림(ic_cat_* 등)을 쓴다. 색이 들어 있어 tint 하지 않는다.
+ */
+@Composable
+fun Sticker(res: Int, size: Dp = 64.dp, modifier: Modifier = Modifier) {
+    Image(painter = painterResource(res), contentDescription = null, modifier = modifier.size(size))
+}
 
 /**
  * 입력칸 색. [HistoryScreen] 의 수정 다이얼로그와 [SettingsScreen] 이 함께 쓴다 — 포커스·커서를

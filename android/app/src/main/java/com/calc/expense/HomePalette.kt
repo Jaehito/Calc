@@ -28,6 +28,9 @@ object HomePalette {
     val Soft = Color(0xFFDFF4EC)
     val Chip = Color(0xFFF2F6F4)
     val Gold = Color(0xFFE9A23B)
+
+    /** 기록 버튼 바탕. 앱 아이콘(웃는 지갑)의 크림 바탕과 같다. */
+    val Cream = Color(0xFFFFF1D6)
     val Over = Color(0xFFF0544B)
 
     /** 통계 카테고리 세그먼트 색. 큰 것부터 순서대로 돌려 쓴다. */

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 스티커 — 등급 창 (곳간 항아리). 하루치가 직접 그린 그림 — 색이 들어 있어 tint 없이 쓴다. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="28"
+    android:viewportHeight="28">
+    <group android:translateX="2" android:translateY="2">
+    <group android:rotation="-5" android:pivotX="12" android:pivotY="12">
+        <group android:translateY="0.8">
+            <path android:fillColor="#15352B" android:fillAlpha="0.12" android:strokeColor="#15352B" android:strokeWidth="4.2" android:strokeAlpha="0.12" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M9.9,4.6 A2.1,2.1 0 1 0 14.1,4.6 A2.1,2.1 0 1 0 9.9,4.6 Z" />
+            <path android:fillColor="#15352B" android:fillAlpha="0.12" android:strokeColor="#15352B" android:strokeWidth="4.2" android:strokeAlpha="0.12" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M8,8 H16 C18.2,9.6 20.2,11.6 20.2,14.8 C20.2,18.6 16.6,20.8 12,20.8 C7.4,20.8 3.8,18.6 3.8,14.8 C3.8,11.6 5.8,9.6 8,8 Z" />
+            <path android:fillColor="#15352B" android:fillAlpha="0.12" android:strokeColor="#15352B" android:strokeWidth="4.2" android:strokeAlpha="0.12" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M8.1,6.6 H15.9 A1.1,1.1 0 0 1 17,7.7 V8.1 A1.1,1.1 0 0 1 15.9,9.2 H8.1 A1.1,1.1 0 0 1 7,8.1 V7.7 A1.1,1.1 0 0 1 8.1,6.6 Z" />
+        </group>
+        <group>
+            <path android:fillColor="#FFFFFF" android:strokeColor="#FFFFFF" android:strokeWidth="4.2" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M9.9,4.6 A2.1,2.1 0 1 0 14.1,4.6 A2.1,2.1 0 1 0 9.9,4.6 Z" />
+            <path android:fillColor="#FFFFFF" android:strokeColor="#FFFFFF" android:strokeWidth="4.2" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M8,8 H16 C18.2,9.6 20.2,11.6 20.2,14.8 C20.2,18.6 16.6,20.8 12,20.8 C7.4,20.8 3.8,18.6 3.8,14.8 C3.8,11.6 5.8,9.6 8,8 Z" />
+            <path android:fillColor="#FFFFFF" android:strokeColor="#FFFFFF" android:strokeWidth="4.2" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M8.1,6.6 H15.9 A1.1,1.1 0 0 1 17,7.7 V8.1 A1.1,1.1 0 0 1 15.9,9.2 H8.1 A1.1,1.1 0 0 1 7,8.1 V7.7 A1.1,1.1 0 0 1 8.1,6.6 Z" />
+        </group>
+        <path android:fillColor="#12C08B" android:strokeColor="#15352B" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M9.9,4.6 A2.1,2.1 0 1 0 14.1,4.6 A2.1,2.1 0 1 0 9.9,4.6 Z" />
+        <path android:fillColor="#E9A23B" android:strokeColor="#15352B" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M8,8 H16 C18.2,9.6 20.2,11.6 20.2,14.8 C20.2,18.6 16.6,20.8 12,20.8 C7.4,20.8 3.8,18.6 3.8,14.8 C3.8,11.6 5.8,9.6 8,8 Z" />
+        <path android:fillColor="#F4C46E" android:strokeColor="#15352B" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M8.1,6.6 H15.9 A1.1,1.1 0 0 1 17,7.7 V8.1 A1.1,1.1 0 0 1 15.9,9.2 H8.1 A1.1,1.1 0 0 1 7,8.1 V7.7 A1.1,1.1 0 0 1 8.1,6.6 Z" />
+    </group>
+    </group>
+</vector>

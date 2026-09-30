@@ -46,6 +46,7 @@ fun DailyGradeDialog(
         },
         text = {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                Sticker(R.drawable.ic_sticker_gotgan, size = 60.dp)
                 Text(
                     text = grade.grade.name,
                     color = gradeColor(grade.grade),

@@ -1,21 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 카테고리 — 미분류 (물음표 쪽지). 하루치가 직접 그린 그림 — 색이 들어 있어 tint 없이 쓴다. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
-    <!-- 카테고리 — 미분류. Lucide «tag» (ISC). 선 아이콘이라 색은 Compose 의 Icon tint 가 정한다. -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#000000"
-        android:strokeWidth="2"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0 -2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58 -6.58a2.426 2.426 0 0 0 0 -3.42z" />
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#000000"
-        android:strokeWidth="2"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M7 7.5a0.5 0.5 0 1 0 1 0a0.5 0.5 0 1 0 -1 0" />
+    android:viewportWidth="26"
+    android:viewportHeight="26">
+    <group android:translateX="1" android:translateY="1">
+        <path android:fillColor="#FFF1D6" android:strokeColor="#15352B" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M5,4.5 H19 V15.5 L15,19.5 H5 Z" />
+        <path android:fillColor="#F4C46E" android:strokeColor="#15352B" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M19,15.5 H15 V19.5 Z" />
+        <path android:fillColor="#00000000" android:strokeColor="#15352B" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M9.8,9.5 C9.8,7.2 14.2,7.2 14.2,9.6 C14.2,11.4 12,11.3 12,13.3" />
+        <path android:fillColor="#15352B" android:pathData="M10.95,16.1 A1.05,1.05 0 1 0 13.05,16.1 A1.05,1.05 0 1 0 10.95,16.1 Z" />
+    </group>
 </vector>

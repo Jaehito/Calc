@@ -1,28 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 홈 — 곳간 (동전이 올라간 항아리). 하루치가 직접 그린 그림 — 색이 들어 있어 tint 없이 쓴다. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
-    <!-- 곳간. Lucide «piggy-bank» (ISC). 선 아이콘이라 색은 Compose 의 Icon tint 가 정한다. -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#000000"
-        android:strokeWidth="2"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M11 17h3v2a1 1 0 0 0 1 1h2a1 1 0 0 0 1 -1v-3a3.16 3.16 0 0 0 2 -2h1a1 1 0 0 0 1 -1v-2a1 1 0 0 0 -1 -1h-1a5 5 0 0 0 -2 -4V3a4 4 0 0 0 -3.2 1.6l-.3 .4H11a6 6 0 0 0 -6 6v1a5 5 0 0 0 2 4v3a1 1 0 0 0 1 1h2a1 1 0 0 0 1 -1z" />
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#000000"
-        android:strokeWidth="2"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M16 10h.01" />
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#000000"
-        android:strokeWidth="2"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M2 8v1a2 2 0 0 0 2 2h1" />
+    android:viewportWidth="26"
+    android:viewportHeight="26">
+    <group android:translateX="1" android:translateY="1">
+        <path android:fillColor="#12C08B" android:strokeColor="#15352B" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M9.9,4.6 A2.1,2.1 0 1 0 14.1,4.6 A2.1,2.1 0 1 0 9.9,4.6 Z" />
+        <path android:fillColor="#E9A23B" android:strokeColor="#15352B" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M8,8 H16 C18.2,9.6 20.2,11.6 20.2,14.8 C20.2,18.6 16.6,20.8 12,20.8 C7.4,20.8 3.8,18.6 3.8,14.8 C3.8,11.6 5.8,9.6 8,8 Z" />
+        <path android:fillColor="#F4C46E" android:strokeColor="#15352B" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M8.1,6.6 H15.9 A1.1,1.1 0 0 1 17,7.7 V8.1 A1.1,1.1 0 0 1 15.9,9.2 H8.1 A1.1,1.1 0 0 1 7,8.1 V7.7 A1.1,1.1 0 0 1 8.1,6.6 Z" />
+    </group>
 </vector>

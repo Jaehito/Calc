@@ -278,20 +278,21 @@ class QuickInputActivity : AppCompatActivity() {
         })
     }
 
-    /** [label] 칸을 켜고 나머지를 끈다. 켜진 칸은 민트 동그라미·흰 아이콘·초록 굵은 이름. */
+    /**
+     * [label] 칸을 켜고 나머지를 끈다. 켜진 칸은 민트 테두리·초록 굵은 이름.
+     * 그림은 색이 들어 있어 칠하지 않는다 — 첫 글자 칸만 글자색을 바꾼다.
+     */
     private fun checkCell(label: String) {
         selectedCategory = if (label == CATEGORY_NONE) "" else label
         val accent: Int = ContextCompat.getColor(this, R.color.app_accent)
         val ink2: Int = ContextCompat.getColor(this, R.color.app_ink_2)
-        val white: Int = ContextCompat.getColor(this, R.color.app_card)
         for (i in 0 until ui.groupCategory.childCount) {
             val cell: View = ui.groupCategory.getChildAt(i)
             val on: Boolean = cell.tag == label
             cell.isSelected = on
             cell.findViewById<View>(R.id.cellCircle)
                 .setBackgroundResource(if (on) R.drawable.bg_cell_on else R.drawable.bg_cell)
-            cell.findViewById<ImageView>(R.id.cellIcon).setColorFilter(if (on) white else ink2)
-            cell.findViewById<TextView>(R.id.cellLetter).setTextColor(if (on) white else ink2)
+            cell.findViewById<TextView>(R.id.cellLetter).setTextColor(if (on) accent else ink2)
             val name: TextView = cell.findViewById(R.id.cellLabel)
             name.setTextColor(if (on) accent else ink2)
             name.setTypeface(null, if (on) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)

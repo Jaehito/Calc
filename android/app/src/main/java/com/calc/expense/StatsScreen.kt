@@ -1,6 +1,7 @@
 package com.calc.expense
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -433,7 +434,7 @@ private fun CategoryRow(group: CategoryGroup, color: Color, onOpenCategory: (Str
             .then(if (name != null) Modifier.clickable { onOpenCategory(name) } else Modifier)
             .padding(vertical = 10.dp),
     ) {
-        if (name != null) CategoryBadge(name, color) else IconBadge(R.drawable.ic_cat_other, color, size = 34.dp)
+        if (name != null) CategoryBadge(name, color) else IconBadge(R.drawable.ic_cat_other, color, size = 34.dp, drawn = true)
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -464,7 +465,7 @@ private fun CategoryRow(group: CategoryGroup, color: Color, onOpenCategory: (Str
 private fun CategoryBadge(storedName: String, color: Color) {
     val icon: Int? = CategoryIcons.of(storedName)
     if (icon != null) {
-        IconBadge(icon, color, size = 34.dp)
+        IconBadge(icon, color, size = 34.dp, drawn = true)
         return
     }
     Box(
@@ -475,14 +476,21 @@ private fun CategoryBadge(storedName: String, color: Color) {
     }
 }
 
-/** 연한 색 바탕의 둥근 칸 안에 같은 색 선 아이콘. */
+/**
+ * 연한 색 바탕의 둥근 칸 안에 아이콘. 바탕색은 도넛 조각 색이라 목록과 도넛이 이어진다.
+ * [drawn] 이면 직접 그린 색 있는 그림(카테고리)이라 tint 없이 크게, 아니면 선 아이콘을 같은 색으로 칠한다.
+ */
 @Composable
-private fun IconBadge(icon: Int, color: Color, size: Dp) {
+private fun IconBadge(icon: Int, color: Color, size: Dp, drawn: Boolean = false) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier.size(size).clip(RoundedCornerShape(size / 3)).background(color.copy(alpha = 0.14f)),
     ) {
-        Icon(painterResource(icon), contentDescription = null, tint = color, modifier = Modifier.size(size / 2))
+        if (drawn) {
+            Image(painterResource(icon), contentDescription = null, modifier = Modifier.size(size * 0.74f))
+        } else {
+            Icon(painterResource(icon), contentDescription = null, tint = color, modifier = Modifier.size(size / 2))
+        }
     }
 }
 

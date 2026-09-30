@@ -157,7 +157,7 @@ fun HistoryScreen(
         when {
             ui.loading -> Note(tr("불러오는 중…", "Loading…", "Cargando…"))
             ui.error != null -> Note(ui.error, HomePalette.Over)
-            ui.groups.isEmpty() -> Note(tr("이 달에는 기록이 없어요.", "Nothing logged this month.", "No hay gastos este mes."))
+            ui.groups.isEmpty() -> EmptyMonth(tr("이 달에는 기록이 없어요.", "Nothing logged this month.", "No hay gastos este mes."))
             else -> for (group in ui.groups) {
                 DaySection(group, onRowClick = { row -> editingRow = row })
             }
@@ -332,6 +332,20 @@ private fun EditRowDialog(
             TextButton(onClick = onDismiss) { Text(tr("취소", "Cancel", "Cancelar"), color = HomePalette.Ink2) }
         },
     )
+}
+
+/** 기록이 없는 달. 영수증 스티커를 가운데 크게 두고 그 아래 한 줄. */
+@Composable
+private fun EmptyMonth(text: String) {
+    Spacer(Modifier.height(10.dp))
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(HomePalette.Card).padding(vertical = 24.dp, horizontal = 20.dp),
+    ) {
+        Sticker(R.drawable.ic_sticker_receipt, size = 72.dp)
+        Spacer(Modifier.height(10.dp))
+        Text(text = text, color = HomePalette.Ink2, fontSize = 13.sp)
+    }
 }
 
 @Composable

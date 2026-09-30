@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    카테고리 격자 한 칸. 동그라미 안에 통계 화면과 같은 선 아이콘, 아래에 이름.
-    사용자가 만든 카테고리는 아이콘이 없어 첫 글자를 대신 쓴다(코드).
-    고르면 동그라미가 민트로 차고 아이콘이 흰색, 이름이 초록 굵게 바뀐다.
+    카테고리 격자 한 칸. 동그라미 안에 직접 그린 카테고리 그림, 아래에 이름.
+    그림은 색이 들어 있어 tint 하지 않는다. 사용자가 만든 카테고리는 그림이 없어 첫 글자를 쓴다(코드).
+    고르면 동그라미에 민트 테두리가 둘리고 이름이 초록 굵게 바뀐다.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="0dp"
     android:layout_height="wrap_content"
     android:background="?attr/selectableItemBackgroundBorderless"
@@ -24,11 +23,10 @@
 
         <ImageView
             android:id="@+id/cellIcon"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
             android:layout_gravity="center"
-            android:importantForAccessibility="no"
-            app:tint="@color/app_ink_2" />
+            android:importantForAccessibility="no" />
 
         <TextView
             android:id="@+id/cellLetter"
