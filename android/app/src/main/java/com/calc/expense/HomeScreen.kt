@@ -54,14 +54,14 @@ import androidx.compose.ui.unit.sp
  */
 @Composable
 fun HomeScreen(
-    /** 고른 지갑의 숫자. 그 지갑에 예산이 없으면 null — 예산을 정하라는 카드를 보인다. */
-    snapshot: LedgerSnapshot?,
+    /** 지갑마다의 숫자. 예산이 없는 지갑은 null — 예산을 정하라는 카드를 보인다. */
+    snapshots: Map<Purse, LedgerSnapshot?>,
     purse: Purse,
     /** 연결된 지갑들. 둘이면 아래에 개인·공용 토글이 뜬다. */
     purses: List<Purse>,
     purseLabels: Map<Purse, String>,
-    /** 고른 지갑의 주기 경계(새 주기 시작일). 두 칸에는 그 전날을 목표날로 보여 준다. */
-    payDay: Int,
+    /** 지갑마다의 주기 경계(새 주기 시작일). 두 칸에는 그 전날을 목표날로 보여 준다. */
+    payDays: Map<Purse, Int>,
     notice: String?,
     onSelectPurse: (Purse) -> Unit,
     onOpenSettings: () -> Unit,
@@ -91,57 +91,63 @@ fun HomeScreen(
             }
             Spacer(Modifier.height(18.dp))
 
-            if (snapshot == null) {
-                if (purse == Purse.SHARED) {
-                    EmptyCard(
-                        title = tr("공용 예산을 아직 정하지 않았어요", "No shared budget yet", "Aún no hay presupuesto compartido"),
-                        body = tr(
-                            "정하면 배우자와 같이 쓰는 오늘 쓸 수 있는 돈이 여기에 보여요.",
-                            "Once set, what you two can spend today shows up here.",
-                            "Cuando lo fijes, aquí verás lo que podéis gastar hoy.",
-                        ),
-                        button = tr("공용 예산 정하기", "Set shared budget", "Fijar presupuesto compartido"),
-                        onClick = { onEditBudget(Purse.SHARED) },
-                    )
-                } else {
-                    EmptyCard(
-                        title = tr("아직 한 달 예산을 정하지 않았어요", "No monthly budget yet", "Aún no tienes presupuesto mensual"),
-                        body = tr(
-                            "월급에서 고정비를 빼면 한 달 예산이 나와요. " +
-                                "정하면 오늘 쓸 수 있는 돈이 여기에 보여요.",
-                            "Your income minus fixed costs is what you can spend in a month. " +
-                                "Once set, what you can spend today shows up here.",
-                            "Tu sueldo menos los gastos fijos es lo que puedes gastar al mes. " +
-                                "Cuando lo fijes, aquí verás lo que puedes gastar hoy.",
-                        ),
-                        button = tr("한 달 예산 정하기", "Set monthly budget", "Fijar presupuesto"),
-                        onClick = onSetBudget,
-                    )
-                }
-            } else {
-                HeadLine(snapshot)
-                Spacer(Modifier.height(16.dp))
-                SourceCard(snapshot, onClick = { onOpenHistory(snapshot.purse) })
-                Spacer(Modifier.height(10.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    SettingBox(
-                        label = if (snapshot.purse == Purse.SHARED) tr("공용 예산", "Shared budget", "Presupuesto compartido")
-                        else tr("한 달 예산", "Monthly budget", "Presupuesto mensual"),
-                        value = StatusText.won(snapshot.monthlyBudget),
-                        icon = R.drawable.ic_budget_wallet,
-                        tilt = -10f,
-                        onClick = { onEditBudget(snapshot.purse) },
-                        modifier = Modifier.weight(1f),
-                    )
-                    SettingBox(
-                        label = if (snapshot.purse == Purse.SHARED) tr("공용 목표날", "Shared target day", "Día objetivo compartido")
-                        else tr("목표날", "Target day", "Día objetivo"),
-                        value = StatusText.targetDay(payDay),
-                        icon = R.drawable.ic_payday_calendar,
-                        tilt = 9f,
-                        onClick = { onEditPayday(snapshot.purse) },
-                        modifier = Modifier.weight(1f),
-                    )
+            // 토글을 바꾸면 이 아래만 옆으로 밀려 바뀐다. 앱 아이콘·설정 줄은 제자리.
+            PurseSlide(purse = purse, purses = purses) { p ->
+                Column {
+                    val snapshot: LedgerSnapshot? = snapshots[p]
+                    if (snapshot == null) {
+                        if (p == Purse.SHARED) {
+                            EmptyCard(
+                                title = tr("공용 예산을 아직 정하지 않았어요", "No shared budget yet", "Aún no hay presupuesto compartido"),
+                                body = tr(
+                                    "정하면 배우자와 같이 쓰는 오늘 쓸 수 있는 돈이 여기에 보여요.",
+                                    "Once set, what you two can spend today shows up here.",
+                                    "Cuando lo fijes, aquí verás lo que podéis gastar hoy.",
+                                ),
+                                button = tr("공용 예산 정하기", "Set shared budget", "Fijar presupuesto compartido"),
+                                onClick = { onEditBudget(Purse.SHARED) },
+                            )
+                        } else {
+                            EmptyCard(
+                                title = tr("아직 한 달 예산을 정하지 않았어요", "No monthly budget yet", "Aún no tienes presupuesto mensual"),
+                                body = tr(
+                                    "월급에서 고정비를 빼면 한 달 예산이 나와요. " +
+                                        "정하면 오늘 쓸 수 있는 돈이 여기에 보여요.",
+                                    "Your income minus fixed costs is what you can spend in a month. " +
+                                        "Once set, what you can spend today shows up here.",
+                                    "Tu sueldo menos los gastos fijos es lo que puedes gastar al mes. " +
+                                        "Cuando lo fijes, aquí verás lo que puedes gastar hoy.",
+                                ),
+                                button = tr("한 달 예산 정하기", "Set monthly budget", "Fijar presupuesto"),
+                                onClick = onSetBudget,
+                            )
+                        }
+                    } else {
+                        HeadLine(snapshot)
+                        Spacer(Modifier.height(16.dp))
+                        SourceCard(snapshot, onClick = { onOpenHistory(snapshot.purse) })
+                        Spacer(Modifier.height(10.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            SettingBox(
+                                label = if (snapshot.purse == Purse.SHARED) tr("공용 예산", "Shared budget", "Presupuesto compartido")
+                                else tr("한 달 예산", "Monthly budget", "Presupuesto mensual"),
+                                value = StatusText.won(snapshot.monthlyBudget),
+                                icon = R.drawable.ic_budget_wallet,
+                                tilt = -10f,
+                                onClick = { onEditBudget(snapshot.purse) },
+                                modifier = Modifier.weight(1f),
+                            )
+                            SettingBox(
+                                label = if (snapshot.purse == Purse.SHARED) tr("공용 목표날", "Shared target day", "Día objetivo compartido")
+                                else tr("목표날", "Target day", "Día objetivo"),
+                                value = StatusText.targetDay(payDays[p] ?: Payday.DEFAULT),
+                                icon = R.drawable.ic_payday_calendar,
+                                tilt = 9f,
+                                onClick = { onEditPayday(snapshot.purse) },
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
                 }
             }
 
@@ -164,13 +170,11 @@ fun HomeScreen(
     }
 }
 
-/** 카드·칸에 두는 아주 옅은 그림자. 바탕이 회색이라 흰 카드가 떠 보이는 정도로만. */
-private fun Modifier.softShadow(shape: Shape): Modifier = this.shadow(
-    elevation = 3.dp,
-    shape = shape,
-    ambientColor = HomePalette.Ink.copy(alpha = 0.05f),
-    spotColor = HomePalette.Ink.copy(alpha = 0.08f),
-)
+/**
+ * 카드·칸에 두는 옅은 그림자. 바탕이 회색이라 흰 카드가 떠 보이는 정도로만.
+ * 그림자 색은 기본값(검정) — 옅은 색을 주면 테마 진하기와 곱해져 안 보인다([iconCircle]).
+ */
+private fun Modifier.softShadow(shape: Shape): Modifier = this.shadow(elevation = CARD_ELEVATION, shape = shape)
 
 /** 머리 줄 왼쪽의 앱 아이콘 — 크림 바탕에 웃는 지갑. 어떤 앱인지 첫눈에 보이게. */
 @Composable
@@ -315,45 +319,6 @@ private fun SettingBox(
         )
     }
 }
-
-/** 개인·공용 토글. 아래 가운데 떠 있다 — 한 번에 한 지갑만 보인다. */
-@Composable
-private fun PurseToggle(
-    purses: List<Purse>,
-    selected: Purse,
-    labels: Map<Purse, String>,
-    onSelect: (Purse) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val pill = RoundedCornerShape(999.dp)
-    Row(
-        modifier = modifier
-            .shadow(elevation = 6.dp, shape = pill, ambientColor = HomePalette.Ink.copy(alpha = 0.12f), spotColor = HomePalette.Ink.copy(alpha = 0.16f))
-            .clip(pill)
-            .background(ToggleTrack)
-            .padding(4.dp),
-    ) {
-        for (p in purses) {
-            val on: Boolean = p == selected
-            Text(
-                text = labels[p] ?: p.defaultLabel,
-                color = if (on) Color.White else ToggleIdle,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                modifier = Modifier
-                    .clip(pill)
-                    .background(if (on) ToggleOn else Color.Transparent)
-                    .clickable { onSelect(p) }
-                    .padding(horizontal = 20.dp, vertical = 8.dp),
-            )
-        }
-    }
-}
-
-private val ToggleTrack = Color(0xFFE5E8EB)
-private val ToggleOn = Color(0xFF333D4B)
-private val ToggleIdle = Color(0xFF4E5968)
 
 /**
  * 세 줄 중 하나. 작은 색 점 + 이름 + 오른쪽 끝 금액. 아이콘 없이 점 색([hue])만으로 셋을 가른다 —

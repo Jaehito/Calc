@@ -17,38 +17,39 @@ import java.time.LocalDate
 object CycleReportRepository {
 
     /**
-     * 가장 최근에 끝난 주기의 리포트.
+     * [purse] 곳간의 가장 최근에 끝난 주기 리포트. 주기는 그 곳간의 목표날을 따른다.
      *
      * 주기 경계는 [RecurringCosts.recentCycles] 하나가 정한다 — 결산 팝업과 통계 탭이 각자
      * 계산하면 월급날 전후로 서로 다른 주기를 보여줄 수 있다.
+     *
+     * 결제 알림은 폰 주인의 것이라 개인 리포트에만 섞는다. 공용 리포트는 고정비 찾기를
+     * 보여 주지 않는다([CycleReport.showsFixedCosts]).
      */
-    fun build(context: Context, today: LocalDate = LocalDate.now()): CycleReport {
+    fun build(context: Context, purse: Purse, today: LocalDate = LocalDate.now()): CycleReport {
         val settings: Settings = SettingsStore.load(context)
-        val cycles: List<BudgetCycle> = RecurringCosts.recentCycles(today, settings.payDay)
+        val payDay: Int = settings.payDayOf(purse)
+        val cycles: List<BudgetCycle> = RecurringCosts.recentCycles(today, payDay)
         val ended: BudgetCycle = cycles.first()
-        val purses: List<Purse> = PurseAccess.linked(context)
 
-        var spent = 0L
-        var budget = 0L
-        for (purse in purses) {
-            spent += Ledger.spentInCycle(context, purse, ended)
-            val config: PurseSettings = settings.of(purse)
-            if (config.hasBudget) budget += config.monthlyBudget
-        }
+        val spent: Long = Ledger.spentInCycle(context, purse, ended)
+        val config: PurseSettings = settings.of(purse)
+        val budget: Long = if (config.hasBudget) config.monthlyBudget else 0L
 
         // 그 앞 주기가 없으면 견주지 않는다. 0 원과 견주면 언제나 «더 썼어요»가 된다.
         val prevSpent: Long =
             if (cycles.size < 2) 0L
-            else purses.sumOf { Ledger.spentInCycle(context, it, cycles[1]) }
+            else Ledger.spentInCycle(context, purse, cycles[1])
 
         // 되풀이를 찾을 때는 **진행 중인 주기까지** 본다. 그러지 않으면 이달에 적은 것이
         // 통째로 버려져, 이달 중순에 깔고 한 달 쓴 사람은 아무것도 못 찾는다.
-        val lookback: List<BudgetCycle> = RecurringCosts.lookback(today, settings.payDay)
-        val rows: List<ExpenseRow>? = readRows(context, purses, lookback.last().start, today)
+        val lookback: List<BudgetCycle> = RecurringCosts.lookback(today, payDay)
+        val rows: List<ExpenseRow>? =
+            FirestoreExpenseReader.rowsBetween(context, purse, lookback.last().start, today)
 
         val plan: FixedCostPlan = FixedCostStore.load(context)
-        val events: List<MoneyEvent> =
-            PaymentLogs.events(PaymentLogStore.load(context)) + rows.orEmpty().map { it.toMoneyEvent() }
+        val logs: List<MoneyEvent> =
+            if (purse == Purse.PERSONAL) PaymentLogs.events(PaymentLogStore.load(context)) else emptyList()
+        val events: List<MoneyEvent> = logs + rows.orEmpty().map { it.toMoneyEvent() }
 
         return CycleReport(
             cycle = ended,
@@ -59,24 +60,13 @@ object CycleReportRepository {
             candidates = RecurringCosts.of(events, lookback, known = plan.items.map { it.name }),
             plan = plan,
             loading = false,
-            error = if (rows == null) tr("기록을 불러오지 못해 결제 알림만 봤어요", "Couldn't load your entries, so only payment alerts were used", "No se pudieron cargar tus gastos; solo se usaron los avisos de pago") else null,
+            error = when {
+                rows != null -> null
+                purse == Purse.PERSONAL -> tr("기록을 불러오지 못해 결제 알림만 봤어요", "Couldn't load your entries, so only payment alerts were used", "No se pudieron cargar tus gastos; solo se usaron los avisos de pago")
+                else -> tr("기록을 불러오지 못했어요. 잠시 뒤 다시 열어 주세요", "Couldn't load entries. Please try again in a moment", "No se pudieron cargar los gastos. Vuelve a intentarlo en un momento")
+            },
+            purse = purse,
         )
-    }
-
-    /** 곳간을 합쳐 읽는다. 하나라도 실패하면 null — 반쪽만 담으면 숫자가 조용히 작아진다. */
-    private fun readRows(
-        context: Context,
-        purses: List<Purse>,
-        first: LocalDate,
-        last: LocalDate,
-    ): List<ExpenseRow>? {
-        val merged = ArrayList<ExpenseRow>()
-        for (purse in purses) {
-            val rows: List<ExpenseRow> =
-                FirestoreExpenseReader.rowsBetween(context, purse, first, last) ?: return null
-            merged.addAll(rows)
-        }
-        return merged
     }
 
     /** 끝난 주기 안의 행만 카테고리로 묶는다. 읽지 못했으면 빈 목록이다. */

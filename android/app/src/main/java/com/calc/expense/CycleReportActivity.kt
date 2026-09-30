@@ -1,5 +1,6 @@
 package com.calc.expense
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -18,6 +19,19 @@ import java.util.concurrent.Executors
  * 갈 곳이 없다. 통계 탭은 그 «나중에»가 왔을 때의 문이다.
  */
 class CycleReportActivity : ComponentActivity() {
+
+    companion object {
+        private const val EXTRA_PURSE = "purse"
+
+        /** 결산 팝업은 개인 곳간의 결산이라 개인, 통계 탭은 토글이 가리키는 곳간. */
+        fun intent(context: Context, purse: Purse): Intent =
+            Intent(context, CycleReportActivity::class.java).putExtra(EXTRA_PURSE, purse.key)
+    }
+
+    private val purse: Purse by lazy {
+        val key: String? = intent.getStringExtra(EXTRA_PURSE)
+        Purse.entries.firstOrNull { it.key == key } ?: Purse.PERSONAL
+    }
 
     private val io = Executors.newSingleThreadExecutor()
 
@@ -38,6 +52,7 @@ class CycleReportActivity : ComponentActivity() {
         setContent {
             CycleReportScreen(
                 report = report,
+                purseLabel = SettingsStore.load(this).labelOf(purse),
                 selected = selected,
                 onToggle = { toggle(it) },
                 onApply = { apply() },
@@ -64,7 +79,7 @@ class CycleReportActivity : ComponentActivity() {
 
     private fun load() {
         io.execute {
-            val built: CycleReport = CycleReportRepository.build(this, LocalDate.now())
+            val built: CycleReport = CycleReportRepository.build(this, purse, LocalDate.now())
             runOnUiThread {
                 report = built
                 selected = built.candidates
@@ -88,7 +103,7 @@ class CycleReportActivity : ComponentActivity() {
         val cycle: BudgetCycle = report?.cycle ?: return
         val category: String = if (sliceName == CategoryBreakdown.UNCATEGORIZED) "" else sliceName
         startActivity(
-            CategoryDetailActivity.intent(this, category, cycle.start, cycle.lastDay),
+            CategoryDetailActivity.intent(this, purse, category, cycle.start, cycle.lastDay),
         )
     }
 
@@ -106,6 +121,7 @@ class CycleReportActivity : ComponentActivity() {
      */
     private fun apply() {
         val current: CycleReport = report ?: return
+        if (!current.showsFixedCosts) return
         val chosen: List<FixedCostCandidate> =
             current.candidates.filter { RecurringCosts.normalize(it.name) in selected }
         if (chosen.isEmpty()) return

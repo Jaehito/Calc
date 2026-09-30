@@ -49,17 +49,23 @@ fun mintFieldColors(): TextFieldColors = OutlinedTextFieldDefaults.colors(
 
 /**
  * 작은 칸 아이콘의 흰 동그라미 + 옅은 그림자. 도감·통계·기록 창이 같은 모양을 쓴다 — 홈 두 칸의
- * 흰 칸·옅은 그림자를 작게 줄인 것. 크기는 부르는 쪽이 [size] 로 정한다.
+ * 흰 칸·그림자를 작게 줄인 것. 크기는 부르는 쪽이 [size] 로 정한다.
+ *
+ * 그림자 색은 **기본값(검정)** 그대로 둔다. 안드로이드는 그 색에 테마의 그림자 진하기(주변 약 4%,
+ * 아래쪽 약 19%)를 한 번 더 곱해 그린다 — 옅은 색을 따로 주면 두 번 옅어져 사실상 안 보인다
+ * (실측: 6%·10% 를 줬더니 기록 창 뷰 그림자의 1/10). 진하기는 높이로만 맞춘다. 기록 창(XML)의
+ * 동그라미도 같은 높이([ICON_ELEVATION])다.
  */
 fun Modifier.iconCircle(): Modifier = this
-    .shadow(
-        elevation = 3.dp,
-        shape = CircleShape,
-        ambientColor = HomePalette.Ink.copy(alpha = 0.06f),
-        spotColor = HomePalette.Ink.copy(alpha = 0.10f),
-    )
+    .shadow(elevation = ICON_ELEVATION, shape = CircleShape)
     .clip(CircleShape)
     .background(HomePalette.Card)
+
+/** 작은 칸 아이콘 동그라미의 높이. 기록 창 격자(XML)와 같다. */
+val ICON_ELEVATION = 2.5.dp
+
+/** 홈 카드·두 칸 같은 큰 흰 카드의 높이. 회색 바탕 위에서 살짝 뜰 만큼만. */
+val CARD_ELEVATION = 2.dp
 
 /**
  * 설정으로 가는 톱니바퀴. 홈·통계·도감 머리 줄 오른쪽 같은 자리에 둔다 — 예전에는 홈에만

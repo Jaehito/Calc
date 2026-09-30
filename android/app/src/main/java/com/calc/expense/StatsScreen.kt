@@ -43,40 +43,69 @@ import java.time.LocalDate
 /**
  * 통계 탭. 위는 주간 추이 막대 그래프, 아래는 카테고리 도넛.
  *
+ * 홈처럼 한 번에 지갑 하나만 본다 — 아래 가운데 토글이 홈과 같은 선택을 공유한다.
  * 채점하지 않는다 — 덜/더 썼다는 사실만. 도넛·막대는 라이브러리 없이 Canvas 로 직접 그린다.
  */
 @Composable
 fun StatsScreen(
-    data: StatsData,
+    /** 지갑마다의 통계. 옆으로 밀려 나가는 화면도 제 숫자를 들고 있어야 해서 지갑으로 묻는다. */
+    dataOf: (Purse) -> StatsData,
+    purse: Purse,
+    /** 연결된 지갑들. 둘이면 아래에 개인·공용 토글이 뜬다. */
+    purses: List<Purse>,
+    purseLabels: Map<Purse, String>,
+    onSelectPurse: (Purse) -> Unit,
     onToggleCategoryMonth: () -> Unit,
     onOpenReport: () -> Unit = {},
     onOpenCategory: (String) -> Unit = {},
     onOpenSettings: () -> Unit = {},
 ) {
-    Column(
+    val hasToggle: Boolean = purses.size > 1
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(HomePalette.Ground)
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 24.dp),
+            .background(HomePalette.Ground),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = tr("통계", "Stats", "Estadísticas"),
-                color = HomePalette.Ink,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f),
-            )
-            SettingsGear(onOpenSettings)
-        }
-        Spacer(Modifier.height(16.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                // 토글이 있으면 마지막 카드를 가리지 않게 아래를 넉넉히 비운다.
+                .padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = if (hasToggle) 96.dp else 24.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = tr("통계", "Stats", "Estadísticas"),
+                    color = HomePalette.Ink,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                )
+                SettingsGear(onOpenSettings)
+            }
+            Spacer(Modifier.height(16.dp))
 
-        TrendCard(data)
-        Spacer(Modifier.height(12.dp))
-        CategoryCard(data, onToggleCategoryMonth, onOpenCategory)
-        Spacer(Modifier.height(12.dp))
-        ReportCard(onOpenReport)
+            PurseSlide(purse = purse, purses = purses) { p ->
+                val data: StatsData = dataOf(p)
+                Column {
+                    TrendCard(data)
+                    Spacer(Modifier.height(12.dp))
+                    CategoryCard(data, onToggleCategoryMonth, onOpenCategory)
+                    Spacer(Modifier.height(12.dp))
+                    ReportCard(p, onOpenReport)
+                }
+            }
+        }
+
+        if (hasToggle) {
+            PurseToggle(
+                purses = purses,
+                selected = purse,
+                labels = purseLabels,
+                onSelect = onSelectPurse,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 20.dp),
+            )
+        }
     }
 }
 
@@ -88,7 +117,7 @@ fun StatsScreen(
  * 그래서 늘 있는 자리에 문을 하나 더 둔다.
  */
 @Composable
-private fun ReportCard(onOpenReport: () -> Unit) {
+private fun ReportCard(purse: Purse, onOpenReport: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -104,7 +133,12 @@ private fun ReportCard(onOpenReport: () -> Unit) {
             Text(tr("지난 주기 리포트", "Last cycle report", "Informe del ciclo anterior"), color = HomePalette.Ink, fontSize = 15.5f.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(2.dp))
             Text(
-                text = tr(
+                // 고정비 찾기는 개인 리포트에만 있다([CycleReport.showsFixedCosts]).
+                text = if (purse == Purse.SHARED) tr(
+                    "지난 주기에 같이 쓴 돈을 돌아봐요",
+                    "Look back at what you two spent last cycle",
+                    "Repasa lo que gastasteis juntos el ciclo anterior",
+                ) else tr(
                     "달마다 되풀이되는 결제를 찾아 고정비를 정리해요",
                     "Find monthly repeating payments and sort out fixed costs",
                     "Encuentra pagos que se repiten cada mes y ordena tus gastos fijos",
@@ -365,7 +399,8 @@ private fun CategoryCard(data: StatsData, onToggle: () -> Unit, onOpenCategory: 
         when {
             data.error != null ->
                 Text(text = data.error, color = HomePalette.Over, fontSize = 13.sp)
-            data.loadingCategories ->
+            // 전에 본 도넛이 있으면 다시 읽는 동안에도 그대로 보인다.
+            data.loadingCategories && data.categories.isEmpty() ->
                 Text(text = tr("불러오는 중…", "Loading…", "Cargando…"), color = HomePalette.Muted, fontSize = 13.sp)
             data.categories.isEmpty() ->
                 Text(

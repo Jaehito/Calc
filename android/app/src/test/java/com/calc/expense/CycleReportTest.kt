@@ -34,6 +34,13 @@ class CycleReportTest {
     )
 
     @Test
+    fun `고정비 찾기는 개인 리포트에만 있다`() {
+        // 고정비 계획은 개인 한 달 예산을 정한다 — 공용 리포트에서 적용하면 개인 예산이 바뀐다.
+        assertTrue(report().showsFixedCosts)
+        assertFalse(report().copy(purse = Purse.SHARED).showsFixedCosts)
+    }
+
+    @Test
     fun `앞 주기가 없으면 견주지 않는다`() {
         // 설치 첫 달에 «0원 쓴 달»과 견주면 언제나 «더 썼어요»가 된다.
         assertFalse(report(prevSpent = 0L).hasPrev)

@@ -10,6 +10,7 @@ package com.calc.expense
  * @param budget 그 주기에 잡았던 예산. 0 이면 예산 없이 지낸 주기다
  * @param prevSpent 그 앞 주기의 지출. 0 이면 견줄 앞 주기가 없다
  * @param plan 지금 저장돼 있는 고정비 계획. 선택한 후보는 여기에 더해진다
+ * @param purse 어느 곳간의 리포트인가. 통계 탭의 개인/공용 토글을 따른다
  */
 data class CycleReport(
     val cycle: BudgetCycle,
@@ -21,7 +22,16 @@ data class CycleReport(
     val plan: FixedCostPlan = FixedCostPlan(),
     val loading: Boolean = false,
     val error: String? = null,
+    val purse: Purse = Purse.PERSONAL,
 ) {
+    /**
+     * 고정비 찾기를 보여 주나. **개인 곳간만** 보여 준다 — 고정비 계획은 월급에서 빼 개인
+     * 한 달 예산을 정하는 숫자라([FixedCostPlan]), 공용 리포트에서 «적용»을 누르면 공용이 아니라
+     * 개인 예산이 바뀐다.
+     */
+    val showsFixedCosts: Boolean
+        get() = purse == Purse.PERSONAL
+
     /** 앞 주기보다 얼마나 더 썼나. 음수면 덜 썼다. */
     val diff: Long
         get() = spent - prevSpent

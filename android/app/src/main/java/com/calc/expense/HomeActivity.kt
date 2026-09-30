@@ -65,7 +65,8 @@ class HomeActivity : ComponentActivity() {
     private var purse: Purse by mutableStateOf(Purse.PERSONAL)
     private var notice: String? by mutableStateOf(null)
 
-    private var stats: StatsData? by mutableStateOf(null)
+    /** 지갑마다의 통계. 토글을 바꾸면 밀려 나가는 쪽도 제 숫자로 그린다. */
+    private var stats: Map<Purse, StatsData> by mutableStateOf(emptyMap())
     /** 카테고리 막대가 보는 주기. 0 = 이번 주기, 1 = 지난 주기. 달력 달이 아니라 월급날 기준이다. */
     private var categoryCycleBack: Int by mutableStateOf(0)
 
@@ -114,19 +115,23 @@ class HomeActivity : ComponentActivity() {
                 Box(modifier = Modifier.fillMaxSize().padding(padding)) {
                     when (tab) {
                         1 -> StatsScreen(
-                            data = stats ?: StatsRepository.localOnly(this@HomeActivity),
+                            dataOf = { p -> stats[p] ?: StatsRepository.localOnly(this@HomeActivity, p) },
+                            purse = purse,
+                            purses = purses,
+                            purseLabels = purseLabels,
+                            onSelectPurse = { selectPurse(it) },
                             onToggleCategoryMonth = { toggleCategoryMonth() },
-                            onOpenReport = { openCycleReport() },
+                            onOpenReport = { openCycleReport(purse) },
                             onOpenCategory = { name -> openCategoryDetail(name) },
                             onOpenSettings = { openSettings() },
                         )
                         2 -> DogamScreen(ui = dogam, today = LocalDate.now(), onOpenSettings = { openSettings() })
                         else -> HomeScreen(
-                            snapshot = snapshots[purse],
+                            snapshots = snapshots,
                             purse = purse,
                             purses = purses,
                             purseLabels = purseLabels,
-                            payDay = payDays[purse] ?: Payday.DEFAULT,
+                            payDays = payDays,
                             notice = notice,
                             onSelectPurse = { selectPurse(it) },
                             onSetBudget = { startActivity(Intent(this@HomeActivity, OnboardingActivity::class.java)) },
@@ -158,7 +163,8 @@ class HomeActivity : ComponentActivity() {
                                 onApply = { applyRecommendedBudget() },
                                 onOpenReport = {
                                     cycleGrade = null
-                                    openCycleReport()
+                                    // 결산 팝업은 개인 곳간의 결산이다.
+                                    openCycleReport(Purse.PERSONAL)
                                 },
                                 onDismiss = { cycleGrade = null },
                             )
@@ -330,8 +336,8 @@ class HomeActivity : ComponentActivity() {
     }
 
     /** 주기 리포트 화면을 연다. 결산 팝업과 통계 탭 두 곳에서 같은 곳으로 보낸다. */
-    private fun openCycleReport() {
-        startActivity(Intent(this, CycleReportActivity::class.java))
+    private fun openCycleReport(purse: Purse) {
+        startActivity(CycleReportActivity.intent(this, purse))
     }
 
     /**
@@ -344,7 +350,7 @@ class HomeActivity : ComponentActivity() {
         val cycle: BudgetCycle = categoryCycle()
         val category: String = if (sliceName == CategoryBreakdown.UNCATEGORIZED) "" else sliceName
         startActivity(
-            CategoryDetailActivity.intent(this, category, cycle.start, cycle.lastDay),
+            CategoryDetailActivity.intent(this, purse, category, cycle.start, cycle.lastDay),
         )
     }
 
@@ -467,10 +473,12 @@ class HomeActivity : ComponentActivity() {
         startActivity(intent)
     }
 
-    /** 홈 토글. 고른 쪽을 기억해 다음에 열어도 같은 지갑이 보인다. */
+    /** 홈·통계 토글. 둘이 같은 선택이다. 고른 쪽을 기억해 다음에 열어도 같은 지갑이 보인다. */
     private fun selectPurse(next: Purse) {
+        if (next == purse) return
         purse = next
         getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(KEY_PURSE, next.key).apply()
+        if (tab == 1) loadStats()
     }
 
     private fun openHistory(purse: Purse) {
@@ -505,42 +513,50 @@ class HomeActivity : ComponentActivity() {
      * 같은 화면의 숫자들이 서로 다른 기간을 말하게 된다.
      */
     private fun categoryCycle(today: LocalDate = LocalDate.now()): BudgetCycle =
-        Payday.cycleBefore(today, SettingsStore.load(this).payDay, categoryCycleBack)
+        Payday.cycleBefore(today, SettingsStore.load(this).payDayOf(purse), categoryCycleBack)
 
+    /** 고른 지갑의 통계를 채운다. 토글·주기를 빨리 오가도 늦게 온 옛 결과가 덮어쓰지 않는다. */
     private fun loadStats() {
         val today: LocalDate = LocalDate.now()
-        val base: StatsData = StatsRepository.localOnly(this, today)
+        val target: Purse = purse
+        val back: Int = categoryCycleBack
+        val base: StatsData = StatsRepository.localOnly(this, target, today)
         val cycle: BudgetCycle = categoryCycle(today)
         val label: String =
             if (categoryCycleBack == 0) tr("이번 주기", "This cycle", "Este ciclo")
             else tr("지난 주기", "Last cycle", "Ciclo anterior")
         val range: String = StatusText.cycleRange(cycle)
-        stats = base.copy(
+        // 이미 본 도넛이 있으면 그대로 두고 막대·합계만 새로 — 토글을 오갈 때 빈 도넛이 번쩍이지 않게.
+        val previous: StatsData? = stats[target]?.takeIf { it.categoryCycleRange == range }
+        stats = stats + (target to base.copy(
             categoryCycleLabel = label,
             categoryCycleRange = range,
+            categories = previous?.categories.orEmpty(),
+            categoryTotal = previous?.categoryTotal ?: 0L,
             loadingCategories = true,
             error = null,
-        )
+        ))
 
         val app = applicationContext
         io.execute {
             val (totals: Map<String, Long>, error: String?) =
                 try {
-                    StatsRepository.fetchCategories(app, cycle)
+                    StatsRepository.fetchCategories(app, target, cycle)
                 } catch (e: Exception) {
                     emptyMap<String, Long>() to StatusText.error(e)
                 }
 
             runOnUiThread {
                 if (isFinishing || isDestroyed) return@runOnUiThread
-                stats = base.copy(
+                if (back != categoryCycleBack) return@runOnUiThread
+                stats = stats + (target to base.copy(
                     categoryCycleLabel = label,
                     categoryCycleRange = range,
                     categories = CategoryBreakdown.of(totals),
                     categoryTotal = CategoryBreakdown.total(totals),
                     loadingCategories = false,
                     error = error,
-                )
+                ))
             }
         }
     }

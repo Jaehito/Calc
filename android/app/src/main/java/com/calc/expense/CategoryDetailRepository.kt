@@ -11,28 +11,26 @@ import java.time.LocalDate
 object CategoryDetailRepository {
 
     /**
-     * [from]~[to] 사이에서 [category] 에 속한 줄들을 이름으로 묶는다.
+     * [purse] 곳간의 [from]~[to] 사이에서 [category] 에 속한 줄들을 이름으로 묶는다.
+     * 통계 도넛과 같은 곳간이라야 펼친 합계가 조각의 숫자와 같다.
      *
-     * 곳간 하나라도 읽지 못하면 실패로 본다 — 반쪽만 보여주면 사용자가 «이게 전부»로 읽고
+     * 읽지 못하면 실패로 본다 — 빈 목록으로 보여주면 사용자가 «이게 전부»로 읽고
      * 나머지를 영영 분류하지 않는다([StatsRepository.fetchCategories] 와 같은 판단).
      */
     fun load(
         context: Context,
+        purse: Purse,
         from: LocalDate,
         to: LocalDate,
         category: String,
     ): CategoryDetail {
-        val rows = ArrayList<PursedRow>()
-        for (purse in PurseAccess.linked(context)) {
-            val read: List<ExpenseRow> = FirestoreExpenseReader.rowsBetween(context, purse, from, to)
-                ?: return CategoryDetail(
-                    category = category,
-                    groups = emptyList(),
-                    error = tr("불러오지 못했어요. 잠시 뒤 다시 열어 주세요", "Couldn't load. Please try again in a moment", "No se pudo cargar. Vuelve a intentarlo en un momento"),
-                )
-            for (row in read) rows.add(PursedRow(purse, row))
-        }
-        return CategoryDetails.of(rows, category)
+        val read: List<ExpenseRow> = FirestoreExpenseReader.rowsBetween(context, purse, from, to)
+            ?: return CategoryDetail(
+                category = category,
+                groups = emptyList(),
+                error = tr("불러오지 못했어요. 잠시 뒤 다시 열어 주세요", "Couldn't load. Please try again in a moment", "No se pudo cargar. Vuelve a intentarlo en un momento"),
+            )
+        return CategoryDetails.of(read.map { PursedRow(purse, it) }, category)
     }
 
     /**

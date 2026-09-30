@@ -51,6 +51,7 @@ private val DayFormat: DateTimeFormatter get() = L10n.monthDay()
 @Composable
 fun CycleReportScreen(
     report: CycleReport?,
+    purseLabel: String,
     selected: Set<String>,
     onToggle: (FixedCostCandidate) -> Unit,
     onApply: () -> Unit,
@@ -71,7 +72,7 @@ fun CycleReportScreen(
                 if (report != null) {
                     Spacer(Modifier.height(3.dp))
                     Text(
-                        text = "${report.cycle.start.format(DayFormat)} ~ ${report.cycle.lastDay.format(DayFormat)}",
+                        text = "$purseLabel · ${report.cycle.start.format(DayFormat)} ~ ${report.cycle.lastDay.format(DayFormat)}",
                         color = HomePalette.Muted,
                         fontSize = 12.sp,
                     )
@@ -87,8 +88,10 @@ fun CycleReportScreen(
         }
 
         SpentCard(report)
-        Spacer(Modifier.height(12.dp))
-        CandidateCard(report, selected, onToggle, onApply, onEditFixed)
+        if (report.showsFixedCosts) {
+            Spacer(Modifier.height(12.dp))
+            CandidateCard(report, selected, onToggle, onApply, onEditFixed)
+        }
 
         if (report.categories.isNotEmpty()) {
             Spacer(Modifier.height(12.dp))

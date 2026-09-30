@@ -20,6 +20,7 @@ import java.util.concurrent.Executors
 class CategoryDetailActivity : ComponentActivity() {
 
     companion object {
+        private const val EXTRA_PURSE = "purse"
         private const val EXTRA_CATEGORY = "category"
         private const val EXTRA_FROM = "from"
         private const val EXTRA_TO = "to"
@@ -27,10 +28,12 @@ class CategoryDetailActivity : ComponentActivity() {
         /** @param category 빈 문자열이면 미분류 */
         fun intent(
             context: android.content.Context,
+            purse: Purse,
             category: String,
             from: LocalDate,
             to: LocalDate,
         ): Intent = Intent(context, CategoryDetailActivity::class.java)
+            .putExtra(EXTRA_PURSE, purse.key)
             .putExtra(EXTRA_CATEGORY, category)
             .putExtra(EXTRA_FROM, from.toString())
             .putExtra(EXTRA_TO, to.toString())
@@ -43,6 +46,10 @@ class CategoryDetailActivity : ComponentActivity() {
     private var busyName: String? by mutableStateOf(null)
     private var message: String? by mutableStateOf(null)
 
+    private val purse: Purse by lazy {
+        val key: String? = intent.getStringExtra(EXTRA_PURSE)
+        Purse.entries.firstOrNull { it.key == key } ?: Purse.PERSONAL
+    }
     private val category: String by lazy { intent.getStringExtra(EXTRA_CATEGORY).orEmpty() }
     private val from: LocalDate by lazy { readDate(EXTRA_FROM) }
     private val to: LocalDate by lazy { readDate(EXTRA_TO) }
@@ -78,7 +85,7 @@ class CategoryDetailActivity : ComponentActivity() {
 
     private fun load() {
         io.execute {
-            val loaded: CategoryDetail = CategoryDetailRepository.load(this, from, to, category)
+            val loaded: CategoryDetail = CategoryDetailRepository.load(this, purse, from, to, category)
             runOnUiThread {
                 if (isFinishing || isDestroyed) return@runOnUiThread
                 detail = loaded
@@ -104,7 +111,7 @@ class CategoryDetailActivity : ComponentActivity() {
                 0
             }
 
-            val reloaded: CategoryDetail = CategoryDetailRepository.load(this, from, to, category)
+            val reloaded: CategoryDetail = CategoryDetailRepository.load(this, purse, from, to, category)
             runOnUiThread {
                 if (isFinishing || isDestroyed) return@runOnUiThread
                 busyName = null
