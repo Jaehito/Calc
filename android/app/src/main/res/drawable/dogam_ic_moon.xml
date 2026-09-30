@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 도감 — 무지출 최장 연속 (달). 하루치가 직접 그린 그림 — 색이 들어 있어 tint 없이 쓴다. -->
+<!-- 도감 — 무지출 최장 연속 (달). 하루치가 직접 그린 그림 — 선은 자리 색(#7C6BD6)을 짙게 한 한 색이라 tint 없이 쓴다. 바탕 동그라미는 IconHues. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="26"
     android:viewportHeight="26">
     <group android:translateX="1" android:translateY="1">
-        <path android:fillColor="#B9A8F0" android:strokeColor="#15352B" android:strokeWidth="1.1" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M15.5,4.2 C11.2,4.6 8,8.2 8,12.5 C8,16.8 11.5,20.2 15.8,20.2 C17.4,20.2 18.8,19.7 20,19 C15.2,18.8 11.7,15.3 11.7,11 C11.7,8.2 13.2,5.6 15.5,4.2 Z" />
-        <path android:fillColor="#E9A23B" android:pathData="M5.2,6.5 A1,1 0 1 0 7.2,6.5 A1,1 0 1 0 5.2,6.5 Z" />
-        <path android:fillColor="#E9A23B" android:pathData="M4.2,11.5 A0.8,0.8 0 1 0 5.8,11.5 A0.8,0.8 0 1 0 4.2,11.5 Z" />
+        <path android:fillColor="#FFFFFF" android:strokeColor="#545094" android:strokeWidth="1.10" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M15.5,4.2 C11.2,4.6 8,8.2 8,12.5 C8,16.8 11.5,20.2 15.8,20.2 C17.4,20.2 18.8,19.7 20,19 C15.2,18.8 11.7,15.3 11.7,11 C11.7,8.2 13.2,5.6 15.5,4.2 Z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M5.2,6.5 A1,1 0 1 0 7.2,6.5 A1,1 0 1 0 5.2,6.5 Z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M4.2,11.5 A0.8,0.8 0 1 0 5.8,11.5 A0.8,0.8 0 1 0 4.2,11.5 Z" />
     </group>
 </vector>

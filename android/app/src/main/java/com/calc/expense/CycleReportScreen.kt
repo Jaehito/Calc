@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -393,7 +394,7 @@ private fun CategoryCard(report: CycleReport, onOpenCategory: (String) -> Unit) 
         Text(tr("어디에 썼나", "Where it went", "En qué se gastó"), color = HomePalette.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(14.dp))
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            report.categories.take(5).forEachIndexed { index, slice ->
+            report.categories.take(5).forEach { slice ->
                 // 통계 탭과 같은 문이다 — 누르면 그 카테고리 안이 이름별로 펼쳐진다.
                 Column(
                     modifier = Modifier
@@ -406,7 +407,7 @@ private fun CategoryCard(report: CycleReport, onOpenCategory: (String) -> Unit) 
                             modifier = Modifier
                                 .size(9.dp)
                                 .clip(RoundedCornerShape(3.dp))
-                                .background(HomePalette.categoryColor(index)),
+                                .background(Color(IconHues.category(slice.name))),
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
@@ -438,7 +439,7 @@ private fun CategoryCard(report: CycleReport, onOpenCategory: (String) -> Unit) 
                                 .fillMaxWidth(slice.percent.coerceIn(1, 100) / 100f)
                                 .height(6.dp)
                                 .clip(RoundedCornerShape(3.dp))
-                                .background(HomePalette.categoryColor(index)),
+                                .background(Color(IconHues.category(slice.name))),
                         )
                     }
                 }

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 카테고리 — 간식 (붕어빵). 하루치가 직접 그린 그림 — 색이 들어 있어 tint 없이 쓴다. -->
+<!-- 카테고리 — 간식 (붕어빵). 하루치가 직접 그린 그림 — 선은 자리 색(#F08A3C)을 짙게 한 한 색이라 tint 없이 쓴다. 바탕 동그라미는 IconHues. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="26"
     android:viewportHeight="26">
     <group android:translateX="1" android:translateY="1">
-        <path android:fillColor="#F4C46E" android:strokeColor="#15352B" android:strokeWidth="1.1" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M3.5,12 C6,7 13,6.5 17,9.5 L20.5,7 V17 L17,14.5 C13,17.5 6,17 3.5,12 Z" />
-        <path android:fillColor="#15352B" android:pathData="M6.2,11 A1.1,1.1 0 1 0 8.4,11 A1.1,1.1 0 1 0 6.2,11 Z" />
-        <path android:fillColor="#00000000" android:strokeColor="#15352B" android:strokeWidth="1.1" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M11,9.8 Q12.4,12 11,14.2 M13.8,10.3 Q15.1,12 13.8,13.7" />
+        <path android:fillColor="#FFFFFF" android:strokeColor="#A06530" android:strokeWidth="1.10" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M3.5,12 C6,7 13,6.5 17,9.5 L20.5,7 V17 L17,14.5 C13,17.5 6,17 3.5,12 Z" />
+        <path android:fillColor="#A06530" android:pathData="M6.2,11 A1.1,1.1 0 1 0 8.4,11 A1.1,1.1 0 1 0 6.2,11 Z" />
+        <path android:fillColor="#00000000" android:strokeColor="#A06530" android:strokeWidth="1.10" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M11,9.8 Q12.4,12 11,14.2 M13.8,10.3 Q15.1,12 13.8,13.7" />
     </group>
 </vector>

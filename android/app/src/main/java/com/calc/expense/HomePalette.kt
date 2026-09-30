@@ -31,20 +31,6 @@ object HomePalette {
 
     val Over = Color(0xFFF0544B)
 
-    /** 통계 카테고리 세그먼트 색. 큰 것부터 순서대로 돌려 쓴다. */
-    val CategoryColors = listOf(
-        Color(0xFF12C08B), // 민트
-        Color(0xFFE9A23B), // 골드
-        Color(0xFF3AA6C4), // 틸
-        Color(0xFF8E7BE6), // 바이올렛
-        Color(0xFFEC6A8B), // 로즈
-        Color(0xFF57B36B), // 그린
-        Color(0xFFE0864B), // 오렌지
-        Color(0xFF9AA8A2), // 회색(미분류·나머지)
-    )
-
-    fun categoryColor(index: Int): Color = CategoryColors[index % CategoryColors.size]
-
     /** 판정은 [Tone] 이 한다. 여기서는 색만 고른다 — XML 화면과 같은 규칙을 쓰기 위해서다. */
     fun of(tone: Tone): Color = when (tone) {
         Tone.REMAINING -> Accent

@@ -98,7 +98,7 @@ private fun ReportCard(onOpenReport: () -> Unit) {
             .clickable(onClick = onOpenReport)
             .padding(horizontal = 20.dp, vertical = 18.dp),
     ) {
-        IconBadge(R.drawable.ic_report, size = 38.dp)
+        IconBadge(R.drawable.ic_report, IconHues.REPORT, size = 38.dp)
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(tr("지난 주기 리포트", "Last cycle report", "Informe del ciclo anterior"), color = HomePalette.Ink, fontSize = 15.5f.sp, fontWeight = FontWeight.Bold)
@@ -385,16 +385,16 @@ private fun CategoryCard(data: StatsData, onToggle: () -> Unit, onOpenCategory: 
                 Spacer(Modifier.height(10.dp))
                 groups.forEachIndexed { i, group ->
                     if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(HomePalette.Line))
-                    CategoryRow(group, groupColor(i, group), onOpenCategory)
+                    CategoryRow(group, groupColor(group), onOpenCategory)
                 }
             }
         }
     }
 }
 
-/** 큰 것들은 팔레트 앞쪽 색을 차례로, «나머지»는 회색. */
-private fun groupColor(index: Int, group: CategoryGroup): Color =
-    if (group.isRest) HomePalette.CategoryColors.last() else HomePalette.categoryColor(index)
+/** 카테고리마다 정해진 색([IconHues.category]) — 격자·목록·리포트와 같다. «나머지»는 회색. */
+private fun groupColor(group: CategoryGroup): Color =
+    Color(group.name?.let { IconHues.category(it) } ?: IconHues.REST)
 
 /** ‹ 이번 주기 › — 두 주기(이번·지난) 사이를 오간다. 갈 곳이 없는 쪽 꺾쇠는 흐리게. */
 @Composable
@@ -435,10 +435,10 @@ private fun CategoryRow(group: CategoryGroup, color: Color, onOpenCategory: (Str
             .then(if (name != null) Modifier.clickable { onOpenCategory(name) } else Modifier)
             .padding(vertical = 10.dp),
     ) {
-        if (name != null) CategoryBadge(name, color) else IconBadge(R.drawable.ic_cat_other, size = 34.dp)
+        if (name != null) CategoryBadge(name) else IconBadge(R.drawable.ic_cat_other, IconHues.REST, size = 34.dp)
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            // 아이콘 동그라미는 모두 같은 회색이라, 도넛 조각 색은 이름 앞 점이 잇는다.
+            // 이름 앞 점 = 도넛 조각 색 = 아이콘 동그라미의 자리 색.
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(7.dp).clip(CircleShape).background(color))
                 Spacer(Modifier.width(6.dp))
@@ -466,31 +466,32 @@ private fun CategoryRow(group: CategoryGroup, color: Color, onOpenCategory: (Str
     }
 }
 
-/** 카테고리 아이콘. 기본 카테고리는 그림으로, 사용자가 만든 카테고리는 첫 글자로. */
+/** 카테고리 아이콘. 기본 카테고리는 그림으로, 사용자가 만든 카테고리는 첫 글자로. 바탕은 카테고리 색. */
 @Composable
-private fun CategoryBadge(storedName: String, color: Color) {
+private fun CategoryBadge(storedName: String) {
+    val hue: Int = IconHues.category(storedName)
     val icon: Int? = CategoryIcons.of(storedName)
     if (icon != null) {
-        IconBadge(icon, size = 34.dp)
+        IconBadge(icon, hue, size = 34.dp)
         return
     }
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier.size(34.dp).clip(CircleShape).background(HomePalette.Chip),
+        modifier = Modifier.size(34.dp).clip(CircleShape).background(Color(IconHues.back(hue))),
     ) {
-        Text(text = L10n.name(storedName).take(1), color = color, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        Text(text = L10n.name(storedName).take(1), color = Color(IconHues.ink(hue)), fontSize = 14.sp, fontWeight = FontWeight.Bold)
     }
 }
 
 /**
- * 회색 동그라미 안에 직접 그린 그림. 홈 세 줄·도감·기록 창 격자와 같은 [HomePalette.Chip] 바탕이다.
- * 그림은 색이 들어 있어 tint 하지 않는다.
+ * 자리 색 동그라미 안에 직접 그린 그림. 그림 선은 [hue] 를 짙게 한 한 색으로 이미 칠해져 있어
+ * tint 하지 않는다 — 바탕만 [IconHues.back]. 홈 세 줄·도감·기록 창 격자와 같은 규칙이다.
  */
 @Composable
-private fun IconBadge(icon: Int, size: Dp) {
+private fun IconBadge(icon: Int, hue: Int, size: Dp) {
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier.size(size).clip(CircleShape).background(HomePalette.Chip),
+        modifier = Modifier.size(size).clip(CircleShape).background(Color(IconHues.back(hue))),
     ) {
         Image(painterResource(icon), contentDescription = null, modifier = Modifier.size(size * 0.78f))
     }
@@ -508,10 +509,10 @@ private fun Donut(groups: List<CategoryGroup>, total: Long, modifier: Modifier) 
             val topLeft = Offset((size.width - diameter) / 2f, (size.height - diameter) / 2f)
             val arcSize = Size(diameter, diameter)
             var start = -90f
-            groups.forEachIndexed { i, group ->
+            groups.forEach { group ->
                 val sweep: Float = group.amount.toFloat() / sum.toFloat() * 360f
                 drawArc(
-                    color = groupColor(i, group),
+                    color = groupColor(group),
                     startAngle = start + gapDeg / 2f,
                     sweepAngle = (sweep - gapDeg).coerceAtLeast(0f),
                     useCenter = false,

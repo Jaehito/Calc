@@ -1,6 +1,7 @@
 package com.calc.expense
 
 import android.content.Context
+import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
 import android.text.Editable
@@ -271,6 +272,7 @@ class QuickInputActivity : AppCompatActivity() {
                 iconView.visibility = View.GONE
                 letter.visibility = View.VISIBLE
                 letter.text = L10n.name(label).take(1)
+                letter.setTextColor(IconHues.ink(IconHues.category(label)))
             }
             // 다섯 칸이 폭을 똑같이 나눠 갖는다.
             cell.layoutParams = GridLayout.LayoutParams(
@@ -297,7 +299,7 @@ class QuickInputActivity : AppCompatActivity() {
 
     /**
      * [label] 칸을 켜고 나머지를 끈다. 켜진 칸은 민트 테두리·초록 굵은 이름.
-     * 그림은 색이 들어 있어 칠하지 않는다 — 첫 글자 칸만 글자색을 바꾼다.
+     * 동그라미 바탕은 늘 그 카테고리 색이고, 그림·첫 글자도 같은 계열 짙은 색이라 켜고 끌 때 바꾸지 않는다.
      */
     private fun checkCell(label: String) {
         selectedCategory = if (label == CATEGORY_NONE) "" else label
@@ -307,14 +309,23 @@ class QuickInputActivity : AppCompatActivity() {
             val cell: View = ui.groupCategory.getChildAt(i)
             val on: Boolean = cell.tag == label
             cell.isSelected = on
-            cell.findViewById<View>(R.id.cellCircle)
-                .setBackgroundResource(if (on) R.drawable.bg_cell_on else R.drawable.bg_cell)
-            cell.findViewById<TextView>(R.id.cellLetter).setTextColor(if (on) accent else ink2)
+            cell.findViewById<View>(R.id.cellCircle).background = hueCircle(cell.tag as String, on)
             val name: TextView = cell.findViewById(R.id.cellLabel)
             name.setTextColor(if (on) accent else ink2)
             name.setTypeface(null, if (on) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
         }
     }
+
+    /** 카테고리 동그라미 — 그 카테고리 색을 옅게 한 바탕, 고른 칸만 민트 테두리. */
+    private fun hueCircle(storedName: String, on: Boolean): GradientDrawable =
+        GradientDrawable().apply {
+            setShape(GradientDrawable.OVAL)
+            setColor(IconHues.back(IconHues.category(storedName)))
+            if (on) {
+                val width: Int = Math.round(2.5f * resources.displayMetrics.density)
+                setStroke(width, ContextCompat.getColor(this@QuickInputActivity, R.color.app_bright))
+            }
+        }
 
     /**
      * [text] 에서 카테고리를 짐작해 칸을 켠다. 사용자가 아직 손대지 않았을 때만 불린다.
@@ -492,7 +503,9 @@ class QuickInputActivity : AppCompatActivity() {
             val letter: TextView = row.findViewById(R.id.entryLetter)
             letter.visibility = View.VISIBLE
             letter.text = L10n.name(category).take(1)
+            letter.setTextColor(IconHues.ink(IconHues.category(category)))
         }
+        row.findViewById<View>(R.id.entryCircle).background = hueCircle(category, on = false)
 
         val remove: View = row.findViewById(R.id.buttonRemove)
         remove.contentDescription = tr("지우기", "Delete", "Borrar") + " · " + expense.name

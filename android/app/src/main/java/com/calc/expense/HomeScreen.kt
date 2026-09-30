@@ -200,11 +200,11 @@ private fun PurseCard(snapshot: LedgerSnapshot, onClick: () -> Unit) {
         }
 
         Spacer(Modifier.height(10.dp))
-        FactRow(R.drawable.ic_spoon, tr("하루치", "Daily", "Diario"), snapshot.dailyRate, HomePalette.Ink)
+        FactRow(R.drawable.ic_envelope, IconHues.DAILY, tr("하루치", "Daily", "Diario"), snapshot.dailyRate, HomePalette.Ink)
         RowLine()
-        FactRow(R.drawable.ic_piggy, tr("곳간", "Savings", "Ahorro"), snapshot.vault, HomePalette.Accent)
+        FactRow(R.drawable.ic_piggy, IconHues.GOTGAN, tr("곳간", "Savings", "Ahorro"), snapshot.vault, HomePalette.Accent)
         RowLine()
-        FactRow(R.drawable.ic_receipt, tr("오늘 쓴 돈", "Spent today", "Gastado hoy"), snapshot.todaySpent, HomePalette.Ink)
+        FactRow(R.drawable.ic_bag, IconHues.SPENT, tr("오늘 쓴 돈", "Spent today", "Gastado hoy"), snapshot.todaySpent, HomePalette.Ink)
 
         Spacer(Modifier.height(14.dp))
         PeriodLine(snapshot)
@@ -212,13 +212,13 @@ private fun PurseCard(snapshot: LedgerSnapshot, onClick: () -> Unit) {
 }
 
 /**
- * 세 줄 중 하나. 회색 동그라미 안의 직접 그린 그림(한 숟갈·돼지 저금통·영수증) + 이름 + 오른쪽 끝 금액.
- * 그림은 색이 들어 있어 tint 하지 않는다. 동그라미는 도감·통계·기록 창과 같은 [HomePalette.Chip].
+ * 세 줄 중 하나. 자리 색 동그라미 안의 직접 그린 그림(용돈 봉투·돼지 저금통·쇼핑백) + 이름 + 오른쪽 끝 금액.
+ * 그림 선은 [hue] 를 짙게 한 한 색으로 이미 칠해져 있어 tint 하지 않는다 — 바탕만 [IconHues.back].
  */
 @Composable
-private fun FactRow(icon: Int, label: String, value: Long, valueColor: Color) {
+private fun FactRow(icon: Int, hue: Int, label: String, value: Long, valueColor: Color) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 7.dp)) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(34.dp).clip(CircleShape).background(HomePalette.Chip)) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(34.dp).clip(CircleShape).background(Color(IconHues.back(hue)))) {
             Image(painterResource(icon), contentDescription = null, modifier = Modifier.size(26.dp))
         }
         Spacer(Modifier.width(10.dp))

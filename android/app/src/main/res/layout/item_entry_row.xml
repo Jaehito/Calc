@@ -8,7 +8,9 @@
     android:minHeight="44dp"
     android:orientation="horizontal">
 
+    <!-- 바탕은 카테고리 색을 옅게 — 코드가 칠한다(IconHues). -->
     <FrameLayout
+        android:id="@+id/entryCircle"
         android:layout_width="28dp"
         android:layout_height="28dp"
         android:background="@drawable/bg_badge_soft">

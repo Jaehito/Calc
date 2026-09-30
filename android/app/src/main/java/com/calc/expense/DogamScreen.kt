@@ -484,7 +484,7 @@ private fun RecordsCard(ui: DogamUi, today: LocalDate) {
     CardColumn {
         val saved: Best? = bests.savedDay
         RecordRow(
-            icon = R.drawable.dogam_ic_coin,
+            icon = R.drawable.dogam_ic_coin, hue = IconHues.SAVED_DAY,
             title = tr("가장 많이 아낀 날", "Biggest saving day", "Día de mayor ahorro"),
             detail =
                 if (saved != null) "${saved.from.format(DayFormat)} · " + tr("${StatusText.won(saved.spent)} 씀", "spent ${StatusText.won(saved.spent)}", "gastado ${StatusText.won(saved.spent)}")
@@ -494,7 +494,7 @@ private fun RecordsCard(ui: DogamUi, today: LocalDate) {
         )
         Divider()
         RecordRow(
-            icon = R.drawable.dogam_ic_shield,
+            icon = R.drawable.dogam_ic_shield, hue = IconHues.KEEP_RUN,
             title = tr("하루치 최장 연속", "Longest on-budget streak", "Racha más larga en presupuesto"),
             detail = bests.keepRun?.let { range(it) } ?: tr(
                 "하루치 안에서 마친 날이 이어지면 늘어요",
@@ -507,7 +507,7 @@ private fun RecordsCard(ui: DogamUi, today: LocalDate) {
         Divider()
         val quiet: Best? = bests.noSpendRun
         RecordRow(
-            icon = R.drawable.dogam_ic_moon,
+            icon = R.drawable.dogam_ic_moon, hue = IconHues.NO_SPEND,
             title = tr("무지출 최장 연속", "Longest no-spend streak", "Racha más larga sin gastos"),
             detail = if (quiet != null) {
                 val purse: Purse? = quiet.purse
@@ -525,7 +525,7 @@ private fun RecordsCard(ui: DogamUi, today: LocalDate) {
         )
         Divider()
         RecordRow(
-            icon = R.drawable.dogam_ic_week,
+            icon = R.drawable.dogam_ic_week, hue = IconHues.CHEAP_WEEK,
             title = tr("가장 적게 쓴 주", "Cheapest week", "Semana más barata"),
             detail = bests.cheapestWeek?.let { range(it) } ?: tr(
                 "월요일부터 일요일까지 한 주가 지나면 나와요",
@@ -537,7 +537,7 @@ private fun RecordsCard(ui: DogamUi, today: LocalDate) {
         )
         Divider()
         RecordRow(
-            icon = R.drawable.dogam_ic_pen,
+            icon = R.drawable.dogam_ic_pen, hue = IconHues.RECORD_RUN,
             title = tr("기록 최장 연속", "Longest logging streak", "Racha más larga anotando"),
             detail = bests.recordRun?.let { range(it) } ?: tr(
                 "하루도 빠짐없이 적으면 늘어요",
@@ -565,6 +565,7 @@ private fun Divider() {
 @Composable
 private fun RecordRow(
     @DrawableRes icon: Int,
+    hue: Int,
     title: String,
     detail: String,
     value: String?,
@@ -572,10 +573,10 @@ private fun RecordRow(
     fresh: Boolean,
 ) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 12.dp)) {
-        // 통계·홈과 같은 회색 동그라미 + 직접 그린 그림(색이 들어 있어 tint 하지 않는다).
+        // 통계·홈과 같은 자리 색 동그라미 + 직접 그린 그림(선이 이미 자리 색이라 tint 하지 않는다).
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.size(38.dp).clip(CircleShape).background(HomePalette.Chip),
+            modifier = Modifier.size(38.dp).clip(CircleShape).background(Color(IconHues.back(hue))),
         ) {
             Image(painterResource(icon), contentDescription = null, modifier = Modifier.size(30.dp))
         }

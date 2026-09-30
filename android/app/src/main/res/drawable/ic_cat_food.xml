@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 카테고리 — 식비 (밥그릇). 하루치가 직접 그린 그림 — 색이 들어 있어 tint 없이 쓴다. -->
+<!-- 카테고리 — 식비 (밥그릇). 하루치가 직접 그린 그림 — 선은 자리 색(#12C08B)을 짙게 한 한 색이라 tint 없이 쓴다. 바탕 동그라미는 IconHues. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="26"
     android:viewportHeight="26">
     <group android:translateX="1" android:translateY="1">
-        <path android:fillColor="#FFFFFF" android:strokeColor="#15352B" android:strokeWidth="1.1" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M5.5,12.5 C5.5,8.5 8.5,6.5 12,6.5 C15.5,6.5 18.5,8.5 18.5,12.5 Z" />
-        <path android:fillColor="#12C08B" android:strokeColor="#15352B" android:strokeWidth="1.1" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M3.5,12.5 H20.5 C20.5,17.5 16.8,20.5 12,20.5 C7.2,20.5 3.5,17.5 3.5,12.5 Z" />
-        <path android:fillColor="#00000000" android:strokeColor="#15352B" android:strokeWidth="1.1" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M14.5,3.5 L10.5,9.5 M17.5,4.5 L12.5,9.8" />
+        <path android:fillColor="#FFFFFF" android:strokeColor="#108863" android:strokeWidth="1.10" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M5.5,12.5 C5.5,8.5 8.5,6.5 12,6.5 C15.5,6.5 18.5,8.5 18.5,12.5 Z" />
+        <path android:fillColor="#FFFFFF" android:strokeColor="#108863" android:strokeWidth="1.10" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M3.5,12.5 H20.5 C20.5,17.5 16.8,20.5 12,20.5 C7.2,20.5 3.5,17.5 3.5,12.5 Z" />
+        <path android:fillColor="#00000000" android:strokeColor="#108863" android:strokeWidth="1.10" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M14.5,3.5 L10.5,9.5 M17.5,4.5 L12.5,9.8" />
     </group>
 </vector>

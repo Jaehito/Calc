@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 카테고리 — 건강 (반창고). 하루치가 직접 그린 그림 — 색이 들어 있어 tint 없이 쓴다. -->
+<!-- 카테고리 — 건강 (반창고). 하루치가 직접 그린 그림 — 선은 자리 색(#E5534B)을 짙게 한 한 색이라 tint 없이 쓴다. 바탕 동그라미는 IconHues. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
@@ -7,12 +7,12 @@
     android:viewportHeight="26">
     <group android:translateX="1" android:translateY="1">
         <group android:rotation="-40" android:pivotX="12" android:pivotY="12">
-            <path android:fillColor="#F4C46E" android:strokeColor="#15352B" android:strokeWidth="1.1" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M6.2,8.3 H17.8 A3.7,3.7 0 0 1 21.5,12 V12 A3.7,3.7 0 0 1 17.8,15.7 H6.2 A3.7,3.7 0 0 1 2.5,12 V12 A3.7,3.7 0 0 1 6.2,8.3 Z" />
-            <path android:fillColor="#FFFFFF" android:strokeColor="#15352B" android:strokeWidth="1.1" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M8.8,8.3 H15.2 V15.7 H8.8 Z" />
-            <path android:fillColor="#15352B" android:pathData="M9.9,10.6 A0.7,0.7 0 1 0 11.3,10.6 A0.7,0.7 0 1 0 9.9,10.6 Z" />
-            <path android:fillColor="#15352B" android:pathData="M12.7,10.6 A0.7,0.7 0 1 0 14.1,10.6 A0.7,0.7 0 1 0 12.7,10.6 Z" />
-            <path android:fillColor="#15352B" android:pathData="M9.9,13.4 A0.7,0.7 0 1 0 11.3,13.4 A0.7,0.7 0 1 0 9.9,13.4 Z" />
-            <path android:fillColor="#15352B" android:pathData="M12.7,13.4 A0.7,0.7 0 1 0 14.1,13.4 A0.7,0.7 0 1 0 12.7,13.4 Z" />
+            <path android:fillColor="#FFFFFF" android:strokeColor="#99413A" android:strokeWidth="1.10" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M6.2,8.3 H17.8 A3.7,3.7 0 0 1 21.5,12 V12 A3.7,3.7 0 0 1 17.8,15.7 H6.2 A3.7,3.7 0 0 1 2.5,12 V12 A3.7,3.7 0 0 1 6.2,8.3 Z" />
+            <path android:fillColor="#FFFFFF" android:strokeColor="#99413A" android:strokeWidth="1.10" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M8.8,8.3 H15.2 V15.7 H8.8 Z" />
+            <path android:fillColor="#99413A" android:pathData="M9.9,10.6 A0.7,0.7 0 1 0 11.3,10.6 A0.7,0.7 0 1 0 9.9,10.6 Z" />
+            <path android:fillColor="#99413A" android:pathData="M12.7,10.6 A0.7,0.7 0 1 0 14.1,10.6 A0.7,0.7 0 1 0 12.7,10.6 Z" />
+            <path android:fillColor="#99413A" android:pathData="M9.9,13.4 A0.7,0.7 0 1 0 11.3,13.4 A0.7,0.7 0 1 0 9.9,13.4 Z" />
+            <path android:fillColor="#99413A" android:pathData="M12.7,13.4 A0.7,0.7 0 1 0 14.1,13.4 A0.7,0.7 0 1 0 12.7,13.4 Z" />
         </group>
     </group>
 </vector>
