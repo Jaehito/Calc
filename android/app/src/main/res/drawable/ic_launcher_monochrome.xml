@@ -1,24 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     테마 아이콘(안드로이드 13+)용 한 색 레이어. 시스템이 이 모양만 보고 배경색에 맞춰 칠한다.
-    지갑은 채우고 잠금 부분은 뚫고, 삐져나온 일력은 테두리만.
+    지갑은 채우고 얼굴(눈·입)은 뚫고, 물고 있는 일력은 테두리만.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <group android:rotation="-9" android:pivotX="52" android:pivotY="42">
+    <group android:rotation="-9" android:pivotX="52" android:pivotY="40">
         <path
             android:fillColor="#00000000"
             android:strokeColor="#FFFFFF"
             android:strokeWidth="4.5"
-            android:pathData="M41 30H65A3 3 0 0 1 68 33V49A3 3 0 0 1 65 52H41A3 3 0 0 1 38 49V33A3 3 0 0 1 41 30Z" />
+            android:pathData="M43,27 H63 A3,3 0 0 1 66,30 V44 A3,3 0 0 1 63,47 H43 A3,3 0 0 1 40,44 V30 A3,3 0 0 1 43,27 Z" />
     </group>
-    <!-- 지갑 몸통에서 잠금 부분을 뚫어 낸다(evenOdd). -->
+    <!-- 지갑 몸통에서 눈과 웃는 입을 뚫어 낸다(evenOdd). -->
     <path
         android:fillColor="#FFFFFF"
         android:fillType="evenOdd"
-        android:pathData="M35 48H73A7 7 0 0 1 80 55V73A7 7 0 0 1 73 80H35A7 7 0 0 1 28 73V55A7 7 0 0 1 35 48ZM67 57H79A5 5 0 0 1 84 62V65A5 5 0 0 1 79 70H67A5 5 0 0 1 62 65V62A5 5 0 0 1 67 57Z" />
-    <path android:fillColor="#FFFFFF" android:pathData="M66.6 63.5a2.4 2.4 0 1 0 4.8 0a2.4 2.4 0 1 0 -4.8 0Z" />
+        android:pathData="M33,46 H75 A9,9 0 0 1 84,55 V75 A9,9 0 0 1 75,84 H33 A9,9 0 0 1 24,75 V55 A9,9 0 0 1 33,46 Z M42.2,61 A2.8,2.8 0 1 0 47.8,61 A2.8,2.8 0 1 0 42.2,61 Z M58.2,61 A2.8,2.8 0 1 0 63.8,61 A2.8,2.8 0 1 0 58.2,61 Z M46.5,67 Q53,75 59.5,67 Q53,71.2 46.5,67 Z" />
 </vector>
