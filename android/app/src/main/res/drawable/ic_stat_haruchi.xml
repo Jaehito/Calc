@@ -1,26 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    알림 작은 아이콘. 앱 아이콘(웃는 지갑)의 한 색 판을 24dp 로 줄인 것 —
-    테마 아이콘 레이어([ic_launcher_monochrome])의 가운데 60칸을 그대로 옮겼다.
-    알림 아이콘은 모양(알파)만 쓰이고 색은 시스템이 칠한다.
+    알림 작은 아이콘(상단 알림줄). 앱 아이콘(웃는 지갑)을 그대로 줄이면 지갑 위에 가운데로 얹힌
+    종이 테두리가 손잡이처럼 보여 가방으로 읽혔다. 그래서 알림줄 전용으로 따로 그렸다.
+    - 오른쪽으로 튀어나온 잠금 탭 + 단추 구멍 → 지갑으로 읽힌다.
+    - 종이(하루치 한 장)는 테두리가 아니라 채운 한 장을 비스듬히 꽂고, 지갑과의 사이를 잘라 낸다.
+    알림 아이콘은 모양(알파)만 쓰이고 색은 시스템이 칠한다 — 틈은 바탕색이 아니라 잘라서 만든다.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-    <group android:scaleX="0.4" android:scaleY="0.4" android:translateX="-9.6" android:translateY="-9.6">
-        <group android:rotation="-9" android:pivotX="52" android:pivotY="40">
-            <path
-                android:fillColor="#00000000"
-                android:strokeColor="#FFFFFF"
-                android:strokeWidth="4.5"
-                android:pathData="M43,27 H63 A3,3 0 0 1 66,30 V44 A3,3 0 0 1 63,47 H43 A3,3 0 0 1 40,44 V30 A3,3 0 0 1 43,27 Z" />
+    <group>
+        <clip-path android:pathData="M0,0 H24 V7.4 H0 Z" />
+        <group android:rotation="-14" android:pivotX="9" android:pivotY="9">
+            <path android:fillColor="#FFFFFF" android:pathData="M6,2.6 H12.6 A1.4,1.4 0 0 1 14,4 V9.8 A1.4,1.4 0 0 1 12.6,11.2 H6 A1.4,1.4 0 0 1 4.6,9.8 V4 A1.4,1.4 0 0 1 6,2.6 Z" />
         </group>
-        <!-- 지갑 몸통에서 눈과 웃는 입을 뚫어 낸다(evenOdd). -->
-        <path
-            android:fillColor="#FFFFFF"
-            android:fillType="evenOdd"
-            android:pathData="M33,46 H75 A9,9 0 0 1 84,55 V75 A9,9 0 0 1 75,84 H33 A9,9 0 0 1 24,75 V55 A9,9 0 0 1 33,46 Z M42.2,61 A2.8,2.8 0 1 0 47.8,61 A2.8,2.8 0 1 0 42.2,61 Z M58.2,61 A2.8,2.8 0 1 0 63.8,61 A2.8,2.8 0 1 0 58.2,61 Z M46.5,67 Q53,75 59.5,67 Q53,71.2 46.5,67 Z" />
     </group>
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M5.3,8.3 H16.5 A2.8,2.8 0 0 1 19.3,11.1 V17.7 A2.8,2.8 0 0 1 16.5,20.5 H5.3 A2.8,2.8 0 0 1 2.5,17.7 V11.1 A2.8,2.8 0 0 1 5.3,8.3 Z M15.3,11.6 H19.9 A2.5,2.5 0 0 1 22.4,14.1 V14.9 A2.5,2.5 0 0 1 19.9,17.4 H15.3 A2.5,2.5 0 0 1 12.8,14.9 V14.1 A2.5,2.5 0 0 1 15.3,11.6 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M15.5,12.7 H20.9 A1.6,1.6 0 0 1 22.5,14.3 V14.7 A1.6,1.6 0 0 1 20.9,16.3 H15.5 A1.6,1.6 0 0 1 13.9,14.7 V14.3 A1.6,1.6 0 0 1 15.5,12.7 Z M15.9,14.5 A1.1,1.1 0 1 0 18.1,14.5 A1.1,1.1 0 1 0 15.9,14.5 Z" />
 </vector>
