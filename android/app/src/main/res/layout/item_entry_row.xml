@@ -8,7 +8,7 @@
     android:minHeight="44dp"
     android:orientation="horizontal">
 
-    <!-- 바탕은 카테고리 색을 옅게 — 코드가 칠한다(IconHues). -->
+    <!-- 흰 동그라미 + 옅은 그림자 — 코드가 칠한다(QuickInputActivity.iconCircle). -->
     <FrameLayout
         android:id="@+id/entryCircle"
         android:layout_width="28dp"

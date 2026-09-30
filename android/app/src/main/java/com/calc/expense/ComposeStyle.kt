@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -45,6 +46,20 @@ fun mintFieldColors(): TextFieldColors = OutlinedTextFieldDefaults.colors(
     focusedTextColor = HomePalette.Ink,
     unfocusedTextColor = HomePalette.Ink,
 )
+
+/**
+ * 작은 칸 아이콘의 흰 동그라미 + 옅은 그림자. 도감·통계·기록 창이 같은 모양을 쓴다 — 홈 두 칸의
+ * 흰 칸·옅은 그림자를 작게 줄인 것. 크기는 부르는 쪽이 [size] 로 정한다.
+ */
+fun Modifier.iconCircle(): Modifier = this
+    .shadow(
+        elevation = 3.dp,
+        shape = CircleShape,
+        ambientColor = HomePalette.Ink.copy(alpha = 0.06f),
+        spotColor = HomePalette.Ink.copy(alpha = 0.10f),
+    )
+    .clip(CircleShape)
+    .background(HomePalette.Card)
 
 /**
  * 설정으로 가는 톱니바퀴. 홈·통계·도감 머리 줄 오른쪽 같은 자리에 둔다 — 예전에는 홈에만

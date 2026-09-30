@@ -98,7 +98,7 @@ private fun ReportCard(onOpenReport: () -> Unit) {
             .clickable(onClick = onOpenReport)
             .padding(horizontal = 20.dp, vertical = 18.dp),
     ) {
-        IconBadge(R.drawable.ic_report, IconHues.REPORT, size = 38.dp)
+        IconBadge(R.drawable.ic_report, size = 38.dp)
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(tr("지난 주기 리포트", "Last cycle report", "Informe del ciclo anterior"), color = HomePalette.Ink, fontSize = 15.5f.sp, fontWeight = FontWeight.Bold)
@@ -435,7 +435,7 @@ private fun CategoryRow(group: CategoryGroup, color: Color, onOpenCategory: (Str
             .then(if (name != null) Modifier.clickable { onOpenCategory(name) } else Modifier)
             .padding(vertical = 10.dp),
     ) {
-        if (name != null) CategoryBadge(name) else IconBadge(R.drawable.ic_cat_other, IconHues.REST, size = 34.dp)
+        if (name != null) CategoryBadge(name) else IconBadge(R.drawable.ic_cat_other, size = 34.dp)
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             // 이름 앞 점 = 도넛 조각 색 = 아이콘 동그라미의 자리 색.
@@ -466,34 +466,34 @@ private fun CategoryRow(group: CategoryGroup, color: Color, onOpenCategory: (Str
     }
 }
 
-/** 카테고리 아이콘. 기본 카테고리는 그림으로, 사용자가 만든 카테고리는 첫 글자로. 바탕은 카테고리 색. */
+/** 카테고리 아이콘. 기본 카테고리는 그림으로, 사용자가 만든 카테고리는 첫 글자(카테고리 색)로. */
 @Composable
 private fun CategoryBadge(storedName: String) {
     val hue: Int = IconHues.category(storedName)
     val icon: Int? = CategoryIcons.of(storedName)
     if (icon != null) {
-        IconBadge(icon, hue, size = 34.dp)
+        IconBadge(icon, size = 34.dp)
         return
     }
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier.size(34.dp).clip(CircleShape).background(Color(IconHues.back(hue))),
+        modifier = Modifier.size(34.dp).iconCircle(),
     ) {
         Text(text = L10n.name(storedName).take(1), color = Color(IconHues.ink(hue)), fontSize = 14.sp, fontWeight = FontWeight.Bold)
     }
 }
 
 /**
- * 자리 색 동그라미 안에 직접 그린 그림. 그림 선은 [hue] 를 짙게 한 한 색으로 이미 칠해져 있어
- * tint 하지 않는다 — 바탕만 [IconHues.back]. 홈 세 줄·도감·기록 창 격자와 같은 규칙이다.
+ * 흰 동그라미 + 옅은 그림자 안에 직접 그린 여러 색 그림(선 1.3). 홈 두 칸 그림과 같은 결이고,
+ * 도감·기록 창 격자도 같은 모양이다([iconCircle]). 그림은 색이 들어 있어 tint 하지 않는다.
  */
 @Composable
-private fun IconBadge(icon: Int, hue: Int, size: Dp) {
+private fun IconBadge(icon: Int, size: Dp) {
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier.size(size).clip(CircleShape).background(Color(IconHues.back(hue))),
+        modifier = Modifier.size(size).iconCircle(),
     ) {
-        Image(painterResource(icon), contentDescription = null, modifier = Modifier.size(size * 0.78f))
+        Image(painterResource(icon), contentDescription = null, modifier = Modifier.size(size * 0.8f))
     }
 }
 

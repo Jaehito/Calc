@@ -65,9 +65,10 @@ object StatsRepository {
      */
     fun dailyBudget(context: Context, today: LocalDate): Long {
         val settings: Settings = SettingsStore.load(context)
-        val cycle: BudgetCycle = Payday.cycleOf(today, settings.payDay)
         var total = 0L
         for (purse in PurseAccess.linked(context)) {
+            // 지갑마다 주기가 다를 수 있다(공용 목표날).
+            val cycle: BudgetCycle = Payday.cycleOf(today, settings.payDayOf(purse))
             total += Budget.baseRate(settings.of(purse).monthlyBudget, cycle)
         }
         return total

@@ -42,6 +42,12 @@ object Payday {
 
     fun normalize(payDay: Int): Int = payDay.coerceIn(1, 31)
 
+    /** 저장한 경계(새 주기 시작일) → 사람이 적는 목표날(주기 마지막 날). 말일은 31. */
+    fun targetOf(payDay: Int): Int = normalize(payDay).let { if (it == 1) 31 else it - 1 }
+
+    /** 사람이 적은 목표날 → 저장할 경계. 31(말일)이면 다음 달 1일에 새 주기가 시작한다. */
+    fun fromTarget(target: Int): Int = target.coerceIn(1, 31).let { if (it == 31) 1 else it + 1 }
+
     /**
      * 그 달에 실제로 존재하는 월급날.
      * 31일로 지정해도 2월에는 28(29)일이 된다 — 없는 날짜를 만들지 않는다.

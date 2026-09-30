@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 카테고리 — 육아 (젖병). 하루치가 직접 그린 그림 — 선은 자리 색(#E86A9A)을 짙게 한 한 색이라 tint 없이 쓴다. 바탕 동그라미는 IconHues. -->
+<!-- 카테고리 — 육아 (젖병). 하루치가 직접 그린 그림 — 색이 들어 있어 tint 없이 쓴다. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="26"
     android:viewportHeight="26">
     <group android:translateX="1" android:translateY="1">
-        <path android:fillColor="#FFFFFF" android:strokeColor="#9B506D" android:strokeWidth="1.10" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M10,5 V3.8 C10,1.9 14,1.9 14,3.8 V5 Z" />
-        <path android:fillColor="#FFFFFF" android:strokeColor="#9B506D" android:strokeWidth="1.10" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M9,5 H15 A1,1 0 0 1 16,6 V6.9 A1,1 0 0 1 15,7.9 H9 A1,1 0 0 1 8,6.9 V6 A1,1 0 0 1 9,5 Z" />
-        <path android:fillColor="#FFFFFF" android:strokeColor="#9B506D" android:strokeWidth="1.10" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M10.4,7.9 H13.6 A3,3 0 0 1 16.6,10.9 V17.9 A3,3 0 0 1 13.6,20.9 H10.4 A3,3 0 0 1 7.4,17.9 V10.9 A3,3 0 0 1 10.4,7.9 Z" />
-        <path android:fillColor="#FFFFFF" android:pathData="M7.4,13.5 H16.6 V17.9 A3,3 0 0 1 13.6,20.9 H10.4 A3,3 0 0 1 7.4,17.9 Z" />
-        <path android:fillColor="#00000000" android:strokeColor="#9B506D" android:strokeWidth="1.10" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M10.4,7.9 H13.6 A3,3 0 0 1 16.6,10.9 V17.9 A3,3 0 0 1 13.6,20.9 H10.4 A3,3 0 0 1 7.4,17.9 V10.9 A3,3 0 0 1 10.4,7.9 Z" />
-        <path android:fillColor="#00000000" android:strokeColor="#9B506D" android:strokeWidth="1.10" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M7.4,11 H9.6 M7.4,13.5 H9.6" />
+        <path android:fillColor="#F4C46E" android:strokeColor="#15352B" android:strokeWidth="1.3" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M10,5 V3.8 C10,1.9 14,1.9 14,3.8 V5 Z" />
+        <path android:fillColor="#12C08B" android:strokeColor="#15352B" android:strokeWidth="1.3" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M9,5 H15 A1,1 0 0 1 16,6 V6.9 A1,1 0 0 1 15,7.9 H9 A1,1 0 0 1 8,6.9 V6 A1,1 0 0 1 9,5 Z" />
+        <path android:fillColor="#FFFFFF" android:strokeColor="#15352B" android:strokeWidth="1.3" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M10.4,7.9 H13.6 A3,3 0 0 1 16.6,10.9 V17.9 A3,3 0 0 1 13.6,20.9 H10.4 A3,3 0 0 1 7.4,17.9 V10.9 A3,3 0 0 1 10.4,7.9 Z" />
+        <path android:fillColor="#FFF1D6" android:pathData="M7.4,13.5 H16.6 V17.9 A3,3 0 0 1 13.6,20.9 H10.4 A3,3 0 0 1 7.4,17.9 Z" />
+        <path android:fillColor="#00000000" android:strokeColor="#15352B" android:strokeWidth="1.3" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M10.4,7.9 H13.6 A3,3 0 0 1 16.6,10.9 V17.9 A3,3 0 0 1 13.6,20.9 H10.4 A3,3 0 0 1 7.4,17.9 V10.9 A3,3 0 0 1 10.4,7.9 Z" />
+        <path android:fillColor="#00000000" android:strokeColor="#15352B" android:strokeWidth="1.3" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M7.4,11 H9.6 M7.4,13.5 H9.6" />
     </group>
 </vector>

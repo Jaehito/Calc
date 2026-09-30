@@ -246,4 +246,15 @@ class StatusTextTest {
         assertEquals("오늘 8,000원\n넘게 썼어요", over.before + over.amount + over.after)
         assertEquals(true, over.over)
     }
+
+    @Test
+    fun `목표날은 새 주기 시작일의 전날이고, 1일에 시작하면 말일이다`() {
+        L10n.lang = Lang.KO
+        assertEquals("매달 14일", StatusText.targetDay(15))
+        assertEquals("매달 말일", StatusText.targetDay(1))
+        assertEquals(15, Payday.fromTarget(14))
+        assertEquals(1, Payday.fromTarget(31))
+        assertEquals(31, Payday.targetOf(1))
+        assertEquals(14, Payday.targetOf(Payday.fromTarget(14)))
+    }
 }

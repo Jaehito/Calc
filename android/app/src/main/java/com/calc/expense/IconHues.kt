@@ -1,9 +1,8 @@
 package com.calc.expense
 
 /**
- * 아이콘 자리마다 정한 색 하나. 동그라미 바탕은 이 색을 흰색 쪽으로 옅게 한 [back],
- * 그림의 선은 이 색을 짙게 한 [ink] 다. 그림 파일(ic_cat_*·dogam_ic_* 등)에는 선 색이 이미
- * 들어 있으니, 여기 색을 바꾸면 그림도 다시 그려야 한다.
+ * 자리마다 정한 색 하나. 아이콘 그림은 여러 색(짙은 선 1.3)이라 이 색을 쓰지 않고, 이 색은
+ * 통계 도넛·이름 앞 점·홈 세 줄의 점, 그리고 직접 만든 카테고리의 첫 글자([ink])가 쓴다.
  *
  * 카테고리 색은 기록 창 격자·통계 목록·도넛·리포트가 같이 쓴다 — 같은 카테고리는 어디서나 같은 색.
  * 사용자가 만든 카테고리는 기본 카테고리가 쓰지 않는 색 중에서 이름으로 하나를 고른다(늘 같은 색).
@@ -16,14 +15,6 @@ object IconHues {
     val DAILY: Int = 0xFF12C08B.toInt()
     val GOTGAN: Int = 0xFFE86A9A.toInt()
     val SPENT: Int = 0xFFF08A3C.toInt()
-
-    /** 도감 «나의 기록» 다섯 줄과 지난 주기 리포트. */
-    val SAVED_DAY: Int = 0xFFD98E1F.toInt()
-    val KEEP_RUN: Int = 0xFF12C08B.toInt()
-    val NO_SPEND: Int = 0xFF7C6BD6.toInt()
-    val CHEAP_WEEK: Int = 0xFF3F82C9.toInt()
-    val RECORD_RUN: Int = 0xFFD9587F.toInt()
-    val REPORT: Int = 0xFFD98E1F.toInt()
 
     /** 통계의 «나머지 N개» 묶음. */
     val REST: Int = 0xFF9AA8A2.toInt()
@@ -58,10 +49,7 @@ object IconHues {
     fun category(storedName: String): Int =
         categories[storedName] ?: extras[Math.floorMod(storedName.hashCode(), extras.size)]
 
-    /** 동그라미 바탕. */
-    fun back(hue: Int): Int = mix(hue, 0xFFFFFFFF.toInt(), 0.84f)
-
-    /** 그림 선·첫 글자 색. 그림 파일의 선 색과 같은 규칙이다. */
+    /** 직접 만든 카테고리의 첫 글자 색 — 자리 색을 짙게 해서 흰 동그라미 위에서도 읽힌다. */
     fun ink(hue: Int): Int = mix(hue, 0xFF0B1F19.toInt(), 0.35f)
 
     private fun mix(from: Int, to: Int, weight: Float): Int {

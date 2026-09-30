@@ -33,12 +33,14 @@ object Ledger {
         if (!config.hasBudget || !PurseAccess.isLinked(context, purse)) return null
 
         val stored: BudgetState? = BudgetStore.load(context, purse)
-        val cycle: BudgetCycle = Payday.cycleOf(today, settings.payDay)
+        // 지갑마다 주기가 다를 수 있다 — 공용은 가정이 정한 목표날을 쓴다.
+        val payDay: Int = settings.payDayOf(purse)
+        val cycle: BudgetCycle = Payday.cycleOf(today, payDay)
         val reckoning: Budget.Reckoning = Budget.reckon(
             stored,
             config.monthlyBudget,
             today,
-            settings.payDay,
+            payDay,
             spentOn = { day -> SpendingCache.spentOn(context, purse, day) },
             // 재설치로 앵커가 사라져도 저장소에서 돌아온 이번 주기 기록부터 다시 접는다([Budget.startingAnchor]).
             firstSpentDay = firstSpentDay(context, purse, cycle, today),
@@ -60,7 +62,7 @@ object Ledger {
             targetDay = cycle.lastDay,
             daysLeft = cycle.daysLeftFrom(today),
             cycleDays = cycle.length,
-            vsLastCycle = compareToLastCycle(context, purse, cycle, today, cycleSpent, settings.payDay),
+            vsLastCycle = compareToLastCycle(context, purse, cycle, today, cycleSpent, payDay),
         )
     }
 
@@ -177,9 +179,9 @@ object Ledger {
     ): String? {
         val settings = SettingsStore.load(context)
 
-        val cycle: BudgetCycle = Payday.cycleOf(today, settings.payDay)
+        val cycle: BudgetCycle = Payday.cycleOf(today, settings.payDayOf(purse))
         // 지난 주기까지 함께 맞춘다 — 홈의 «지난 주기 이맘때보다» 비교가 그 캐시를 읽는다.
-        val previous: BudgetCycle = Payday.cycleOf(cycle.start.minusDays(1), settings.payDay)
+        val previous: BudgetCycle = Payday.cycleOf(cycle.start.minusDays(1), settings.payDayOf(purse))
 
         // 두 주기가 걸친 달들을 한 번씩만 조회한다. 주기가 한 달을 공유해도 중복 조회하지 않는다.
         var month: YearMonth = YearMonth.from(previous.start)

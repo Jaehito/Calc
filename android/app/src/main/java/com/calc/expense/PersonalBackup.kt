@@ -82,7 +82,7 @@ data class PersonalBackup(
 
         /**
          * 되찾은 값을 이 폰 설정에 얹는다. 공용 곳간 칸은 건드리지 않는다 — 그건 가정 문서가 준다.
-         * 월급날은 되찾되, 가정에 묶여 있으면 뒤이어 가정 값이 덮는다([HouseholdSync.pull]).
+         * 개인 주기(목표날)도 되찾는다. 공용 주기는 가정 문서가 따로 준다([HouseholdSync.pull]).
          */
         fun applyTo(local: Settings, backup: PersonalBackup): Settings = local.copy(
             payDay = backup.payDay,

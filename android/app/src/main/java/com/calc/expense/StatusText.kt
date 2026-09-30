@@ -38,10 +38,16 @@ object StatusText {
 
     data class Headline(val before: String, val amount: String, val after: String, val over: Boolean)
 
-    /** 월급날 한 줄 — «매달 15일». 홈 두 칸과 설정이 같은 말을 쓴다. */
-    fun payday(day: Int): String {
-        val d: Int = Payday.normalize(day)
-        return tr("매달 ${d}일", "Every ${L10n.ordinal(d)}", "Cada día $d")
+    /**
+     * 목표날 한 줄 — «매달 14일». 저장하는 값은 새 주기가 시작하는 날([payDay])이고, 사람에게는
+     * 그 전날(주기 마지막 날)을 목표날로 보여 준다. 1일에 시작하면 목표날은 말일이다.
+     * 홈 두 칸과 설정이 같은 말을 쓴다.
+     */
+    fun targetDay(payDay: Int): String {
+        val d: Int = Payday.normalize(payDay)
+        if (d == 1) return tr("매달 말일", "End of each month", "Fin de cada mes")
+        val t: Int = d - 1
+        return tr("매달 ${t}일", "Every ${L10n.ordinal(t)}", "Cada día $t")
     }
 
     /**

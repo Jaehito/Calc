@@ -299,7 +299,7 @@ class QuickInputActivity : AppCompatActivity() {
 
     /**
      * [label] 칸을 켜고 나머지를 끈다. 켜진 칸은 민트 테두리·초록 굵은 이름.
-     * 동그라미 바탕은 늘 그 카테고리 색이고, 그림·첫 글자도 같은 계열 짙은 색이라 켜고 끌 때 바꾸지 않는다.
+     * 동그라미는 흰 바탕 + 옅은 그림자(통계·도감과 같은 모양), 그림은 여러 색이라 켜고 끌 때 바꾸지 않는다.
      */
     private fun checkCell(label: String) {
         selectedCategory = if (label == CATEGORY_NONE) "" else label
@@ -309,23 +309,26 @@ class QuickInputActivity : AppCompatActivity() {
             val cell: View = ui.groupCategory.getChildAt(i)
             val on: Boolean = cell.tag == label
             cell.isSelected = on
-            cell.findViewById<View>(R.id.cellCircle).background = hueCircle(cell.tag as String, on)
+            iconCircle(cell.findViewById(R.id.cellCircle), on, elevationDp = 2.5f)
             val name: TextView = cell.findViewById(R.id.cellLabel)
             name.setTextColor(if (on) accent else ink2)
             name.setTypeface(null, if (on) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
         }
     }
 
-    /** 카테고리 동그라미 — 그 카테고리 색을 옅게 한 바탕, 고른 칸만 민트 테두리. */
-    private fun hueCircle(storedName: String, on: Boolean): GradientDrawable =
-        GradientDrawable().apply {
+    /**
+     * 카테고리 동그라미 — 흰 바탕 + 옅은 그림자, 고른 칸만 민트 테두리. 그림자는 뷰 높이(elevation)가
+     * 동그란 바탕 모양 그대로 그린다.
+     */
+    private fun iconCircle(circle: View, on: Boolean, elevationDp: Float) {
+        val density: Float = resources.displayMetrics.density
+        circle.background = GradientDrawable().apply {
             setShape(GradientDrawable.OVAL)
-            setColor(IconHues.back(IconHues.category(storedName)))
-            if (on) {
-                val width: Int = Math.round(2.5f * resources.displayMetrics.density)
-                setStroke(width, ContextCompat.getColor(this@QuickInputActivity, R.color.app_bright))
-            }
+            setColor(ContextCompat.getColor(this@QuickInputActivity, R.color.app_card))
+            if (on) setStroke(Math.round(2.5f * density), ContextCompat.getColor(this@QuickInputActivity, R.color.app_bright))
         }
+        circle.elevation = elevationDp * density
+    }
 
     /**
      * [text] 에서 카테고리를 짐작해 칸을 켠다. 사용자가 아직 손대지 않았을 때만 불린다.
@@ -505,7 +508,7 @@ class QuickInputActivity : AppCompatActivity() {
             letter.text = L10n.name(category).take(1)
             letter.setTextColor(IconHues.ink(IconHues.category(category)))
         }
-        row.findViewById<View>(R.id.entryCircle).background = hueCircle(category, on = false)
+        iconCircle(row.findViewById(R.id.entryCircle), on = false, elevationDp = 1.5f)
 
         val remove: View = row.findViewById(R.id.buttonRemove)
         remove.contentDescription = tr("지우기", "Delete", "Borrar") + " · " + expense.name

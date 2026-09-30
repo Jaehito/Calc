@@ -61,7 +61,10 @@ import kotlinx.coroutines.delay
 /** 설정 폼의 값. 저장·검증 로직은 Activity 쪽(순수 상태가 아니라서)에 남는다. */
 data class SettingsFormUi(
     val categoriesText: String = "",
+    /** 개인 목표날(주기 마지막 날, 말일 = 31). 저장할 때 새 주기 시작일로 바꾼다([Payday.fromTarget]). */
     val payDayText: String = "",
+    /** 공용 목표날. 두 폰이 같이 쓴다. */
+    val sharedPayDayText: String = "",
     val personalName: String = "",
     val personalBudgetText: String = "",
     val sharedName: String = "",
@@ -103,7 +106,7 @@ data class SettingsUi(
 private enum class SettingsPage { MAIN, SHARED, PAYMENT, ACCOUNT }
 
 /** 값 하나를 고치는 창. 첫 화면에는 값만 보이고, 누르면 이 창이 뜬다. */
-private enum class EditField { BUDGET, PAYDAY, PERSONAL_NAME, SHARED_NAME, SHARED_BUDGET, CATEGORIES, LANGUAGE }
+private enum class EditField { BUDGET, PAYDAY, PERSONAL_NAME, SHARED_NAME, SHARED_BUDGET, SHARED_PAYDAY, CATEGORIES, LANGUAGE }
 
 /**
  * 설정 화면. 홈·통계·도감·내역과 같은 민트 카드 화면군으로 맞춘다.
@@ -266,14 +269,24 @@ private fun MainPage(
             }
         }
         RowDivider()
-        ValueRow(tr("월급날", "Payday", "Día de cobro"), paydayLabel(form.payDayText)) { onEdit(EditField.PAYDAY) }
+        ValueRow(
+            if (ui.householdPaired) tr("개인 목표날", "Personal target day", "Día objetivo personal")
+            else tr("목표날", "Target day", "Día objetivo"),
+            paydayLabel(form.payDayText),
+        ) { onEdit(EditField.PAYDAY) }
+        if (ui.householdPaired) {
+            RowDivider()
+            ValueRow(tr("공용 목표날", "Shared target day", "Día objetivo compartido"), paydayLabel(form.sharedPayDayText)) {
+                onEdit(EditField.SHARED_PAYDAY)
+            }
+        }
     }
     if (ui.householdPaired) {
         Note(
             tr(
-                "월급날은 개인·공용이 같은 날에 끊겨요. 공용 예산·월급날은 배우자 폰에도 같이 바뀌어요.",
-                "Personal and shared cycles end on the same payday. The shared budget and payday also change on your partner's phone.",
-                "Los ciclos personal y compartido terminan el mismo día de cobro. El presupuesto compartido y el día de cobro también cambian en el teléfono de tu pareja.",
+                "공용 예산·공용 목표날은 배우자 폰에도 같이 바뀌어요.",
+                "The shared budget and shared target day also change on your partner's phone.",
+                "El presupuesto y el día objetivo compartidos también cambian en el teléfono de tu pareja.",
             ),
         )
     }
@@ -320,9 +333,17 @@ private fun budgetLabel(text: String): String {
     return if (amount > 0L) StatusText.won(amount) else tr("정하지 않음", "Not set", "Sin definir")
 }
 
+/** 목표날 편집 창의 도움말. */
+private fun targetHelper(): String = tr(
+    "이날까지가 한 주기예요. 다음 날부터 새 주기가 시작돼요. 말일로 하려면 31을 적어 주세요.",
+    "A cycle ends on this day; the next one starts the day after. Use 31 for the end of the month.",
+    "Un ciclo termina este día y el siguiente empieza al día siguiente. Usa 31 para fin de mes.",
+)
+
+/** 목표날 칸(사람이 적은 목표날)을 «매달 14일»·«매달 말일»로. */
 private fun paydayLabel(text: String): String {
-    val day: Int = text.trim().toIntOrNull()?.let(Payday::normalize) ?: 1
-    return tr("매달 ${day}일", "Every ${L10n.ordinal(day)}", "Cada día $day")
+    val target: Int = text.trim().toIntOrNull() ?: 31
+    return StatusText.targetDay(Payday.fromTarget(target))
 }
 
 private fun categoryCountLabel(text: String): String {
@@ -389,12 +410,16 @@ private fun SharedPage(
             ValueRow(tr("공용 한 달 예산", "Shared monthly budget", "Presupuesto mensual compartido"), budgetLabel(ui.form.sharedBudgetText)) {
                 onEdit(EditField.SHARED_BUDGET)
             }
+            RowDivider()
+            ValueRow(tr("공용 목표날", "Shared target day", "Día objetivo compartido"), paydayLabel(ui.form.sharedPayDayText)) {
+                onEdit(EditField.SHARED_PAYDAY)
+            }
         }
         Note(
             tr(
-                "이름·예산·월급날을 바꾸면 배우자 폰에도 같이 바뀌어요.",
-                "Changes to the name, budget and payday also apply on your partner's phone.",
-                "Los cambios de nombre, presupuesto y día de cobro también se aplican en el teléfono de tu pareja.",
+                "이름·예산·목표날을 바꾸면 배우자 폰에도 같이 바뀌어요.",
+                "Changes to the name, budget and target day also apply on your partner's phone.",
+                "Los cambios de nombre, presupuesto y día objetivo también se aplican en el teléfono de tu pareja.",
             ),
         )
         Spacer(Modifier.height(18.dp))
@@ -627,16 +652,26 @@ private fun EditDialog(
         )
 
         EditField.PAYDAY -> TextEditDialog(
-            title = tr("월급날", "Payday", "Día de cobro"),
+            title = tr("목표날", "Target day", "Día objetivo"),
             initial = form.payDayText,
             keyboardType = KeyboardType.Number,
-            helper = tr(
-                "이날부터 다음 월급 전날까지가 한 주기예요. 달력 달로 쓰려면 1을 적어 주세요.",
-                "A cycle runs from this day to the day before the next payday. Use 1 for calendar months.",
-                "Un ciclo va de este día al día anterior al siguiente cobro. Usa 1 para meses naturales.",
-            ),
+            helper = targetHelper(),
             filter = { it.filter(Char::isDigit).take(2) },
             onSave = { save(form.copy(payDayText = it)) },
+            onDismiss = onDismiss,
+        )
+
+        EditField.SHARED_PAYDAY -> TextEditDialog(
+            title = tr("공용 목표날", "Shared target day", "Día objetivo compartido"),
+            initial = form.sharedPayDayText,
+            keyboardType = KeyboardType.Number,
+            helper = targetHelper() + " " + tr(
+                "배우자 폰에도 같이 바뀌어요.",
+                "It also changes on your partner's phone.",
+                "También cambia en el teléfono de tu pareja.",
+            ),
+            filter = { it.filter(Char::isDigit).take(2) },
+            onSave = { save(form.copy(sharedPayDayText = it)) },
             onDismiss = onDismiss,
         )
 

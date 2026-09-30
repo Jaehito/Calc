@@ -2,7 +2,6 @@ package com.calc.expense
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -18,22 +17,19 @@ class IconHuesTest {
         "주거" to "ic_cat_housing", "기타" to "ic_cat_other",
     )
 
-    private fun hex(color: Int): String = "#%06X".format(color and 0xFFFFFF)
 
-    /** 그림 파일에 든 선 색(한 가지뿐이어야 한다). */
-    private fun strokeColors(name: String): Set<String> =
-        Regex("""android:strokeColor="(#[0-9A-Fa-f]{6})"""")
+    /** 그림 파일에 든 짙은 선(#15352B)의 굵기들. */
+    private fun inkWidths(name: String): Set<String> =
+        Regex("""android:strokeColor="#15352B" android:strokeWidth="([0-9.]+)"""")
             .findAll(File(drawables, "$name.xml").readText())
-            .map { it.groupValues[1].uppercase() }
+            .map { it.groupValues[1] }
             .toSet()
 
-    @Test fun `그림 선 색이 코드의 자리 색 규칙과 같다`() {
-        val places: Map<String, Int> = categoryFiles.entries.associate { (stored, file) -> file to IconHues.category(stored) } + mapOf(
-            "dogam_ic_coin" to IconHues.SAVED_DAY, "dogam_ic_shield" to IconHues.KEEP_RUN, "dogam_ic_moon" to IconHues.NO_SPEND,
-            "dogam_ic_week" to IconHues.CHEAP_WEEK, "dogam_ic_pen" to IconHues.RECORD_RUN, "ic_report" to IconHues.REPORT,
-        )
-        for ((file, hue) in places) {
-            assertEquals(file, setOf(hex(IconHues.ink(hue))), strokeColors(file))
+    @Test fun `작은 칸 그림은 모두 짙은 선 1_3 한 가지 굵기다`() {
+        val files: List<String> = categoryFiles.values.toList() +
+            listOf("dogam_ic_coin", "dogam_ic_shield", "dogam_ic_moon", "dogam_ic_week", "dogam_ic_pen", "ic_report")
+        for (file in files) {
+            assertEquals(file, setOf("1.3"), inkWidths(file))
         }
     }
 
@@ -50,10 +46,8 @@ class IconHuesTest {
         }
     }
 
-    @Test fun `바탕은 옅고 선은 짙다`() {
+    @Test fun `첫 글자 색은 자리 색보다 짙다`() {
         val hue: Int = IconHues.category("식비")
-        assertNotEquals(hue, IconHues.back(hue))
-        assertTrue(brightness(IconHues.back(hue)) > brightness(hue))
         assertTrue(brightness(IconHues.ink(hue)) < brightness(hue))
     }
 

@@ -67,7 +67,7 @@ class PurseHistoryActivity : ComponentActivity() {
     private fun load() {
         val settings: Settings = SettingsStore.load(this)
         val title: String = tr("${settings.labelOf(purse)} 내역", "${settings.labelOf(purse)} history", "Historial de ${settings.labelOf(purse)}")
-        val cycle: BudgetCycle = Payday.cycleBefore(LocalDate.now(), settings.payDay, cycleBack)
+        val cycle: BudgetCycle = Payday.cycleBefore(LocalDate.now(), settings.payDayOf(purse), cycleBack)
         val periodName: String = if (cycleBack == 0) tr("이번 주기", "This cycle", "Este ciclo") else tr("지난 주기", "Last cycle", "Ciclo anterior")
         val periodRange: String = StatusText.cycleRange(cycle)
         val shared: Boolean = purse == Purse.SHARED

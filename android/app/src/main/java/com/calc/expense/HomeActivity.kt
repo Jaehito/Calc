@@ -58,7 +58,8 @@ class HomeActivity : ComponentActivity() {
     private var purses: List<Purse> by mutableStateOf(emptyList())
     private var snapshots: Map<Purse, LedgerSnapshot?> by mutableStateOf(emptyMap())
     private var purseLabels: Map<Purse, String> by mutableStateOf(emptyMap())
-    private var payDay: Int by mutableStateOf(Payday.DEFAULT)
+    /** 지갑마다의 주기 경계. 공용은 가정이 정한 목표날을 쓴다. */
+    private var payDays: Map<Purse, Int> by mutableStateOf(emptyMap())
 
     /** 홈 토글로 고른 지갑. 마지막에 고른 쪽을 기억한다. */
     private var purse: Purse by mutableStateOf(Purse.PERSONAL)
@@ -125,7 +126,7 @@ class HomeActivity : ComponentActivity() {
                             purse = purse,
                             purses = purses,
                             purseLabels = purseLabels,
-                            payDay = payDay,
+                            payDay = payDays[purse] ?: Payday.DEFAULT,
                             notice = notice,
                             onSelectPurse = { selectPurse(it) },
                             onSetBudget = { startActivity(Intent(this@HomeActivity, OnboardingActivity::class.java)) },
@@ -137,7 +138,7 @@ class HomeActivity : ComponentActivity() {
                                 )
                             },
                             onEditBudget = { p -> openSettings(if (p == Purse.SHARED) MainActivity.EDIT_SHARED_BUDGET else MainActivity.EDIT_BUDGET) },
-                            onEditPayday = { openSettings(MainActivity.EDIT_PAYDAY) },
+                            onEditPayday = { p -> openSettings(if (p == Purse.SHARED) MainActivity.EDIT_SHARED_PAYDAY else MainActivity.EDIT_PAYDAY) },
                         )
                     }
 
@@ -609,7 +610,7 @@ class HomeActivity : ComponentActivity() {
         purses = linked
         snapshots = linked.associateWith { Ledger.snapshot(this, it, today) }
         purseLabels = linked.associateWith { settings.labelOf(it) }
-        payDay = settings.payDay
+        payDays = linked.associateWith { settings.payDayOf(it) }
         // 기억해 둔 지갑이 연결에서 빠졌으면(가정 연결 해제 등) 개인으로 돌아온다.
         val saved: String? = getSharedPreferences(PREFS, MODE_PRIVATE).getString(KEY_PURSE, null)
         purse = linked.firstOrNull { it.key == saved } ?: linked.firstOrNull() ?: Purse.PERSONAL

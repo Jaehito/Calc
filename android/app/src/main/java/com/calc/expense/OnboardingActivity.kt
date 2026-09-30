@@ -209,10 +209,12 @@ class OnboardingActivity : ComponentActivity() {
         val budget: String =
             if (settings.shared.hasBudget) tr("공용 예산 ", "Shared budget ", "Presupuesto compartido ") + StatusText.won(settings.shared.monthlyBudget)
             else tr("공용 예산 미정", "Shared budget not set", "Presupuesto compartido sin definir")
+        // 가정 문서가 주는 건 공용 목표날이다(개인 목표날은 이 폰의 값 그대로).
+        val target: String = StatusText.targetDay(settings.sharedPayDay)
         return tr(
-            "가정에 연결됐어요.\n$budget · 월급날 ${settings.payDay}일을 가져왔어요.",
-            "Joined the household.\nImported: $budget · payday ${L10n.dayOfMonth(settings.payDay)}.",
-            "Te uniste al hogar.\nSe importó: $budget · día de cobro ${L10n.dayOfMonth(settings.payDay)}.",
+            "가정에 연결됐어요.\n$budget · 공용 목표날($target)을 가져왔어요.",
+            "Joined the household.\nImported: $budget · shared target day: $target.",
+            "Te uniste al hogar.\nSe importó: $budget · día objetivo compartido: $target.",
         )
     }
 

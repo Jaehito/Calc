@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 카테고리 — 기타 (택배 상자). 하루치가 직접 그린 그림 — 선은 자리 색(#7D8B94)을 짙게 한 한 색이라 tint 없이 쓴다. 바탕 동그라미는 IconHues. -->
+<!-- 카테고리 — 기타 (택배 상자). 하루치가 직접 그린 그림 — 색이 들어 있어 tint 없이 쓴다. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="26"
     android:viewportHeight="26">
     <group android:translateX="1" android:translateY="1">
-        <path android:fillColor="#FFFFFF" android:strokeColor="#556569" android:strokeWidth="1.10" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M4,8.5 L12,4.5 L20,8.5 V16.5 L12,20.5 L4,16.5 Z" />
-        <path android:fillColor="#00000000" android:strokeColor="#556569" android:strokeWidth="1.10" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M4,8.5 L12,12.5 L20,8.5 M12,12.5 V20.5 M8,6.5 L16,10.5" />
+        <path android:fillColor="#F4C46E" android:strokeColor="#15352B" android:strokeWidth="1.3" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M4,8.5 L12,4.5 L20,8.5 V16.5 L12,20.5 L4,16.5 Z" />
+        <path android:fillColor="#00000000" android:strokeColor="#15352B" android:strokeWidth="1.3" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M4,8.5 L12,12.5 L20,8.5 M12,12.5 V20.5 M8,6.5 L16,10.5" />
     </group>
 </vector>

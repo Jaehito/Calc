@@ -8,6 +8,8 @@ import androidx.security.crypto.MasterKey
 
 object SettingsStore {
 
+    private const val KEY_SHARED_PAY_DAY = "shared.payDay"
+
     private const val TAG = "SettingsStore"
     private const val SECURE_FILE = "expense_secure"
     private const val PLAIN_FILE = "expense_plain"
@@ -58,10 +60,13 @@ object SettingsStore {
         val p = prefs(context)
         val d = Settings()
 
+        val payDay: Int = Payday.normalize(p.getInt("payDay", d.payDay))
         return Settings(
-            payDay = Payday.normalize(p.getInt("payDay", d.payDay)),
+            payDay = payDay,
             personal = loadPurse(p, Purse.PERSONAL),
             shared = loadPurse(p, Purse.SHARED),
+            // 공용 목표날을 따로 두기 전에는 두 지갑이 한 날을 썼다 — 없으면 그 날을 이어 쓴다.
+            sharedPayDay = Payday.normalize(p.getInt(KEY_SHARED_PAY_DAY, payDay)),
         )
     }
 
@@ -79,6 +84,7 @@ object SettingsStore {
     fun save(context: Context, s: Settings) {
         val edit = prefs(context).edit()
             .putInt("payDay", Payday.normalize(s.payDay))
+            .putInt(KEY_SHARED_PAY_DAY, Payday.normalize(s.sharedPayDay))
 
         for (purse in Purse.entries) {
             val p = s.of(purse)

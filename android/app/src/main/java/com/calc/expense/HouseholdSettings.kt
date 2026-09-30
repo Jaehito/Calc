@@ -3,11 +3,11 @@ package com.calc.expense
 /**
  * 가정 문서(`households/{id}`)에 두는, **두 폰이 같이 쓰는** 설정.
  *
- * 공용 곳간의 예산·이름, 그리고 월급날. 월급날은 개인 곳간 주기도 정하지만 한 집이 한 날에
- * 끊기는 편이 공용 곳간 숫자를 맞추기 쉽다 — 두 폰의 주기가 다르면 같은 공용 지출을 두고
- * 서로 다른 «이번 주기»를 보게 된다.
+ * 공용 곳간의 예산·이름·주기 경계(목표날 다음 날). 공용 주기는 두 폰이 같아야 한다 — 다르면
+ * 같은 공용 지출을 두고 서로 다른 «이번 주기»를 보게 된다.
  *
- * 개인 곳간 예산은 여기 없다. 그건 사람마다 다르다.
+ * 개인 곳간 예산과 개인 주기는 여기 없다. 그건 사람마다 다르다. (예전에는 한 날을 두 지갑이
+ * 같이 썼다. 문서의 `payDay` 칸은 이름 그대로 두고 이제 공용 주기만 뜻한다.)
  */
 data class SharedSettings(
     val payDay: Int,
@@ -30,14 +30,14 @@ object HouseholdSettings {
     const val KEY_SHARED_NAME = "sharedName"
 
     fun of(settings: Settings): SharedSettings = SharedSettings(
-        payDay = Payday.normalize(settings.payDay),
+        payDay = Payday.normalize(settings.sharedPayDay),
         sharedBudget = settings.shared.monthlyBudget.coerceAtLeast(0L),
         sharedName = settings.shared.name.trim(),
     )
 
-    /** 가정 값을 로컬 설정에 덮는다. 개인 곳간과 그 밖의 값은 그대로 둔다. */
+    /** 가정 값을 로컬 설정에 덮는다. 개인 곳간(개인 주기 포함)과 그 밖의 값은 그대로 둔다. */
     fun apply(local: Settings, remote: SharedSettings): Settings = local.copy(
-        payDay = Payday.normalize(remote.payDay),
+        sharedPayDay = Payday.normalize(remote.payDay),
         shared = local.shared.copy(
             monthlyBudget = remote.sharedBudget.coerceAtLeast(0L),
             name = remote.sharedName.trim().take(Purse.MAX_NAME_LENGTH),

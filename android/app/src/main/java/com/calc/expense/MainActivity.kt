@@ -33,6 +33,7 @@ class MainActivity : ComponentActivity() {
         const val EDIT_BUDGET = "BUDGET"
         const val EDIT_SHARED_BUDGET = "SHARED_BUDGET"
         const val EDIT_PAYDAY = "PAYDAY"
+        const val EDIT_SHARED_PAYDAY = "SHARED_PAYDAY"
     }
 
     private val io = Executors.newSingleThreadExecutor()
@@ -318,9 +319,9 @@ class MainActivity : ComponentActivity() {
                     householdJoinInput = ""
                     setHouseholdMessage(
                         tr(
-                            "가정에 연결됐어요. 공용 예산과 월급날은 배우자와 같이 써요.",
-                            "Joined the household. The shared budget and payday follow the household's values.",
-                            "Te uniste al hogar. El presupuesto compartido y el día de cobro siguen los del hogar.",
+                            "가정에 연결됐어요. 공용 예산과 공용 목표날은 배우자와 같이 써요.",
+                            "Joined the household. The shared budget and shared target day follow the household's values.",
+                            "Te uniste al hogar. El presupuesto compartido y el día objetivo compartido siguen los del hogar.",
                         ),
                     )
                     pullHouseholdSettings()
@@ -547,7 +548,8 @@ class MainActivity : ComponentActivity() {
         val s: Settings = SettingsStore.load(this)
         form = SettingsFormUi(
             categoriesText = Categories.format(CategoryStore.load(this).map(L10n::name)),
-            payDayText = s.payDay.toString(),
+            payDayText = Payday.targetOf(s.payDay).toString(),
+            sharedPayDayText = Payday.targetOf(s.sharedPayDay).toString(),
             personalName = s.personal.name,
             personalBudgetText = budgetText(s.personal.monthlyBudget),
             sharedName = s.shared.name,
@@ -558,11 +560,13 @@ class MainActivity : ComponentActivity() {
     private fun budgetText(amount: Long): String = if (amount > 0L) amount.toString() else ""
 
     /**
-     * 칸의 값으로 만든 설정. 월급날 칸을 비웠거나 숫자가 아니면 저장된 날을 그대로 둔다 — 칸을
-     * 지우고 나가는 순간 주기가 1일로 바뀌면 곳간 숫자가 통째로 달라진다.
+     * 칸의 값으로 만든 설정. 목표날 칸을 비웠거나 숫자가 아니면 저장된 날을 그대로 둔다 — 칸을
+     * 지우고 나가는 순간 주기가 1일로 바뀌면 곳간 숫자가 통째로 달라진다. 칸은 목표날(주기
+     * 마지막 날)이고, 저장은 새 주기 시작일이다([Payday.fromTarget]).
      */
     private fun currentForm(stored: Settings): Settings = Settings(
-        payDay = form.payDayText.trim().toIntOrNull()?.let(Payday::normalize) ?: stored.payDay,
+        payDay = form.payDayText.trim().toIntOrNull()?.let(Payday::fromTarget) ?: stored.payDay,
+        sharedPayDay = form.sharedPayDayText.trim().toIntOrNull()?.let(Payday::fromTarget) ?: stored.sharedPayDay,
         personal = PurseSettings(
             monthlyBudget = readBudget(form.personalBudgetText),
             name = form.personalName.trim(),

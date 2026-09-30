@@ -46,8 +46,8 @@ import androidx.compose.ui.unit.sp
  * («오늘은 112,300원까지 써도 괜찮아요»). 넘겼으면 넘긴 금액만 빨강. 날짜·지갑 이름 줄은 없다 —
  * 날짜는 폰 위에 이미 있고, 지갑은 토글이 말한다.
  *
- * 그 아래 카드가 그 돈이 어디서 왔는지(하루치·곳간·오늘 쓴 돈)와 월급날까지의 막대, 맨 아래 두 칸이
- * 그 숫자를 정하는 두 값(한 달 예산·월급날)이다. 두 칸은 누르면 그 값을 고치는 창이 바로 뜬다.
+ * 그 아래 카드가 그 돈이 어디서 왔는지(하루치·곳간·오늘 쓴 돈)와 목표날까지의 막대, 맨 아래 두 칸이
+ * 그 숫자를 정하는 두 값(한 달 예산·목표날)이다. 두 칸은 누르면 그 값을 고치는 창이 바로 뜬다.
  *
  * 오늘 쓴 항목 목록은 일부러 넣지 않았다. 지금 앱은 날짜별 합계만 캐시하므로
  * 항목을 보여주려면 홈에 들어올 때마다 저장소를 왕복해야 한다.
@@ -60,6 +60,7 @@ fun HomeScreen(
     /** 연결된 지갑들. 둘이면 아래에 개인·공용 토글이 뜬다. */
     purses: List<Purse>,
     purseLabels: Map<Purse, String>,
+    /** 고른 지갑의 주기 경계(새 주기 시작일). 두 칸에는 그 전날을 목표날로 보여 준다. */
     payDay: Int,
     notice: String?,
     onSelectPurse: (Purse) -> Unit,
@@ -69,7 +70,7 @@ fun HomeScreen(
     /** 개인 예산이 없을 때 — 첫 시작 흐름(월급·고정비)으로 보낸다. */
     onSetBudget: () -> Unit,
     onEditBudget: (Purse) -> Unit,
-    onEditPayday: () -> Unit,
+    onEditPayday: (Purse) -> Unit,
 ) {
     Box(
         modifier = Modifier
@@ -133,11 +134,12 @@ fun HomeScreen(
                         modifier = Modifier.weight(1f),
                     )
                     SettingBox(
-                        label = tr("월급날", "Payday", "Día de cobro"),
-                        value = StatusText.payday(payDay),
+                        label = if (snapshot.purse == Purse.SHARED) tr("공용 목표날", "Shared target day", "Día objetivo compartido")
+                        else tr("목표날", "Target day", "Día objetivo"),
+                        value = StatusText.targetDay(payDay),
                         icon = R.drawable.ic_payday_calendar,
                         tilt = 9f,
-                        onClick = onEditPayday,
+                        onClick = { onEditPayday(snapshot.purse) },
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -269,7 +271,7 @@ private fun SourceCard(snapshot: LedgerSnapshot, onClick: () -> Unit) {
 }
 
 /**
- * 오늘 숫자를 정하는 값 하나(한 달 예산 · 월급날). 누르면 그 값을 고치는 창이 바로 뜬다.
+ * 오늘 숫자를 정하는 값 하나(한 달 예산 · 목표날). 누르면 그 값을 고치는 창이 바로 뜬다.
  * 칸이 커서 그림도 크게 — 오른쪽 아래 모서리에 살짝 기울여 걸치고, 칸 밖은 잘린다.
  */
 @Composable

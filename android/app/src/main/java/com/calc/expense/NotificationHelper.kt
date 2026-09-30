@@ -61,10 +61,13 @@ object NotificationHelper {
     private const val SHORTCUT_ID = "gotgan_record"
 
     /**
-     * 카드 제목. 알림 머리에 앱 이름(하루치)이 이미 붙으므로 제목은 카드가 하는 일을 말한다.
-     * (예전 제목 «곳간»은 이제 아껴 쌓인 돈만 가리키는 말이라 쓸 수 없다.)
+     * 카드 제목 — 앱 이름 그대로. 잠금화면·알림 목록에서 이 카드가 어느 앱의 것인지 바로 보이게.
+     * (예전 «지출 기록»은 기능 이름이라 앱과 이어지지 않았고, «곳간»은 이제 아껴 쌓인 돈만 가리킨다.)
      */
-    private val CARD_TITLE: String get() = tr("지출 기록", "Log spending", "Anotar gasto")
+    private val CARD_TITLE: String get() = tr("하루치", "Haruchi", "Haruchi")
+
+    /** 앱 아이콘을 길게 누르면 나오는 바로가기 이름. 이건 하는 일을 말한다. */
+    private val SHORTCUT_LABEL: String get() = tr("지출 기록", "Log spending", "Anotar gasto")
 
     private const val REQUEST_OPEN_INPUT = 1
     private const val REQUEST_DISMISSED = 2
@@ -145,8 +148,8 @@ object NotificationHelper {
      */
     private fun ensureShortcut(context: Context) {
         val shortcut = ShortcutInfoCompat.Builder(context, SHORTCUT_ID)
-            .setShortLabel(CARD_TITLE)
-            .setLongLabel(tr("지출 기록", "Log spending", "Anotar gasto"))
+            .setShortLabel(SHORTCUT_LABEL)
+            .setLongLabel(SHORTCUT_LABEL)
             .setIcon(IconCompat.createWithResource(context, R.drawable.ic_wallet))
             // 바로가기도 기록으로 간다 — [EntryRoutes] 의 OTHER 규칙과 같은 목적지다.
             .setIntent(
