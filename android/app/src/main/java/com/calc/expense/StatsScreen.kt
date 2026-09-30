@@ -48,8 +48,8 @@ import java.time.LocalDate
  */
 @Composable
 fun StatsScreen(
-    /** 지갑마다의 통계. 옆으로 밀려 나가는 화면도 제 숫자를 들고 있어야 해서 지갑으로 묻는다. */
-    dataOf: (Purse) -> StatsData,
+    /** 고른 지갑의 통계. */
+    data: StatsData,
     purse: Purse,
     /** 연결된 지갑들. 둘이면 아래에 개인·공용 토글이 뜬다. */
     purses: List<Purse>,
@@ -85,16 +85,11 @@ fun StatsScreen(
             }
             Spacer(Modifier.height(16.dp))
 
-            PurseSlide(purse = purse, purses = purses) { p ->
-                val data: StatsData = dataOf(p)
-                Column {
-                    TrendCard(data)
-                    Spacer(Modifier.height(12.dp))
-                    CategoryCard(data, onToggleCategoryMonth, onOpenCategory)
-                    Spacer(Modifier.height(12.dp))
-                    ReportCard(p, onOpenReport)
-                }
-            }
+            TrendCard(data)
+            Spacer(Modifier.height(12.dp))
+            CategoryCard(data, onToggleCategoryMonth, onOpenCategory)
+            Spacer(Modifier.height(12.dp))
+            ReportCard(purse, onOpenReport)
         }
 
         if (hasToggle) {

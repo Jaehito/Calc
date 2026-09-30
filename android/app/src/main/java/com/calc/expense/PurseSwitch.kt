@@ -1,14 +1,8 @@
 package com.calc.expense
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -32,11 +26,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/** 토글과 화면이 함께 움직이는 시간. 둘이 같아야 알약과 화면이 한 동작으로 보인다. */
+/** 알약이 옆 칸으로 미끄러지는 시간. 화면은 기다리지 않고 바로 바뀐다. */
 private const val SWITCH_MS = 280
 
 /**
  * 개인·공용 토글. 홈과 통계 아래 가운데 떠 있다 — 한 번에 한 지갑만 보인다.
+ * 움직이는 건 알약뿐이다. 화면까지 밀면 숫자를 보려고 매번 기다려야 한다.
  *
  * 칸 폭은 모두 같다(가장 긴 이름에 맞춤). 그래야 진한 알약이 칸 하나만큼 옆으로 미끄러진다.
  */
@@ -93,29 +88,6 @@ fun PurseToggle(
             }
         }
     }
-}
-
-/**
- * 지갑이 바뀔 때 화면을 옆으로 민다. 토글에서 오른쪽 칸(공용)을 고르면 화면이 왼쪽으로,
- * 왼쪽 칸(개인)을 고르면 오른쪽으로 간다 — 손가락이 간 쪽에서 새 화면이 들어온다.
- */
-@Composable
-fun PurseSlide(
-    purse: Purse,
-    purses: List<Purse>,
-    modifier: Modifier = Modifier,
-    content: @Composable (Purse) -> Unit,
-) {
-    AnimatedContent(
-        targetState = purse,
-        transitionSpec = {
-            val dir: Int = if (purses.indexOf(targetState) > purses.indexOf(initialState)) 1 else -1
-            (slideInHorizontally(tween(SWITCH_MS)) { w -> dir * w } + fadeIn(tween(SWITCH_MS)))
-                .togetherWith(slideOutHorizontally(tween(SWITCH_MS)) { w -> -dir * w } + fadeOut(tween(SWITCH_MS)))
-        },
-        modifier = modifier,
-        label = "purseSlide",
-    ) { p -> content(p) }
 }
 
 private val ToggleTrack = Color(0xFFE5E8EB)

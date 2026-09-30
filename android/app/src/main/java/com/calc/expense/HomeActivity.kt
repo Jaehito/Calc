@@ -65,7 +65,7 @@ class HomeActivity : ComponentActivity() {
     private var purse: Purse by mutableStateOf(Purse.PERSONAL)
     private var notice: String? by mutableStateOf(null)
 
-    /** 지갑마다의 통계. 토글을 바꾸면 밀려 나가는 쪽도 제 숫자로 그린다. */
+    /** 지갑마다의 통계. 토글을 오갈 때 이미 읽은 쪽은 바로 그린다. */
     private var stats: Map<Purse, StatsData> by mutableStateOf(emptyMap())
     /** 카테고리 막대가 보는 주기. 0 = 이번 주기, 1 = 지난 주기. 달력 달이 아니라 월급날 기준이다. */
     private var categoryCycleBack: Int by mutableStateOf(0)
@@ -115,7 +115,7 @@ class HomeActivity : ComponentActivity() {
                 Box(modifier = Modifier.fillMaxSize().padding(padding)) {
                     when (tab) {
                         1 -> StatsScreen(
-                            dataOf = { p -> stats[p] ?: StatsRepository.localOnly(this@HomeActivity, p) },
+                            data = stats[purse] ?: StatsRepository.localOnly(this@HomeActivity, purse),
                             purse = purse,
                             purses = purses,
                             purseLabels = purseLabels,
