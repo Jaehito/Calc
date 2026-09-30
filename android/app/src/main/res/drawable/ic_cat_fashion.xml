@@ -6,6 +6,6 @@
     android:viewportWidth="26"
     android:viewportHeight="26">
     <group android:translateX="1" android:translateY="1">
-        <path android:fillColor="#FF8A7A" android:strokeColor="#15352B" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M8.2,4 L3.8,7 L5.8,11.2 L7.6,10.3 V20.5 H16.4 V10.3 L18.2,11.2 L20.2,7 L15.8,4 C14.8,5.9 9.2,5.9 8.2,4 Z" />
+        <path android:fillColor="#FF8A7A" android:strokeColor="#15352B" android:strokeWidth="1.1" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M8.2,4 L3.8,7 L5.8,11.2 L7.6,10.3 V20.5 H16.4 V10.3 L18.2,11.2 L20.2,7 L15.8,4 C14.8,5.9 9.2,5.9 8.2,4 Z" />
     </group>
 </vector>

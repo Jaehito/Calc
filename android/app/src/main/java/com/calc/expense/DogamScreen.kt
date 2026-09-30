@@ -1,6 +1,7 @@
 package com.calc.expense
 
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,7 +22,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -484,7 +484,7 @@ private fun RecordsCard(ui: DogamUi, today: LocalDate) {
     CardColumn {
         val saved: Best? = bests.savedDay
         RecordRow(
-            icon = R.drawable.dogam_ic_coin, tint = Color(0xFFD98E1F), back = Color(0xFFFFF4E0),
+            icon = R.drawable.dogam_ic_coin,
             title = tr("가장 많이 아낀 날", "Biggest saving day", "Día de mayor ahorro"),
             detail =
                 if (saved != null) "${saved.from.format(DayFormat)} · " + tr("${StatusText.won(saved.spent)} 씀", "spent ${StatusText.won(saved.spent)}", "gastado ${StatusText.won(saved.spent)}")
@@ -494,7 +494,7 @@ private fun RecordsCard(ui: DogamUi, today: LocalDate) {
         )
         Divider()
         RecordRow(
-            icon = R.drawable.dogam_ic_shield, tint = HomePalette.Accent, back = HomePalette.Soft,
+            icon = R.drawable.dogam_ic_shield,
             title = tr("하루치 최장 연속", "Longest on-budget streak", "Racha más larga en presupuesto"),
             detail = bests.keepRun?.let { range(it) } ?: tr(
                 "하루치 안에서 마친 날이 이어지면 늘어요",
@@ -507,7 +507,7 @@ private fun RecordsCard(ui: DogamUi, today: LocalDate) {
         Divider()
         val quiet: Best? = bests.noSpendRun
         RecordRow(
-            icon = R.drawable.dogam_ic_moon, tint = Color(0xFF7C6BD6), back = Color(0xFFEEEBFA),
+            icon = R.drawable.dogam_ic_moon,
             title = tr("무지출 최장 연속", "Longest no-spend streak", "Racha más larga sin gastos"),
             detail = if (quiet != null) {
                 val purse: Purse? = quiet.purse
@@ -525,7 +525,7 @@ private fun RecordsCard(ui: DogamUi, today: LocalDate) {
         )
         Divider()
         RecordRow(
-            icon = R.drawable.dogam_ic_week, tint = Color(0xFF3F82C9), back = Color(0xFFE6F0FA),
+            icon = R.drawable.dogam_ic_week,
             title = tr("가장 적게 쓴 주", "Cheapest week", "Semana más barata"),
             detail = bests.cheapestWeek?.let { range(it) } ?: tr(
                 "월요일부터 일요일까지 한 주가 지나면 나와요",
@@ -537,7 +537,7 @@ private fun RecordsCard(ui: DogamUi, today: LocalDate) {
         )
         Divider()
         RecordRow(
-            icon = R.drawable.dogam_ic_pen, tint = Color(0xFFD9587F), back = Color(0xFFFCE8EF),
+            icon = R.drawable.dogam_ic_pen,
             title = tr("기록 최장 연속", "Longest logging streak", "Racha más larga anotando"),
             detail = bests.recordRun?.let { range(it) } ?: tr(
                 "하루도 빠짐없이 적으면 늘어요",
@@ -565,8 +565,6 @@ private fun Divider() {
 @Composable
 private fun RecordRow(
     @DrawableRes icon: Int,
-    tint: Color,
-    back: Color,
     title: String,
     detail: String,
     value: String?,
@@ -574,11 +572,12 @@ private fun RecordRow(
     fresh: Boolean,
 ) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 12.dp)) {
+        // 통계·홈과 같은 회색 동그라미 + 직접 그린 그림(색이 들어 있어 tint 하지 않는다).
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(back),
+            modifier = Modifier.size(38.dp).clip(CircleShape).background(HomePalette.Chip),
         ) {
-            Icon(painterResource(icon), contentDescription = null, tint = tint, modifier = Modifier.size(21.dp))
+            Image(painterResource(icon), contentDescription = null, modifier = Modifier.size(30.dp))
         }
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {

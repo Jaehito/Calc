@@ -1,16 +1,21 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- 기록 버튼 (연필). 하루치가 직접 그린 그림 — 색이 들어 있어 tint 없이 쓴다. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="26"
-    android:viewportHeight="26">
-    <group android:translateX="1" android:translateY="1">
-        <group android:rotation="45" android:pivotX="12" android:pivotY="12">
-            <path android:fillColor="#E9A23B" android:strokeColor="#15352B" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M9.6,4.5 H14.4 A0.6,0.6 0 0 1 15,5.1 V15.9 A0.6,0.6 0 0 1 14.4,16.5 H9.6 A0.6,0.6 0 0 1 9,15.9 V5.1 A0.6,0.6 0 0 1 9.6,4.5 Z" />
-            <path android:fillColor="#FF8A7A" android:strokeColor="#15352B" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M10.2,2 H13.8 A1.2,1.2 0 0 1 15,3.2 V3.8 A1.2,1.2 0 0 1 13.8,5 H10.2 A1.2,1.2 0 0 1 9,3.8 V3.2 A1.2,1.2 0 0 1 10.2,2 Z" />
-            <path android:fillColor="#FFF1D6" android:strokeColor="#15352B" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M9,16.5 H15 L12,21.5 Z" />
-            <path android:fillColor="#15352B" android:pathData="M11.1,20 L12.9,20 L12,21.5 Z" />
-        </group>
-    </group>
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- 기록하기 버튼. Lucide «pencil» (ISC). 선 아이콘이라 색은 Compose 의 Icon tint 가 정한다. -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#000000"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#000000"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="m15 5 4 4" />
 </vector>

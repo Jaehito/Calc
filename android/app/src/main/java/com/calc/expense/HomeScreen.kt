@@ -20,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -113,16 +114,16 @@ private fun RecordButton(onClick: () -> Unit, modifier: Modifier) {
         contentAlignment = Alignment.Center,
         modifier = modifier
             .size(58.dp)
-            .shadow(elevation = 8.dp, shape = CircleShape, ambientColor = HomePalette.Gold, spotColor = HomePalette.Gold)
+            .shadow(elevation = 8.dp, shape = CircleShape, ambientColor = HomePalette.Accent, spotColor = HomePalette.Accent)
             .clip(CircleShape)
-            .background(HomePalette.Cream)
+            .background(HomePalette.AccentBright)
             .clickable(onClick = onClick),
     ) {
-        // 직접 그린 색연필이라 tint 하지 않는다.
-        Image(
+        Icon(
             painter = painterResource(R.drawable.ic_pencil),
             contentDescription = tr("기록하기", "Log spending", "Anotar gasto"),
-            modifier = Modifier.size(32.dp),
+            tint = Color.White,
+            modifier = Modifier.size(24.dp),
         )
     }
 }
@@ -199,7 +200,7 @@ private fun PurseCard(snapshot: LedgerSnapshot, onClick: () -> Unit) {
         }
 
         Spacer(Modifier.height(10.dp))
-        FactRow(R.drawable.ic_calendar, tr("하루치", "Daily", "Diario"), snapshot.dailyRate, HomePalette.Ink)
+        FactRow(R.drawable.ic_spoon, tr("하루치", "Daily", "Diario"), snapshot.dailyRate, HomePalette.Ink)
         RowLine()
         FactRow(R.drawable.ic_piggy, tr("곳간", "Savings", "Ahorro"), snapshot.vault, HomePalette.Accent)
         RowLine()
@@ -210,12 +211,15 @@ private fun PurseCard(snapshot: LedgerSnapshot, onClick: () -> Unit) {
     }
 }
 
-/** 세 줄 중 하나. 직접 그린 그림(일력·항아리·영수증) + 이름 + 오른쪽 끝 금액. 그림은 색이 들어 있어 tint 하지 않는다. */
+/**
+ * 세 줄 중 하나. 회색 동그라미 안의 직접 그린 그림(한 숟갈·돼지 저금통·영수증) + 이름 + 오른쪽 끝 금액.
+ * 그림은 색이 들어 있어 tint 하지 않는다. 동그라미는 도감·통계·기록 창과 같은 [HomePalette.Chip].
+ */
 @Composable
 private fun FactRow(icon: Int, label: String, value: Long, valueColor: Color) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 7.dp)) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(30.dp)) {
-            Image(painterResource(icon), contentDescription = null, modifier = Modifier.size(28.dp))
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(34.dp).clip(CircleShape).background(HomePalette.Chip)) {
+            Image(painterResource(icon), contentDescription = null, modifier = Modifier.size(26.dp))
         }
         Spacer(Modifier.width(10.dp))
         Text(text = label, color = HomePalette.Ink2, fontSize = 13.5f.sp, modifier = Modifier.weight(1f))

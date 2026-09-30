@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -97,7 +98,7 @@ private fun ReportCard(onOpenReport: () -> Unit) {
             .clickable(onClick = onOpenReport)
             .padding(horizontal = 20.dp, vertical = 18.dp),
     ) {
-        IconBadge(R.drawable.ic_repeat, HomePalette.Gold, size = 38.dp)
+        IconBadge(R.drawable.ic_report, size = 38.dp)
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(tr("지난 주기 리포트", "Last cycle report", "Informe del ciclo anterior"), color = HomePalette.Ink, fontSize = 15.5f.sp, fontWeight = FontWeight.Bold)
@@ -434,15 +435,20 @@ private fun CategoryRow(group: CategoryGroup, color: Color, onOpenCategory: (Str
             .then(if (name != null) Modifier.clickable { onOpenCategory(name) } else Modifier)
             .padding(vertical = 10.dp),
     ) {
-        if (name != null) CategoryBadge(name, color) else IconBadge(R.drawable.ic_cat_other, color, size = 34.dp, drawn = true)
+        if (name != null) CategoryBadge(name, color) else IconBadge(R.drawable.ic_cat_other, size = 34.dp)
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = if (name != null) L10n.name(name) else tr("나머지 ${group.restNames.size}개", "${group.restNames.size} more", "${group.restNames.size} más"),
-                color = HomePalette.Ink,
-                fontSize = 14.5f.sp,
-                fontWeight = FontWeight.Medium,
-            )
+            // 아이콘 동그라미는 모두 같은 회색이라, 도넛 조각 색은 이름 앞 점이 잇는다.
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(7.dp).clip(CircleShape).background(color))
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = if (name != null) L10n.name(name) else tr("나머지 ${group.restNames.size}개", "${group.restNames.size} more", "${group.restNames.size} más"),
+                    color = HomePalette.Ink,
+                    fontSize = 14.5f.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
             if (name == null) {
                 Text(
                     text = group.restNames.joinToString(" · ") { L10n.name(it) },
@@ -465,32 +471,28 @@ private fun CategoryRow(group: CategoryGroup, color: Color, onOpenCategory: (Str
 private fun CategoryBadge(storedName: String, color: Color) {
     val icon: Int? = CategoryIcons.of(storedName)
     if (icon != null) {
-        IconBadge(icon, color, size = 34.dp, drawn = true)
+        IconBadge(icon, size = 34.dp)
         return
     }
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier.size(34.dp).clip(RoundedCornerShape(11.dp)).background(color.copy(alpha = 0.14f)),
+        modifier = Modifier.size(34.dp).clip(CircleShape).background(HomePalette.Chip),
     ) {
         Text(text = L10n.name(storedName).take(1), color = color, fontSize = 14.sp, fontWeight = FontWeight.Bold)
     }
 }
 
 /**
- * 연한 색 바탕의 둥근 칸 안에 아이콘. 바탕색은 도넛 조각 색이라 목록과 도넛이 이어진다.
- * [drawn] 이면 직접 그린 색 있는 그림(카테고리)이라 tint 없이 크게, 아니면 선 아이콘을 같은 색으로 칠한다.
+ * 회색 동그라미 안에 직접 그린 그림. 홈 세 줄·도감·기록 창 격자와 같은 [HomePalette.Chip] 바탕이다.
+ * 그림은 색이 들어 있어 tint 하지 않는다.
  */
 @Composable
-private fun IconBadge(icon: Int, color: Color, size: Dp, drawn: Boolean = false) {
+private fun IconBadge(icon: Int, size: Dp) {
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier.size(size).clip(RoundedCornerShape(size / 3)).background(color.copy(alpha = 0.14f)),
+        modifier = Modifier.size(size).clip(CircleShape).background(HomePalette.Chip),
     ) {
-        if (drawn) {
-            Image(painterResource(icon), contentDescription = null, modifier = Modifier.size(size * 0.74f))
-        } else {
-            Icon(painterResource(icon), contentDescription = null, tint = color, modifier = Modifier.size(size / 2))
-        }
+        Image(painterResource(icon), contentDescription = null, modifier = Modifier.size(size * 0.78f))
     }
 }
 
