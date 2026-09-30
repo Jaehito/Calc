@@ -423,8 +423,10 @@ class QuickInputActivity : AppCompatActivity() {
         val text: String = ui.inputExpense.text?.toString().orEmpty().trim()
         if (text.isEmpty()) return
 
+        // 입력 칸은 잠그지 않는다. 포커스 있는 칸을 잠그면 안드로이드가 키보드를 내려 버려,
+        // 한 건 적을 때마다 키보드가 내려갔다 올라왔다(에뮬레이터 스모크로 확인). 중복 기록은
+        // [submitting] 과 기록 버튼만으로 막는다.
         submitting = true
-        ui.inputExpense.isEnabled = false
         ui.buttonSend.isEnabled = false
         showResult(tr("기록 중…", "Logging…", "Anotando…"), Tone.NEUTRAL)
 
@@ -450,14 +452,13 @@ class QuickInputActivity : AppCompatActivity() {
                 if (isFinishing || isDestroyed) return@runOnUiThread
 
                 submitting = false
-                ui.inputExpense.isEnabled = true
                 ui.buttonSend.isEnabled = typedAmount != null
-                ui.inputExpense.requestFocus()
 
                 if (result.ok) {
                     // 입력창만 비우고 화면은 그대로 둔다. 다음 건을 바로 이어 적을 수 있게.
                     recorded++
-                    ui.inputExpense.setText("")
+                    // 기록하는 사이 다음 건을 치기 시작했으면 지우지 않는다 — 보낸 글자 그대로일 때만 비운다.
+                    if (ui.inputExpense.text?.toString().orEmpty().trim() == text) ui.inputExpense.setText("")
                     val after: LedgerSnapshot? = refreshNumbers()
 
                     val e: Expense? = result.expense
