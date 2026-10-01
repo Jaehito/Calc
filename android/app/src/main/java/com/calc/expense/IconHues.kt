@@ -24,6 +24,7 @@ object IconHues {
         "식비" to 0xFF12C08B.toInt(),
         "카페" to 0xFFA9713F.toInt(),
         "간식" to 0xFFF08A3C.toInt(),
+        "술" to 0xFF9A5B8C.toInt(),
         "마트" to 0xFF6FA832.toInt(),
         "교통" to 0xFF3F82C9.toInt(),
         "생활" to 0xFF1FA3A0.toInt(),
@@ -35,7 +36,7 @@ object IconHues {
         "기타" to 0xFF7D8B94.toInt(),
     )
 
-    /** 사용자가 만든 카테고리용 — 기본 13개와 겹치지 않는 색. */
+    /** 사용자가 만든 카테고리용 — 기본 카테고리와 겹치지 않는 색. */
     private val extras: List<Int> = listOf(
         0xFF5C6BC0.toInt(), // 남색
         0xFFAB47BC.toInt(), // 자주

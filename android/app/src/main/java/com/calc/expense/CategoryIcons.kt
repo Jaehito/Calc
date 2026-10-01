@@ -12,6 +12,7 @@ object CategoryIcons {
         "식비" -> R.drawable.ic_cat_food
         "카페" -> R.drawable.ic_cat_cafe
         "간식" -> R.drawable.ic_cat_snack
+        "술" -> R.drawable.ic_cat_drinks
         "마트" -> R.drawable.ic_cat_mart
         "교통" -> R.drawable.ic_cat_transport
         "생활" -> R.drawable.ic_cat_household

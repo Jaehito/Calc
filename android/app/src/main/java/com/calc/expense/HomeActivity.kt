@@ -3,6 +3,7 @@ package com.calc.expense
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -77,6 +78,9 @@ class HomeActivity : ComponentActivity() {
     /** 도감. 저장해 둔 것으로 먼저 그리고, 저장소에서 다시 세면 덧댄다([DogamStore]). */
     private var dogam: DogamUi by mutableStateOf(DogamUi())
 
+    /** 통계의 «카테고리 전부 보기» 화면이 열려 있나. 뒤로 가기·다른 탭으로 가면 닫는다. */
+    private var categoriesOpen: Boolean by mutableStateOf(false)
+
     /** 통계 «내 기록» 칸에 올릴 기록 하나. 통계를 그릴 때 도감 계산에서 고른다. */
     private var recordHighlight: RecordHighlight? by mutableStateOf(null)
 
@@ -118,16 +122,26 @@ class HomeActivity : ComponentActivity() {
         // 언어를 바꿔 다시 그릴 때 수집함을 또 띄우지 않는다.
         inboxAsked = savedInstanceState?.getBoolean(STATE_INBOX_ASKED) == true
         setContent {
+            BackHandler(enabled = tab == 1 && categoriesOpen) { categoriesOpen = false }
             Scaffold(bottomBar = { BottomBar() }) { padding ->
                 Box(modifier = Modifier.fillMaxSize().padding(padding)) {
                     when (tab) {
-                        1 -> StatsScreen(
+                        1 -> if (categoriesOpen) {
+                            val shown: StatsData = stats[purse] ?: StatsRepository.localOnly(this@HomeActivity, purse)
+                            CategoriesScreen(
+                                data = shown,
+                                onBack = { categoriesOpen = false },
+                                onToggleCategoryMonth = { toggleCategoryMonth() },
+                                onOpenCategory = { name -> openCategoryDetail(name) },
+                            )
+                        } else StatsScreen(
                             data = stats[purse] ?: StatsRepository.localOnly(this@HomeActivity, purse),
                             purse = purse,
                             purses = purses,
                             purseLabels = purseLabels,
                             onSelectPurse = { selectPurse(it) },
                             onToggleCategoryMonth = { toggleCategoryMonth() },
+                            onOpenAllCategories = { categoriesOpen = true },
                             onOpenReport = { openCycleReport(purse) },
                             record = recordHighlight,
                             onOpenRecords = { startActivity(Intent(this@HomeActivity, RecordsActivity::class.java)) },
@@ -518,6 +532,7 @@ class HomeActivity : ComponentActivity() {
     /** 통계 탭으로 옮기며 데이터를 채운다. 기간 비교는 즉시, 카테고리는 저장소에서 뒤따라. */
     private fun selectStats() {
         tab = 1
+        categoriesOpen = false
         loadStats()
     }
 

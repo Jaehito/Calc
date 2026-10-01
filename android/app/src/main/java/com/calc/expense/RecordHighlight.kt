@@ -23,6 +23,16 @@ data class RecordHighlight(val kind: RecordKind, val best: Best) {
             else -> "${best.value}" + tr("일", " days", " días")
         }
 
+    /**
+     * 통계 «내 기록» 칸에 쓰는 짧은 한 줄. 칸이 낮아 숫자와 기록 이름을 두 줄로 못 쓴다 — 연속
+     * 기록은 «30일 연속», 금액 기록은 금액만.
+     */
+    val short: String
+        get() = when (kind) {
+            RecordKind.SAVED_DAY, RecordKind.CHEAPEST_WEEK -> StatusText.won(best.value)
+            else -> tr("${best.value}일 연속", "${best.value}-day streak", "Racha de ${best.value} días")
+        }
+
     /** 숫자 아래 작게 쓰는 기록 이름. [RecordsCard] 의 줄 이름과 같다. */
     val title: String
         get() = when (kind) {

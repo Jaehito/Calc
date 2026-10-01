@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 카테고리 — 술 (소주병과 잔). 하루치가 직접 그린 그림 — 색이 들어 있어 tint 없이 쓴다. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="26"
+    android:viewportHeight="26">
+    <group android:translateX="1" android:translateY="1">
+        <path android:fillColor="#9FE0C5" android:strokeColor="#15352B" android:strokeWidth="1.3" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M6.4,7.5 H11.6 A1.4,1.4 0 0 1 13,8.9 V19.6 A1.4,1.4 0 0 1 11.6,21 H6.4 A1.4,1.4 0 0 1 5,19.6 V8.9 A1.4,1.4 0 0 1 6.4,7.5 Z" />
+        <path android:fillColor="#9FE0C5" android:strokeColor="#15352B" android:strokeWidth="1.3" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M7.6,4.6 H10.4 V7.5 H7.6 Z" />
+        <path android:fillColor="#12C08B" android:strokeColor="#15352B" android:strokeWidth="1.3" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M7.3,2.4 H10.7 V4.6 H7.3 Z" />
+        <path android:fillColor="#FFFFFF" android:strokeColor="#15352B" android:strokeWidth="1.3" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M5,11.5 H13 V16 H5 Z" />
+        <path android:fillColor="#FFFFFF" android:strokeColor="#15352B" android:strokeWidth="1.3" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M14.8,13.5 H20.2 L19.6,20.8 H15.4 Z" />
+        <path android:fillColor="#E3F6EE" android:strokeColor="#15352B" android:strokeWidth="1.3" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M15.05,16.5 H19.95 L19.6,20.8 H15.4 Z" />
+    </group>
+</vector>

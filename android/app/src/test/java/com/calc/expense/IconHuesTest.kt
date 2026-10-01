@@ -12,7 +12,7 @@ class IconHuesTest {
 
     private val categoryFiles = mapOf(
         CategoryBreakdown.UNCATEGORIZED to "ic_cat_uncategorized", "식비" to "ic_cat_food", "카페" to "ic_cat_cafe",
-        "간식" to "ic_cat_snack", "마트" to "ic_cat_mart", "교통" to "ic_cat_transport", "생활" to "ic_cat_household",
+        "간식" to "ic_cat_snack", "술" to "ic_cat_drinks", "마트" to "ic_cat_mart", "교통" to "ic_cat_transport", "생활" to "ic_cat_household",
         "건강" to "ic_cat_health", "육아" to "ic_cat_kids", "문화" to "ic_cat_culture", "패션" to "ic_cat_fashion",
         "주거" to "ic_cat_housing", "기타" to "ic_cat_other",
     )
@@ -39,7 +39,7 @@ class IconHuesTest {
 
     @Test fun `직접 만든 카테고리는 기본 카테고리와 겹치지 않는 색을 늘 같게 받는다`() {
         val base: Set<Int> = categoryFiles.keys.map { IconHues.category(it) }.toSet()
-        for (name in listOf("술", "반려동물", "경조사", "Gym")) {
+        for (name in listOf("골프", "반려동물", "경조사", "Gym")) {
             val hue: Int = IconHues.category(name)
             assertFalse(name, hue in base)
             assertEquals(hue, IconHues.category(name))

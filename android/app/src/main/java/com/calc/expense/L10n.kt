@@ -165,6 +165,7 @@ object L10n {
         "식비" to ("Food" to "Comida"),
         "카페" to ("Café" to "Café"),
         "간식" to ("Snacks" to "Snacks"),
+        "술" to ("Drinks" to "Bebidas"),
         "마트" to ("Groceries" to "Súper"),
         "교통" to ("Transport" to "Transporte"),
         "생활" to ("Household" to "Hogar"),

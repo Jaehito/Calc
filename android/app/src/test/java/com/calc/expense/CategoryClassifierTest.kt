@@ -143,9 +143,16 @@ class CategoryClassifierTest {
 
     @Test
     fun `술 칩이 없으면 식비나 문화로 내려간다`() {
-        assertEquals("식비", CategoryClassifier.classify("소주", all))
-        assertEquals("식비", CategoryClassifier.classify("이자카야", all))
-        assertEquals("문화", CategoryClassifier.classify("노래방", all))
+        val noSul: List<String> = all - "술"
+        assertEquals("식비", CategoryClassifier.classify("소주", noSul))
+        assertEquals("식비", CategoryClassifier.classify("이자카야", noSul))
+        assertEquals("문화", CategoryClassifier.classify("노래방", noSul))
+    }
+
+    @Test
+    fun `기본 칩에 술이 있어 술 이름은 바로 술로 간다`() {
+        assertEquals("술", CategoryClassifier.classify("소주", all))
+        assertEquals("술", CategoryClassifier.classify("이자카야", all))
     }
 
     @Test
