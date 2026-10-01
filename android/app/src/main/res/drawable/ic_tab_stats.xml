@@ -4,13 +4,14 @@
     android:viewportWidth="24"
     android:viewportHeight="24"
     android:tint="?attr/colorControlNormal">
+    <!-- 끝이 둥근 알약 막대 세 개 -->
     <path
         android:fillColor="#000000"
-        android:pathData="M4.5,13 h3.4 v6 h-3.4 z" />
+        android:pathData="M4,14 a2,2 0 0 1 4,0 v4.5 a2,2 0 0 1 -4,0 Z" />
     <path
         android:fillColor="#000000"
-        android:pathData="M10.3,8 h3.4 v11 h-3.4 z" />
+        android:pathData="M10,7.5 a2,2 0 0 1 4,0 v11 a2,2 0 0 1 -4,0 Z" />
     <path
         android:fillColor="#000000"
-        android:pathData="M16.1,10.5 h3.4 v8.5 h-3.4 z" />
+        android:pathData="M16,11 a2,2 0 0 1 4,0 v7.5 a2,2 0 0 1 -4,0 Z" />
 </vector>

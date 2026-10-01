@@ -26,6 +26,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -208,14 +212,37 @@ class HomeActivity : ComponentActivity() {
      */
     @androidx.compose.runtime.Composable
     private fun BottomBar() {
-        Column(modifier = Modifier.fillMaxWidth().background(HomePalette.Card).navigationBarsPadding()) {
-            Box(Modifier.fillMaxWidth().height(1.dp).background(HomePalette.Ground))
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .barShadow()
+                .background(HomePalette.Card)
+                .navigationBarsPadding(),
+        ) {
             Row(modifier = Modifier.fillMaxWidth().height(62.dp), verticalAlignment = Alignment.CenterVertically) {
                 TabItem(R.drawable.ic_tab_home, tr("홈", "Home", "Inicio"), tab == 0) { tab = 0 }
                 TabItem(R.drawable.ic_tab_stats, tr("통계", "Stats", "Estadísticas"), tab == 1) { selectStats() }
                 TabItem(R.drawable.ic_tab_dogam, tr("도감", "Garden", "Jardín"), tab == 2) { selectDogam() }
             }
         }
+    }
+
+    /**
+     * 하단바 위 경계의 옅은 그림자. 바 위쪽 바깥(본문 쪽)으로 아래가 짙은 그라데이션을 그린다 —
+     * 바는 화면 맨 아래라 높이(elevation) 그림자는 위로 거의 번지지 않는다.
+     * Scaffold 가 바를 본문 다음에 그리므로 본문 위에 얹힌다.
+     */
+    private fun Modifier.barShadow(): Modifier = this.drawBehind {
+        val spread: Float = BAR_SHADOW.toPx()
+        drawRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(Color.Transparent, HomePalette.Ink.copy(alpha = 0.07f)),
+                startY = -spread,
+                endY = 0f,
+            ),
+            topLeft = Offset(0f, -spread),
+            size = Size(size.width, spread),
+        )
     }
 
     @androidx.compose.runtime.Composable
@@ -683,3 +710,6 @@ class HomeActivity : ComponentActivity() {
 
 /** 하단 탭에서 고르지 않은 탭의 아이콘·글자 색. */
 private val TabIdle = Color(0xFFB0B8C1)
+
+/** 하단바 위로 번지는 그림자 폭. */
+private val BAR_SHADOW = 10.dp
