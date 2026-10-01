@@ -27,15 +27,13 @@ import androidx.compose.ui.unit.sp
  * 그리고 [GradeDelivery] 가 B 이상만 통과시키므로 여기 도착하는 등급은 언제나 좋은 소식이다.
  * 나쁜 날은 조용히 넘어간다 — 숫자는 홈·통계에 그대로 있고, 채점만 삼가는 것이다.
  *
- * 도감에 새로 핀 꽃([blooms])이 있으면 아래에 한 줄 붙는다. 누르면 도감 탭으로 간다.
+ * 새로 받은 스탬프는 여기에 붙이지 않는다 — 이 팝업을 닫은 뒤 [StampPressDialog] 가 따로 찍어 준다.
  */
 @Composable
 fun DailyGradeDialog(
     grade: SpendingGrade.Graded,
     saved: Long,
     onDismiss: () -> Unit,
-    blooms: List<Plant> = emptyList(),
-    onOpenDogam: () -> Unit = {},
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -77,11 +75,6 @@ fun DailyGradeDialog(
                             .background(HomePalette.Soft)
                             .padding(horizontal = 14.dp, vertical = 9.dp),
                     )
-                }
-                // 도감에 꽃이 피었으면 여기에 한 줄 붙인다. 알림을 줄여 달라고 해서 따로 띄우지 않는다.
-                if (blooms.isNotEmpty()) {
-                    Spacer(Modifier.height(14.dp))
-                    BloomNotice(blooms = blooms, onClick = onOpenDogam)
                 }
             }
         },

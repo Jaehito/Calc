@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 도감 스탬프 가운데 문양: 쌓인 날 — 벽돌. 한 색 선이라 그리는 쪽이 스탬프 색으로 칠한다(tint). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M6,7 H18 A1.5,1.5 0 0 1 19.5,8.5 V16.5 A1.5,1.5 0 0 1 18,18 H6 A1.5,1.5 0 0 1 4.5,16.5 V8.5 A1.5,1.5 0 0 1 6,7 Z M4.5,12.5 H19.5 M10,7 V12.5 M14,12.5 V18" />
+</vector>

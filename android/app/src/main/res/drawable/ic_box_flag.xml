@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 통계 — 내 기록 칸 (깃발). 하루치가 직접 그린 그림 — 색이 들어 있어 tint 없이 쓴다. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="26"
+    android:viewportHeight="26">
+    <group android:translateX="1" android:translateY="1">
+        <path android:fillColor="#9FE0C5" android:strokeColor="#15352B" android:strokeWidth="1.1" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M3.8,21 A4.2,1.5 0 1 0 12.2,21 A4.2,1.5 0 1 0 3.8,21 Z" />
+        <path android:fillColor="#00000000" android:strokeColor="#15352B" android:strokeWidth="1.1" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M8,21 V3" />
+        <path android:fillColor="#F7B08A" android:strokeColor="#15352B" android:strokeWidth="1.1" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M8.4,4 H19.5 L17,8.2 L19.5,12.4 H8.4 Z" />
+        <path android:fillColor="#FFF1D6" android:strokeColor="#15352B" android:strokeWidth="1.1" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M11.6,8.2 L12.7,6.6 L13.8,8.2 L12.7,9.8 Z" />
+        <path android:fillColor="#E9A23B" android:strokeColor="#15352B" android:strokeWidth="1.1" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M6.9,2.6 A1.1,1.1 0 1 0 9.1,2.6 A1.1,1.1 0 1 0 6.9,2.6 Z" />
+    </group>
+</vector>

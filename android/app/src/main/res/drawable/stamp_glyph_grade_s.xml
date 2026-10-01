@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 도감 스탬프 가운데 문양: S 등급 — 별. 한 색 선이라 그리는 쪽이 스탬프 색으로 칠한다(tint). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M12,4.5 L14.3,9.2 L19.5,10 L15.8,13.6 L16.7,18.7 L12,16.3 L7.3,18.7 L8.2,13.6 L4.5,10 L9.7,9.2 Z" />
+</vector>

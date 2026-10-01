@@ -77,7 +77,10 @@ class HomeActivity : ComponentActivity() {
     /** 도감. 저장해 둔 것으로 먼저 그리고, 저장소에서 다시 세면 덧댄다([DogamStore]). */
     private var dogam: DogamUi by mutableStateOf(DogamUi())
 
-    /** 어제 등급 팝업에 붙일, 새로 핀 꽃. 도감 탭에서 이미 봤으면 비운다. */
+    /** 통계 «내 기록» 칸에 올릴 기록 하나. 통계를 그릴 때 도감 계산에서 고른다. */
+    private var recordHighlight: RecordHighlight? by mutableStateOf(null)
+
+    /** 아직 찍어 주지 않은 새 스탬프. 등급 팝업 다음에 [StampPressDialog] 로 찍는다. 도감 탭에서 이미 봤으면 비운다. */
     private var newBlooms: List<Plant> by mutableStateOf(emptyList())
 
     /** 도감을 다시 세는 중. 탭을 오가며 여러 번 눌러도 한 번만 돈다. */
@@ -126,6 +129,8 @@ class HomeActivity : ComponentActivity() {
                             onSelectPurse = { selectPurse(it) },
                             onToggleCategoryMonth = { toggleCategoryMonth() },
                             onOpenReport = { openCycleReport(purse) },
+                            record = recordHighlight,
+                            onOpenRecords = { startActivity(Intent(this@HomeActivity, RecordsActivity::class.java)) },
                             onOpenCategory = { name -> openCategoryDetail(name) },
                             onOpenSettings = { openSettings() },
                         )
@@ -176,16 +181,11 @@ class HomeActivity : ComponentActivity() {
                             DailyGradeDialog(
                                 grade = yesterday,
                                 saved = dailySaved,
-                                blooms = newBlooms,
-                                onDismiss = {
-                                    dailyGrade = null
-                                    announceBlooms()
-                                },
-                                onOpenDogam = {
-                                    dailyGrade = null
-                                    selectDogam()
-                                },
+                                onDismiss = { dailyGrade = null },
                             )
+                        } else if (newBlooms.isNotEmpty() && tab != 2) {
+                            // 등급 팝업을 닫은 다음 차례. 새 스탬프를 빈 칸에 찍어 주고, 닫으면 알린 것으로 적는다.
+                            StampPressDialog(plants = newBlooms, onDone = { announceBlooms() })
                         }
                     }
 
@@ -222,7 +222,7 @@ class HomeActivity : ComponentActivity() {
             Row(modifier = Modifier.fillMaxWidth().height(62.dp), verticalAlignment = Alignment.CenterVertically) {
                 TabItem(R.drawable.ic_tab_home, tr("홈", "Home", "Inicio"), tab == 0) { tab = 0 }
                 TabItem(R.drawable.ic_tab_stats, tr("통계", "Stats", "Estadísticas"), tab == 1) { selectStats() }
-                TabItem(R.drawable.ic_tab_dogam, tr("도감", "Garden", "Jardín"), tab == 2) { selectDogam() }
+                TabItem(R.drawable.ic_tab_dogam, tr("도감", "Stamps", "Sellos"), tab == 2) { selectDogam() }
             }
         }
     }
@@ -548,6 +548,7 @@ class HomeActivity : ComponentActivity() {
         val target: Purse = purse
         val back: Int = categoryCycleBack
         val base: StatsData = StatsRepository.localOnly(this, target, today)
+        recordHighlight = RecordHighlight.of(DogamStore.load(this).bests, today)
         val cycle: BudgetCycle = categoryCycle(today)
         val label: String =
             if (categoryCycleBack == 0) tr("이번 주기", "This cycle", "Este ciclo")
@@ -589,8 +590,8 @@ class HomeActivity : ComponentActivity() {
     }
 
     /**
-     * 도감을 그린다. NEW 는 이번에 처음 보는 꽃에만 붙이고, 본 것으로 적어 둔다. 도감에서 본 꽃은
-     * 어제 등급 팝업에 다시 붙일 이유가 없으므로 알린 것으로도 친다.
+     * 도감을 그린다. NEW 는 이번에 처음 보는 스탬프에만 붙이고, 본 것으로 적어 둔다. 도감에서 본 스탬프는
+     * 스탬프 팝업으로 다시 찍어 줄 이유가 없으므로 알린 것으로도 친다.
      */
     private fun showDogam(result: DogamResult, loading: Boolean = dogam.loading, error: String? = dogam.error) {
         val unseen: Set<Plant> = DogamStore.unseen(this)
@@ -606,7 +607,7 @@ class HomeActivity : ComponentActivity() {
         )
     }
 
-    /** 팝업에 붙였던 꽃을 알린 것으로 적는다. 다음 팝업에 같은 꽃이 또 붙지 않게. */
+    /** 찍어 준 스탬프를 알린 것으로 적는다. 다음에 같은 스탬프를 또 찍지 않게. */
     private fun announceBlooms(plants: List<Plant> = newBlooms) {
         DogamStore.markAnnounced(this, plants)
         newBlooms = emptyList()
@@ -614,8 +615,8 @@ class HomeActivity : ComponentActivity() {
 
     /**
      * 저장소에서 처음부터 다시 세어 도감을 덧댄다. 도감 탭을 열 때마다, 아니면 앱을 열 때 하루 한 번 —
-     * 꽃은 대부분 하루가 끝나야 피므로 그보다 자주 셀 필요가 없다. 새로 핀 꽃은 도감 탭을 보고 있으면
-     * 바로 NEW 로, 아니면 다음 어제 등급 팝업에 한 줄로 알린다.
+     * 스탬프는 대부분 하루가 끝나야 생기므로 그보다 자주 셀 필요가 없다. 새로 받은 스탬프는 도감 탭을 보고
+     * 있으면 바로 NEW 로, 아니면 다음에 [StampPressDialog] 로 찍어 준다.
      */
     private fun refreshDogam(force: Boolean) {
         if (!PurseAccess.isReady(this) || dogamBusy) return
@@ -634,6 +635,7 @@ class HomeActivity : ComponentActivity() {
 
             runOnUiThread {
                 dogamBusy = false
+                recordHighlight = RecordHighlight.of(load.result.bests, today)
                 if (isFinishing || isDestroyed) return@runOnUiThread
                 if (tab == 2) {
                     showDogam(load.result, loading = false, error = load.error)

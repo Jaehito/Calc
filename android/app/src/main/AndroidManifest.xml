@@ -69,6 +69,13 @@
             android:label="@string/label_cycle_report"
             android:parentActivityName=".HomeActivity" />
 
+        <!-- 내 기록(최고 기록·쌓인 횟수). 통계 맨 아래 «내 기록» 칸에서 들어온다. -->
+        <activity
+            android:name=".RecordsActivity"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:parentActivityName=".HomeActivity" />
+
         <!-- 카테고리 하나를 이름별로 펼치고 다시 분류하는 화면. 통계 도넛과 리포트 막대에서 들어온다. -->
         <activity
             android:name=".CategoryDetailActivity"

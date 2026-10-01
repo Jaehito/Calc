@@ -24,6 +24,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -57,6 +59,9 @@ fun StatsScreen(
     onSelectPurse: (Purse) -> Unit,
     onToggleCategoryMonth: () -> Unit,
     onOpenReport: () -> Unit = {},
+    /** 개인 «내 기록» 칸에 올릴 기록 하나. 기록이 아직 없으면 null. */
+    record: RecordHighlight? = null,
+    onOpenRecords: () -> Unit = {},
     onOpenCategory: (String) -> Unit = {},
     onOpenSettings: () -> Unit = {},
 ) {
@@ -89,7 +94,32 @@ fun StatsScreen(
             Spacer(Modifier.height(12.dp))
             CategoryCard(data, onToggleCategoryMonth, onOpenCategory)
             Spacer(Modifier.height(12.dp))
-            ReportCard(purse, onOpenReport)
+            // 개인은 «리포트 · 내 기록» 두 칸(홈의 두 칸과 같은 모양), 공용은 내 기록이 없으니
+            // 리포트 한 줄 카드 — 두 칸 높이로 한 칸만 두면 세로만 차지한다.
+            if (purse == Purse.PERSONAL) {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    LinkBox(
+                        label = tr("지난 주기", "Last cycle", "Ciclo anterior"),
+                        value = tr("리포트", "Report", "Informe"),
+                        caption = null,
+                        icon = R.drawable.ic_box_report,
+                        tilt = -10f,
+                        onClick = onOpenReport,
+                        modifier = Modifier.weight(1f),
+                    )
+                    LinkBox(
+                        label = tr("내 기록", "My records", "Mis marcas"),
+                        value = record?.value ?: tr("아직 없어요", "None yet", "Aún nada"),
+                        caption = record?.title,
+                        icon = R.drawable.ic_box_flag,
+                        tilt = 9f,
+                        onClick = onOpenRecords,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            } else {
+                ReportCard(purse, onOpenReport)
+            }
         }
 
         if (hasToggle) {
@@ -105,7 +135,54 @@ fun StatsScreen(
 }
 
 /**
- * 주기 리포트로 가는 문.
+ * 다른 화면으로 가는 칸. 홈의 «한 달 예산 · 목표날» 칸과 같은 모양(높이 112, 오른쪽 아래 살짝 기운
+ * 그림)이고, 고치는 칸이 아니라서 연필 대신 «›»를 단다.
+ */
+@Composable
+private fun LinkBox(
+    label: String,
+    value: String,
+    caption: String?,
+    icon: Int,
+    tilt: Float,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val shape = RoundedCornerShape(22.dp)
+    Box(
+        modifier = modifier
+            .height(112.dp)
+            .shadow(elevation = CARD_ELEVATION, shape = shape)
+            .clip(shape)
+            .background(HomePalette.Card)
+            .clickable(onClick = onClick),
+    ) {
+        Column(modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 30.dp)) {
+            Text(text = label, color = HomePalette.Ink2, fontSize = 12.5f.sp, maxLines = 1)
+            Spacer(Modifier.height(2.dp))
+            Text(text = value, color = HomePalette.Ink, fontSize = 16.5f.sp, fontWeight = FontWeight.Bold, maxLines = 1, style = Figures)
+            if (caption != null) {
+                Text(text = caption, color = HomePalette.Muted, fontSize = 11.5f.sp, maxLines = 2, lineHeight = 14.sp, modifier = Modifier.padding(end = 26.dp))
+            }
+        }
+        Box(modifier = Modifier.align(Alignment.TopEnd).padding(top = 12.dp, end = 10.dp)) {
+            Chevron(tint = HomePalette.Muted, size = 18.dp)
+        }
+        // 직접 그린 색 있는 그림이라 tint 하지 않는다.
+        Image(
+            painter = painterResource(icon),
+            contentDescription = null,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .offset(x = 10.dp, y = 12.dp)
+                .rotate(tilt)
+                .size(64.dp),
+        )
+    }
+}
+
+/**
+ * 주기 리포트로 가는 문. 공용 지갑일 때만 쓴다 — 개인은 [LinkBox] 두 칸.
  *
  * 리포트는 결산 팝업에서도 열리지만 그 팝업은 주기가 바뀐 그 순간 한 번만 뜬다. 자기 고정비가
  * 궁금해지는 때는 대개 그 순간이 아니라 «이번 달도 왜 이렇게 썼지» 하고 통계를 들여다볼 때다.

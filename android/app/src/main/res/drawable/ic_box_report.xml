@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 통계 — 지난 주기 리포트 칸 (클립보드). 하루치가 직접 그린 그림 — 색이 들어 있어 tint 없이 쓴다. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="26"
+    android:viewportHeight="26">
+    <group android:translateX="1" android:translateY="1">
+        <path android:fillColor="#9FE0C5" android:strokeColor="#15352B" android:strokeWidth="1.1" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M6.7,4 H17.3 A2.2,2.2 0 0 1 19.5,6.2 V19.3 A2.2,2.2 0 0 1 17.3,21.5 H6.7 A2.2,2.2 0 0 1 4.5,19.3 V6.2 A2.2,2.2 0 0 1 6.7,4 Z" />
+        <path android:fillColor="#FFFFFF" android:strokeColor="#15352B" android:strokeWidth="1.1" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M8,7 H16 A1,1 0 0 1 17,8 V18 A1,1 0 0 1 16,19 H8 A1,1 0 0 1 7,18 V8 A1,1 0 0 1 8,7 Z" />
+        <path android:fillColor="#12C08B" android:strokeColor="#15352B" android:strokeWidth="1.1" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M10.1,2.6 H13.9 A1.3,1.3 0 0 1 15.2,3.9 V4.9 A1.3,1.3 0 0 1 13.9,6.2 H10.1 A1.3,1.3 0 0 1 8.8,4.9 V3.9 A1.3,1.3 0 0 1 10.1,2.6 Z" />
+        <path android:fillColor="#00000000" android:strokeColor="#15352B" android:strokeWidth="1.1" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M9,10.2 H15 M9,12.8 H15 M9,15.4 H12.6" />
+    </group>
+</vector>

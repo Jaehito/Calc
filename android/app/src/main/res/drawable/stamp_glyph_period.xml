@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 도감 스탬프 가운데 문양: 한 주 · 한 주기 — 달력. 한 색 선이라 그리는 쪽이 스탬프 색으로 칠한다(tint). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M7,6.5 H17 A2,2 0 0 1 19,8.5 V16.5 A2,2 0 0 1 17,18.5 H7 A2,2 0 0 1 5,16.5 V8.5 A2,2 0 0 1 7,6.5 Z M5,10.5 H19 M9,4.5 V7.5 M15,4.5 V7.5 M9.3,14.3 L11.1,16.1 L14.7,12.5" />
+</vector>
