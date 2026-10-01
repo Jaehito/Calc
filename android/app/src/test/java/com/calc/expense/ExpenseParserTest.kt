@@ -37,6 +37,38 @@ class ExpenseParserTest {
     @Test fun `이름에 숫자가 섞여 있어도 마지막 숫자를 금액으로`() =
         assertEquals(Expense("2000년 동창회비", 50000), ok("2000년 동창회비 50000"))
 
+    @Test fun `띄어 쓰지 않아도 이름 뒤 금액을 가른다`() = assertEquals(Expense("커피", 4500), ok("커피4500"))
+
+    @Test fun `띄어 쓰지 않아도 금액 뒤 이름을 가른다`() = assertEquals(Expense("커피", 4500), ok("4500커피"))
+
+    @Test fun `띄어 쓰지 않은 영어 이름`() {
+        assertEquals(Expense("coffee", 4500), ok("coffee4500"))
+        assertEquals(Expense("coffee", 4500), ok("4500coffee"))
+    }
+
+    @Test fun `띄어 쓰지 않아도 쉼표·원·한글 단위를 금액으로`() {
+        assertEquals(Expense("택시", 12000), ok("택시12,000원"))
+        assertEquals(Expense("커피", 4000), ok("커피4천"))
+        assertEquals(Expense("장보기", 15000), ok("장보기1.5만"))
+    }
+
+    @Test fun `이름 첫 글자가 만·원이어도 단위로 먹지 않는다`() {
+        assertEquals(Expense("만두", 2000), ok("2000만두"))
+        assertEquals(Expense("원두", 4500), ok("4500원두"))
+    }
+
+    @Test fun `몇 년·몇 잔 같은 숫자는 금액으로 보지 않는다`() {
+        assertEquals(Expense("아메리카노2잔", 9000), ok("아메리카노2잔9000"))
+        assertEquals(Expense("도시락", 4500), ok("4500도시락"))
+        err("2000년")
+    }
+
+    @Test fun `금액 위치 - 띄어 쓰지 않은 금액`() {
+        assertEquals(2..5, ExpenseParser.amountRange("커피4500"))
+        assertEquals(0..3, ExpenseParser.amountRange("4500커피"))
+        assertEquals(2..8, ExpenseParser.amountRange("택시12,000원"))
+    }
+
     @Test fun `금액 없음`() = err("커피")
 
     @Test fun `이름 없음`() = err("4500")

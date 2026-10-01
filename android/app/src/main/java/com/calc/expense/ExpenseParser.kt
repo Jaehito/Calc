@@ -24,25 +24,42 @@ object ExpenseParser {
     private val SEPARATORS = charArrayOf(' ', '\t', '\n', '\u00A0')
 
     /**
-     * 마지막에 나오는 숫자 토큰을 금액으로, 나머지를 이름으로 본다.
+     * 숫자 덩어리 하나. 앞의 ₩, 쉼표·소수점, 뒤에 붙는 만/천 단위와 «원»까지 한 덩어리다.
+     *
+     * 단위·«원»은 **뒤에 한글이 이어지지 않을 때만** 붙인다 — «2000만두»의 «만», «4500원두»의 «원»은
+     * 금액이 아니라 이름의 첫 글자다.
+     */
+    private val AMOUNT_RUN = Regex("""₩?\d[\d,]*(?:\.\d+)?(?:[만천](?=원|[^가-힣]|$))?(?:원(?![가-힣]))?""")
+
+    /**
+     * 숫자 바로 뒤에 와서 금액이 아니라 «몇 년·몇 잔»을 뜻하게 만드는 말. 이 글자 하나로 낱말이 끝날
+     * 때만 본다 — «2000년»은 금액이 아니지만 «4500도시락»의 «도»는 이름의 첫 글자다.
+     */
+    private const val COUNTERS = "년월일시분초개명번잔인층호박살장병권회차주"
+
+    /**
+     * 마지막에 나오는 금액을 금액으로, 나머지를 이름으로 본다.
      * "커피 4500", "점심 김밥 6000", "4500 커피", "택시 12,000원" 모두 처리한다.
+     *
+     * **띄어 쓰지 않아도 된다.** 숫자와 글자가 맞닿은 자리에서 가른다 — "커피4500", "4500커피",
+     * "택시12,000원" 도 같다. 이름은 금액 자리만 빼고 적은 그대로 둔다("아메리카노2잔9000" → 이름
+     * "아메리카노2잔").
      *
      * 금액만 적었으면("4500") [fallbackName] 을 이름으로 쓴다 — 기록 창은 고른 카테고리 이름을,
      * 알림 답장은 «미분류»를 넘긴다. [fallbackName] 이 없으면 예전처럼 이름을 적으라고 한다.
      */
     fun parse(raw: String, fallbackName: String? = null): ParseResult {
-        val tokens: List<IntRange> = tokenRanges(raw)
-        if (tokens.isEmpty()) return ParseResult.Err(tr("아무것도 적지 않았어요", "Nothing entered", "No hay nada escrito"))
+        if (tokenRanges(raw).isEmpty()) return ParseResult.Err(tr("아무것도 적지 않았어요", "Nothing entered", "No hay nada escrito"))
 
-        val amountIndex: Int = lastAmountIndex(raw, tokens)
-        if (amountIndex < 0) return ParseResult.Err(tr("금액을 못 찾았어요", "No amount found", "No se encontró el importe"))
-        val amount: Long = parseAmount(raw.substring(tokens[amountIndex])) ?: 0L
+        val range: IntRange = amountRanges(raw).lastOrNull()
+            ?: return ParseResult.Err(tr("금액을 못 찾았어요", "No amount found", "No se encontró el importe"))
+        val amount: Long = parseAmount(raw.substring(range)) ?: 0L
 
         if (amount <= 0) return ParseResult.Err(tr("금액은 0보다 커야 해요", "The amount must be greater than 0", "El importe debe ser mayor que 0"))
         if (amount > MAX_AMOUNT) return ParseResult.Err(tr("금액이 너무 커요", "The amount is too large", "El importe es demasiado grande"))
 
-        val name: String = tokens.filterIndexed { i, _ -> i != amountIndex }
-            .joinToString(" ") { raw.substring(it) }
+        val rest: String = raw.substring(0, range.first) + " " + raw.substring(range.last + 1)
+        val name: String = tokenRanges(rest).joinToString(" ") { rest.substring(it) }
         if (name.isNotBlank()) return ParseResult.Ok(Expense(name, amount))
 
         val fallback: String = fallbackName?.trim().orEmpty()
@@ -51,23 +68,43 @@ object ExpenseParser {
     }
 
     /**
-     * [parse] 가 금액으로 볼 낱말이 [raw] 의 어디에 있는지. 기록 창이 그 부분만 초록 알약으로 그린다.
-     * 금액으로 볼 낱말이 없으면 null. 0원·너무 큰 금액도 [parse] 가 거절하므로 null 이다.
+     * [parse] 가 금액으로 볼 부분이 [raw] 의 어디에 있는지. 기록 창이 그 부분만 초록 알약으로 그린다.
+     * 금액으로 볼 부분이 없으면 null. 0원·너무 큰 금액도 [parse] 가 거절하므로 null 이다.
      */
     fun amountRange(raw: String): IntRange? {
-        val tokens: List<IntRange> = tokenRanges(raw)
-        val index: Int = lastAmountIndex(raw, tokens)
-        if (index < 0) return null
-        val amount: Long = parseAmount(raw.substring(tokens[index])) ?: return null
-        return if (amount in 1..MAX_AMOUNT) tokens[index] else null
+        val range: IntRange = amountRanges(raw).lastOrNull() ?: return null
+        val amount: Long = parseAmount(raw.substring(range)) ?: return null
+        return if (amount in 1..MAX_AMOUNT) range else null
     }
 
-    /** 뒤에서부터 보아 처음 금액으로 읽히는 낱말의 순번. 없으면 -1. */
-    private fun lastAmountIndex(raw: String, tokens: List<IntRange>): Int {
-        for (i in tokens.indices.reversed()) {
-            if (parseAmount(raw.substring(tokens[i])) != null) return i
+    /**
+     * 금액으로 읽힐 수 있는 자리들, 앞에서부터.
+     *
+     * 낱말 전체가 금액이면("4500", "12,000원", "만원") 낱말 전체가 한 자리다. 아니면 낱말 안에서
+     * 숫자 덩어리([AMOUNT_RUN])를 찾는다 — 띄어 쓰지 않은 "커피4500" 의 "4500".
+     */
+    private fun amountRanges(raw: String): List<IntRange> {
+        val found = mutableListOf<IntRange>()
+        for (token in tokenRanges(raw)) {
+            val text: String = raw.substring(token)
+            if (parseAmount(text) != null) {
+                found.add(token)
+                continue
+            }
+            for (match in AMOUNT_RUN.findAll(text)) {
+                if (isCounted(text, match.range.last + 1)) continue
+                if (parseAmount(match.value) == null) continue
+                found.add((token.first + match.range.first)..(token.first + match.range.last))
+            }
         }
-        return -1
+        return found
+    }
+
+    /** [text] 의 [at] 자리에 [COUNTERS] 글자 하나가 오고 거기서 낱말(한글)이 끝나는가. */
+    private fun isCounted(text: String, at: Int): Boolean {
+        if (at >= text.length || text[at] !in COUNTERS) return false
+        val next: Int = at + 1
+        return next >= text.length || text[next] !in '가'..'힣'
     }
 
     /** [raw] 를 [SEPARATORS] 로 갈라 각 낱말의 위치를 돌려준다. */
