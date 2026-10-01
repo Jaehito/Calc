@@ -41,7 +41,7 @@ import java.time.LocalTime
 import java.util.concurrent.Executors
 
 /**
- * 앱을 열면 나오는 화면. 하단 탭으로 홈·통계·도감을 오간다.
+ * 앱을 열면 나오는 화면. 하단 탭으로 홈·통계·나무(나무와 도감)를 오간다.
  *
  * 설정과 빠른 입력은 XML 그대로다 — 잘 도는 화면을 다시 만들 이유가 없다.
  * 여기만 Compose 인 이유는 이 화면들이 새로 만드는 화면이기 때문이다.
@@ -51,6 +51,8 @@ class HomeActivity : ComponentActivity() {
     companion object {
         /** 결제 배너로 들어왔다는 표시. 수집함을 반드시 한 번 연다([NotificationHelper]). */
         const val EXTRA_OPEN_INBOX = "openInbox"
+        /** 기록 창 말풍선으로 들어왔다는 표시. 나무 탭의 나무 칸을 연다. */
+        const val EXTRA_OPEN_TREE = "openTree"
         private const val STATE_INBOX_ASKED = "inboxAsked"
         private const val PREFS = "home"
         private const val KEY_PURSE = "purse"
@@ -86,6 +88,18 @@ class HomeActivity : ComponentActivity() {
 
     /** 아직 찍어 주지 않은 새 스탬프. 등급 팝업 다음에 [StampPressDialog] 로 찍는다. 도감 탭에서 이미 봤으면 비운다. */
     private var newBlooms: List<Plant> by mutableStateOf(emptyList())
+
+    /** 나무 탭에서 고른 칸([SEGMENT_TREE]·[SEGMENT_STAMPS]). */
+    private var treeSegment: Int by mutableStateOf(SEGMENT_TREE)
+
+    /** 나무. 물을 주거나 앱을 열 때 [TreeStore] 에서 다시 읽는다. */
+    private var tree: TreeState by mutableStateOf(TreeState())
+
+    /** 아침에 받은 하루 보너스 물. 등급 팝업 다음 차례에 «물을 받았어요»로 보여 준다. */
+    private var waterGift: WaterGift? by mutableStateOf(null)
+
+    /** 도감 칸을 보고 있나. 이때만 새 스탬프를 «봤다»고 친다. */
+    private val stampsVisible: Boolean get() = tab == 2 && treeSegment == SEGMENT_STAMPS
 
     /** 도감을 다시 세는 중. 탭을 오가며 여러 번 눌러도 한 번만 돈다. */
     private var dogamBusy: Boolean = false
@@ -148,7 +162,15 @@ class HomeActivity : ComponentActivity() {
                             onOpenCategory = { name -> openCategoryDetail(name) },
                             onOpenSettings = { openSettings() },
                         )
-                        2 -> DogamScreen(ui = dogam, today = LocalDate.now(), onOpenSettings = { openSettings() })
+                        2 -> TreeTab(
+                            tree = tree,
+                            dogam = dogam,
+                            today = LocalDate.now(),
+                            segment = treeSegment,
+                            onSegment = { selectTreeSegment(it) },
+                            onGive = { giveWater() },
+                            onOpenSettings = { openSettings() },
+                        )
                         else -> HomeScreen(
                             snapshots = snapshots,
                             purse = purse,
@@ -177,6 +199,7 @@ class HomeActivity : ComponentActivity() {
                     if (!inboxOpen) {
                         val ended: SpendingGrade.Graded? = cycleGrade
                         val yesterday: SpendingGrade.Graded? = dailyGrade
+                        val gift: WaterGift? = waterGift
                         if (ended != null) {
                             CycleGradeDialog(
                                 grade = ended,
@@ -197,7 +220,10 @@ class HomeActivity : ComponentActivity() {
                                 saved = dailySaved,
                                 onDismiss = { dailyGrade = null },
                             )
-                        } else if (newBlooms.isNotEmpty() && tab != 2) {
+                        } else if (gift != null) {
+                            // 등급 팝업을 닫은 다음 차례. 좋은 하루로 받은 물을 알린다.
+                            WaterGiftDialog(gift = gift, onDismiss = { waterGift = null })
+                        } else if (newBlooms.isNotEmpty() && !stampsVisible) {
                             // 등급 팝업을 닫은 다음 차례. 새 스탬프를 빈 칸에 찍어 주고, 닫으면 알린 것으로 적는다.
                             StampPressDialog(plants = newBlooms, onDone = { announceBlooms() })
                         }
@@ -236,7 +262,7 @@ class HomeActivity : ComponentActivity() {
             Row(modifier = Modifier.fillMaxWidth().height(62.dp), verticalAlignment = Alignment.CenterVertically) {
                 TabItem(R.drawable.ic_tab_home, tr("홈", "Home", "Inicio"), tab == 0) { tab = 0 }
                 TabItem(R.drawable.ic_tab_stats, tr("통계", "Stats", "Estadísticas"), tab == 1) { selectStats() }
-                TabItem(R.drawable.ic_tab_dogam, tr("도감", "Stamps", "Sellos"), tab == 2) { selectDogam() }
+                TabItem(R.drawable.ic_tab_dogam, tr("나무", "Tree", "Árbol"), tab == 2) { selectTree() }
             }
         }
     }
@@ -296,6 +322,12 @@ class HomeActivity : ComponentActivity() {
         val fromBanner: Boolean = intent?.getBooleanExtra(EXTRA_OPEN_INBOX, false) == true
         if (fromBanner) intent.removeExtra(EXTRA_OPEN_INBOX)
         refreshInbox(show = fromBanner || !inboxAsked)
+        // 기록 창 말풍선으로 들어왔으면 나무 칸을 연다.
+        if (intent?.getBooleanExtra(EXTRA_OPEN_TREE, false) == true) {
+            intent.removeExtra(EXTRA_OPEN_TREE)
+            treeSegment = SEGMENT_TREE
+            selectTree()
+        }
         republishNotification()
         resyncInBackground()
         // 개인 설정을 계정에 맡겨 둔다(프로세스마다 한 번). 재설치하면 로그인 때 되찾는다.
@@ -309,11 +341,12 @@ class HomeActivity : ComponentActivity() {
         }
         checkCycleGrade()
         checkDailyGrade()
+        settleWater()
         // 카테고리를 펼쳐 다시 분류하고 돌아오면 도넛이 달라져 있어야 한다. 대조(resync)
         // 끝에도 한 번 부르지만 그건 네트워크를 타므로, 돌아온 자리에서 바로 한 번 더 읽는다.
         if (tab == 1) loadStats()
         newBlooms = DogamStore.unannounced(this)
-        refreshDogam(force = tab == 2)
+        refreshDogam(force = stampsVisible)
         pullHouseholdSettings()
     }
 
@@ -536,12 +569,46 @@ class HomeActivity : ComponentActivity() {
         loadStats()
     }
 
-    /** 도감 탭으로 옮긴다. 저장해 둔 것으로 바로 그리고, 지난 기록을 다시 세어 덧댄다. */
-    private fun selectDogam() {
+    /** 나무 탭으로 옮긴다. 마지막에 보던 칸을 그대로 연다. */
+    private fun selectTree() {
         tab = 2
+        tree = TreeStore.load(this)
+        // «도감 N» 숫자가 비어 보이지 않게 저장해 둔 도감부터 얹는다. 봤다고 치지는 않는다.
+        dogam = dogam.copy(result = DogamStore.load(this))
+        if (treeSegment == SEGMENT_STAMPS) openStamps() else refreshDogam(force = true)
+    }
+
+    private fun selectTreeSegment(segment: Int) {
+        if (segment == treeSegment) return
+        treeSegment = segment
+        if (segment == SEGMENT_STAMPS) openStamps()
+    }
+
+    /** 도감 칸을 연다. 저장해 둔 것으로 바로 그리고, 지난 기록을 다시 세어 덧댄다. */
+    private fun openStamps() {
         dogam = dogam.copy(fresh = emptySet())
         showDogam(DogamStore.load(this))
         refreshDogam(force = true)
+    }
+
+    /** 나무에 한 방울. 물이 없으면 null — 나무 칸은 그대로 둔다. */
+    private fun giveWater(): TreeState? {
+        val after: TreeState = TreeStore.give(this) ?: return null
+        tree = after
+        return after
+    }
+
+    /**
+     * 어제까지 안 센 날의 보너스 물(좋은 날·안 쓴 날)을 받고, 받았으면 아침 팝업 차례에 올린다.
+     * 계정에 맡겨 둔 나무도 이 폰에서 처음 한 번 되찾는다.
+     */
+    private fun settleWater() {
+        val gift: WaterGift = TreeStore.settle(this)
+        if (!gift.isEmpty) waterGift = gift
+        tree = TreeStore.load(this)
+        TreeBackupSync.restoreOnce(this) {
+            if (!isFinishing && !isDestroyed) tree = TreeStore.load(this)
+        }
     }
 
     private fun toggleCategoryMonth() {
@@ -639,7 +706,7 @@ class HomeActivity : ComponentActivity() {
         if (!force && DogamStore.evaluatedOn(this) == today) return
 
         dogamBusy = true
-        if (tab == 2) dogam = dogam.copy(loading = true, error = null)
+        if (stampsVisible) dogam = dogam.copy(loading = true, error = null)
         val app = applicationContext
         io.execute {
             val load: DogamLoad = try {
@@ -652,7 +719,7 @@ class HomeActivity : ComponentActivity() {
                 dogamBusy = false
                 recordHighlight = RecordHighlight.of(load.result.bests, today)
                 if (isFinishing || isDestroyed) return@runOnUiThread
-                if (tab == 2) {
+                if (stampsVisible) {
                     showDogam(load.result, loading = false, error = load.error)
                 } else {
                     dogam = dogam.copy(result = load.result, loading = false, error = load.error)

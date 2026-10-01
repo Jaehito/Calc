@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 말풍선 꼬리. 위쪽 💧 칸을 가리킨다. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="14dp"
+    android:height="7dp"
+    android:viewportWidth="14"
+    android:viewportHeight="7">
+    <path
+        android:fillColor="@color/bubble_ink"
+        android:pathData="M0,7 L6,0.8 Q7,-0.2 8,0.8 L14,7 Z" />
+</vector>

@@ -35,6 +35,10 @@ object HomePalette {
     /** 앱 아이콘(웃는 지갑)의 크림 바탕. 홈 머리 줄의 작은 앱 아이콘이 쓴다. */
     val Cream = Color(0xFFFFF1D6)
 
+    /** 나무에 줄 물. 💧 숫자와 «+1» 글자. */
+    val Water = Color(0xFF2C7FBF)
+    val WaterSoft = Color(0xFFE6F2FC)
+
     /** 판정은 [Tone] 이 한다. 여기서는 색만 고른다 — XML 화면과 같은 규칙을 쓰기 위해서다. */
     fun of(tone: Tone): Color = when (tone) {
         Tone.REMAINING -> Accent

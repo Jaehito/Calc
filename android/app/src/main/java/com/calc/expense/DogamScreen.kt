@@ -49,14 +49,19 @@ data class DogamUi(
 private val DayFormat: DateTimeFormatter get() = L10n.monthDay()
 
 /**
- * 도감 탭 — 스탬프 북. 업적 하나에 도장 하나, 선반(업적 종류)마다 한 줄.
+ * 도감 — 스탬프 북. 나무 탭의 «도감» 칸이다. 업적 하나에 도장 하나, 선반(업적 종류)마다 한 줄.
  *
  * 곳간은 많이 쓴 날 줄고 월급날 잘려 「제자리」가 되기도 한다. 이 탭의 도장은 **지워지지 않는다** —
  * 그게 이 탭이 있는 이유다. 판정은 [Dogam] 이 하고 여기서는 그리기만 한다.
  * 최고 기록은 통계의 «내 기록» 칸으로 옮겼다([RecordsScreen]).
  */
 @Composable
-fun DogamScreen(ui: DogamUi, today: LocalDate, onOpenSettings: () -> Unit = {}) {
+fun DogamScreen(
+    ui: DogamUi,
+    today: LocalDate,
+    onOpenSettings: () -> Unit = {},
+    header: (@Composable () -> Unit)? = null,
+) {
     var opened: Plant? by remember { mutableStateOf(null) }
 
     Column(
@@ -66,7 +71,8 @@ fun DogamScreen(ui: DogamUi, today: LocalDate, onOpenSettings: () -> Unit = {}) 
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 24.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        // 나무 탭 안에서는 «나무 | 도감» 머리글을 함께 쓴다([TreeTab]).
+        if (header != null) header() else Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = tr("도감", "Stamps", "Sellos"),
                 color = HomePalette.Ink,

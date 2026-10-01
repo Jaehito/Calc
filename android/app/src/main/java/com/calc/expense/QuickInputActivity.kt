@@ -1,17 +1,24 @@
 package com.calc.expense
 
+import android.app.KeyguardManager
 import android.content.Context
+import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.widget.GridLayout
 import android.widget.ImageView
+import android.widget.PopupWindow
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -51,6 +58,12 @@ class QuickInputActivity : AppCompatActivity() {
         private const val TIP_LIMIT = 3
         private const val PREFS = "quick_input"
         private const val KEY_TIP_SHOWN = "tip_shown"
+
+        /** 저장할 때 «+1» 이 떠오르는 높이·시간, 💧 칸이 톡 튀는 크기·시간. */
+        private const val WATER_RISE_DP = 22f
+        private const val WATER_FLOAT_MS = 700L
+        private const val WATER_POP_SCALE = 1.15f
+        private const val WATER_POP_MS = 260L
     }
 
     private lateinit var ui: ActivityQuickInputBinding
@@ -99,6 +112,9 @@ class QuickInputActivity : AppCompatActivity() {
 
     private val entries = mutableListOf<Entry>()
 
+    /** 💧 칸 말풍선. 떠 있으면 다시 누를 때 닫는다. */
+    private var bubble: PopupWindow? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -125,6 +141,7 @@ class QuickInputActivity : AppCompatActivity() {
         ui.sheetRoot.setOnClickListener { finish() }
 
         setUpPurses()
+        setUpWater()
         setUpCategories()
         setUpTip()
         refreshNumbers()
@@ -154,6 +171,7 @@ class QuickInputActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        bubble?.dismiss()
         io.shutdown()
         super.onDestroy()
     }
@@ -477,6 +495,7 @@ class QuickInputActivity : AppCompatActivity() {
 
                     val e: Expense? = result.expense
                     if (e != null) addEntryRow(e, result.rowId, purse, day)
+                    if (purse == GradeRepository.GRADED) bumpWater()
                     showResult(
                         if (e == null) tr("기록됨", "Logged", "Anotado") else StatusText.entered(e.name, e.amount, recorded),
                         Tone.of(ok = true, snapshot = after),
@@ -486,6 +505,102 @@ class QuickInputActivity : AppCompatActivity() {
                     showResult(result.lines.summary, Tone.of(ok = false, snapshot = null))
                 }
             }
+        }
+    }
+
+    /** 오른쪽 위 💧 칸(W2) — 나무에 줄 물. 누르면 말풍선이 뜬다. */
+    private fun setUpWater() {
+        ui.groupWater.contentDescription = tr("나무에 줄 물", "Water for your tree", "Agua para tu árbol")
+        ui.groupWater.setOnClickListener { toggleWaterBubble() }
+        refreshWater()
+    }
+
+    private fun refreshWater(): Int {
+        val water: Int = TreeStore.load(this).water
+        ui.textWater.text = "$water"
+        return water
+    }
+
+    /**
+     * 개인 지갑에 적었다 — 숫자가 톡 오르며 «+1» 이 떠오른다([RecordExpense] 가 물을 이미 더했다).
+     * 처음 물을 받을 때 한 번은 말풍선을 저절로 띄워 무엇에 쓰는 물인지 알려 준다.
+     */
+    private fun bumpWater() {
+        refreshWater()
+        val rise: Float = WATER_RISE_DP * resources.displayMetrics.density
+        val plus: TextView = ui.textWaterPlus
+        plus.animate().cancel()
+        plus.alpha = 1f
+        plus.translationY = 0f
+        plus.animate().translationY(-rise).alpha(0f).setDuration(WATER_FLOAT_MS).start()
+        val pill: View = ui.groupWater
+        pill.animate().cancel()
+        pill.scaleX = WATER_POP_SCALE
+        pill.scaleY = WATER_POP_SCALE
+        pill.animate().scaleX(1f).scaleY(1f).setDuration(WATER_POP_MS).start()
+        if (!TreeStore.bubbleSeen(this)) {
+            TreeStore.markBubbleSeen(this)
+            showWaterBubble()
+        }
+    }
+
+    private fun toggleWaterBubble() {
+        if (bubble?.isShowing == true) {
+            bubble?.dismiss()
+            return
+        }
+        showWaterBubble()
+    }
+
+    /** «물방울을 누르면 나무에게 물을 줄 수 있어요!» 말풍선. 누르면 나무 탭으로, 다른 곳을 누르면 닫힌다. */
+    private fun showWaterBubble() {
+        if (isFinishing || isDestroyed) return
+        bubble?.dismiss()
+        val water: Int = refreshWater()
+        val view: View = layoutInflater.inflate(R.layout.popup_water_bubble, ui.sheetRoot, false)
+        view.findViewById<TextView>(R.id.textBubble).text = tr(
+            "물방울을 누르면 나무에게 물을 줄 수 있어요!",
+            "Tap the drops to water your tree!",
+            "¡Toca las gotas para regar tu árbol!",
+        )
+        view.findViewById<TextView>(R.id.textBubbleSub).text = tr(
+            "지금 ${water}방울 · 나무 탭에서 주기 ›",
+            "$water drops now · Water it in the Tree tab ›",
+            "$water gotas ahora · Riégalo en la pestaña Árbol ›",
+        )
+        // 포커스를 뺏지 않는다 — 말풍선이 떠도 키보드와 입력 칸은 그대로다.
+        val popup = PopupWindow(view, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, false)
+        popup.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        popup.isOutsideTouchable = true
+        view.setOnClickListener {
+            popup.dismiss()
+            openTree()
+        }
+        val gap: Int = (4 * resources.displayMetrics.density).toInt()
+        popup.showAsDropDown(ui.groupWater, 0, gap, Gravity.END)
+        bubble = popup
+    }
+
+    /** 나무 탭을 연다. 잠금화면 위에 떠 있으면 잠금부터 푼다 — 앱 화면은 잠금 위에 못 뜬다. */
+    private fun openTree() {
+        val go: () -> Unit = {
+            startActivity(
+                Intent(this, HomeActivity::class.java)
+                    .putExtra(HomeActivity.EXTRA_OPEN_TREE, true)
+                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            )
+            finish()
+        }
+        val keyguard: KeyguardManager? = getSystemService(KeyguardManager::class.java)
+        if (keyguard != null && keyguard.isKeyguardLocked) {
+            keyguard.requestDismissKeyguard(
+                this,
+                object : KeyguardManager.KeyguardDismissCallback() {
+                    override fun onDismissSucceeded() = go()
+                },
+            )
+        } else {
+            go()
         }
     }
 
@@ -543,6 +658,7 @@ class QuickInputActivity : AppCompatActivity() {
                     if (entries.isEmpty()) ui.groupRecent.visibility = View.GONE
                     NotificationHelper.show(app)
                     refreshNumbers()
+                    refreshWater()
                     showResult(
                         "${entry.name} ${StatusText.won(entry.amount)} " + tr("지웠어요", "deleted", "borrado"),
                         Tone.NEUTRAL,

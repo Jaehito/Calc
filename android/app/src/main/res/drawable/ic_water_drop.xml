@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 나무에 줄 물 한 방울. 기록 창 알약·나무 탭·물 팝업이 함께 쓴다. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#4BA3E3"
+        android:pathData="M12,3.5 C9,8 6.5,10.8 6.5,14 a5.5,5.5 0 0 0 11,0 C17.5,10.8 15,8 12,3.5 Z" />
+    <path
+        android:fillColor="#9FD0F2"
+        android:pathData="M9.6,13.4 c0,-1.2 0.5,-2.3 1.2,-3.3 c0.25,-0.35 0.75,-0.1 0.6,0.3 c-0.4,0.9 -0.6,1.8 -0.6,3 c0,0.6 -1.2,0.6 -1.2,0 Z" />
+</vector>

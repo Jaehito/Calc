@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 기록 창 오른쪽 위 💧 칸. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/water_soft" />
+    <corners android:radius="999dp" />
+</shape>

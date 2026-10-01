@@ -34,46 +34,111 @@
         android:paddingBottom="16dp">
 
         <!--
-            개인·공용 탭. 맨 위에 두어 아래 숫자가 어느 지갑 것인지 먼저 보이게 한다.
-            연결된 지갑이 하나뿐이면 숨긴다(코드).
+            맨 위 줄: 개인·공용 탭(왼쪽)과 나무에 줄 물(오른쪽, W2). 물 칸을 누르면 말풍선이 뜬다(코드).
         -->
         <LinearLayout
-            android:id="@+id/groupPurse"
-            android:layout_width="wrap_content"
+            android:id="@+id/rowTop"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-            android:background="@drawable/bg_tabs"
-            android:orientation="horizontal"
-            android:padding="3dp"
-            android:visibility="gone">
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/tabPersonal"
+            <!--
+                개인·공용 탭. 맨 위에 두어 아래 숫자가 어느 지갑 것인지 먼저 보이게 한다.
+                연결된 지갑이 하나뿐이면 숨긴다(코드).
+            -->
+            <LinearLayout
+                android:id="@+id/groupPurse"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:minWidth="64dp"
-                android:gravity="center"
-                android:paddingStart="14dp"
-                android:paddingTop="5dp"
-                android:paddingEnd="14dp"
-                android:paddingBottom="5dp"
-                android:text="개인"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+                android:background="@drawable/bg_tabs"
+                android:orientation="horizontal"
+                android:padding="3dp"
+                android:visibility="gone">
 
-            <TextView
-                android:id="@+id/tabShared"
+                <TextView
+                    android:id="@+id/tabPersonal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minWidth="64dp"
+                    android:gravity="center"
+                    android:paddingStart="14dp"
+                    android:paddingTop="5dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="5dp"
+                    android:text="개인"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tabShared"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minWidth="64dp"
+                    android:gravity="center"
+                    android:paddingStart="14dp"
+                    android:paddingTop="5dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="5dp"
+                    android:text="공용"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <!-- 저장하면 «+1» 이 물 칸 위로 떠오른다. 그래서 둘을 겹쳐 둔다. -->
+            <FrameLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:minWidth="64dp"
-                android:gravity="center"
-                android:paddingStart="14dp"
-                android:paddingTop="5dp"
-                android:paddingEnd="14dp"
-                android:paddingBottom="5dp"
-                android:text="공용"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+                android:clipChildren="false"
+                android:clipToPadding="false">
+
+                <LinearLayout
+                    android:id="@+id/groupWater"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_water_pill"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="8dp"
+                    android:paddingTop="5dp"
+                    android:paddingEnd="11dp"
+                    android:paddingBottom="5dp">
+
+                    <ImageView
+                        android:layout_width="15dp"
+                        android:layout_height="15dp"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_water_drop" />
+
+                    <TextView
+                        android:id="@+id/textWater"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="3dp"
+                        android:fontFeatureSettings="tnum"
+                        android:text="0"
+                        android:textColor="@color/water"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/textWaterPlus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:alpha="0"
+                    android:text="+1"
+                    android:textColor="@color/water"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </FrameLayout>
         </LinearLayout>
 
         <TextView

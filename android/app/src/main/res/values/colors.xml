@@ -12,4 +12,9 @@
     <color name="app_chip">#F2F6F4</color>
     <color name="app_soft">#DFF4EC</color>
     <color name="app_over">#F0544B</color>
+    <!-- 나무에 줄 물. 기록 창 💧 칸과 말풍선. -->
+    <color name="water">#2C7FBF</color>
+    <color name="water_soft">#E6F2FC</color>
+    <color name="bubble_ink">#0F1A17</color>
+    <color name="bubble_sub">#B9C4C0</color>
 </resources>

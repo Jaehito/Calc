@@ -66,6 +66,7 @@ object AccountScope {
         CycleGradeStore.clear(context)
         DailyGradeStore.clear(context)
         DogamStore.clear(context)
+        TreeStore.clear(context)
         HouseholdStore.setHouseholdId(context, null)
     }
 }
