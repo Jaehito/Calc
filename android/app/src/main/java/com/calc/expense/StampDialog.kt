@@ -1,6 +1,7 @@
 package com.calc.expense
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -27,25 +28,27 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 /** 스탬프를 올려 두는 칸 — 회색 바탕의 둥근 네모. 받기 팝업과 눌러 보기 팝업이 같이 쓴다. */
 @Composable
-private fun StampSlot(content: @Composable () -> Unit) {
+private fun StampSlot(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier
+        modifier = modifier
             .size(132.dp)
             .clip(RoundedCornerShape(28.dp))
             .background(HomePalette.Ground),
@@ -142,8 +145,9 @@ private fun ProgressBar(fraction: Float) {
 }
 
 /**
- * 새로 받은 스탬프를 찍어 주는 팝업. 빈 칸이 먼저 보이고, 나무 도장이 내려와 꾹 누르고 올라가면
- * 그 자리에 잉크 자국이 남는다. 파동이나 날짜·번호 같은 덧붙임은 없다.
+ * 새로 받은 스탬프를 찍어 주는 팝업. 빈 칸(못 받은 모양)이 먼저 보이고, 잠시 뒤 잉크 자국이 조금 크고
+ * 기운 채 옅은 그림자와 함께 내려와 «쾅» 찍힌다 — 칸이 살짝 눌리고 판이 떨리며 잉크 점 몇 개가 튄다.
+ * 도장 손잡이 같은 도구는 그리지 않는다. 찍힌 모양은 도감 칸과 똑같은 [Stamp] 다.
  *
  * 여러 개를 한꺼번에 받았으면 같은 판에서 «다음»을 누를 때마다 하나씩 찍는다. 마지막 것을 닫으면
  * [onDone] — 부른 쪽이 알린 것으로 적는다.
@@ -155,42 +159,82 @@ fun StampPressDialog(plants: List<Plant>, onDone: () -> Unit) {
     val plant: Plant = plants[index.coerceIn(0, plants.lastIndex)]
     val last: Boolean = index >= plants.lastIndex
 
-    // 도장 위치(dp, 칸 가운데 기준)와 보이는 정도, 잉크가 묻은 정도.
-    val drop = remember(index) { Animatable(-96f) }
-    val stamperAlpha = remember(index) { Animatable(0f) }
-    val ink = remember(index) { Animatable(0f) }
+    // fall: 0 = 위에 떠 있음, 1 = 닿음. 나머지는 닿은 뒤의 떨림·눌림·잉크 점·글자.
+    val fall = remember(index) { Animatable(0f) }
+    val shown = remember(index) { Animatable(0f) }
+    val press = remember(index) { Animatable(1f) }
+    val nudge = remember(index) { Animatable(0f) }
+    val specks = remember(index) { Animatable(0f) }
+    val title = remember(index) { Animatable(0f) }
+    val landed: Boolean = fall.value >= 1f
 
     LaunchedEffect(index) {
-        delay(260)
-        stamperAlpha.animateTo(1f, tween(120))
-        drop.animateTo(0f, tween(320, easing = FastOutSlowInEasing))
-        ink.snapTo(1f)
-        delay(140)
-        drop.animateTo(-110f, tween(300, easing = FastOutSlowInEasing))
-        stamperAlpha.animateTo(0f, tween(160))
+        delay(EMPTY_FIRST_MS)
+        launch { shown.animateTo(0.75f, tween(130)) }
+        fall.animateTo(1f, tween(FALL_MS, easing = SlamEasing))
+        shown.snapTo(1f)
+        launch {
+            press.snapTo(0.965f)
+            press.animateTo(1f, tween(160))
+        }
+        launch {
+            nudge.snapTo(2f)
+            nudge.animateTo(-1f, tween(40))
+            nudge.animateTo(0f, tween(60))
+        }
+        launch { specks.animateTo(1f, tween(200, easing = FastOutSlowInEasing)) }
+        delay(240)
+        title.animateTo(1f, tween(300))
     }
 
     AlertDialog(
         onDismissRequest = {},
         containerColor = HomePalette.Card,
         shape = RoundedCornerShape(24.dp),
+        modifier = Modifier.offset(y = nudge.value.dp),
         title = {
             Text(tr("새 스탬프", "New stamp", "Nuevo sello"), color = HomePalette.Ink, fontWeight = FontWeight.Bold, fontSize = 18.sp)
         },
         text = {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                StampSlot {
-                    // 빈 칸 → 잉크 자국. 도장이 닿는 순간 바뀐다.
-                    Stamp(plant, got = false, size = 108.dp, modifier = Modifier.alpha(1f - ink.value))
-                    Stamp(plant, got = true, size = 108.dp, inkAlpha = ink.value)
-                    Stamper(
-                        rubber = StampArt.ink(plant.shelf),
+                StampSlot(modifier = Modifier.graphicsLayer { scaleX = press.value; scaleY = press.value }) {
+                    if (!landed) Stamp(plant, got = false, size = 108.dp)
+                    val f: Float = fall.value
+                    // 내려오는 동안 칸 위에 옅은 그림자. 닿으면 사라진다.
+                    if (!landed && shown.value > 0f) {
+                        Canvas(Modifier.size(114.dp)) {
+                            drawCircle(
+                                Brush.radialGradient(listOf(Color.Black.copy(alpha = 0.22f * f), Color.Transparent)),
+                                radius = this.size.minDimension / 2f * (1.25f - 0.23f * f),
+                            )
+                        }
+                    }
+                    Stamp(
+                        plant,
+                        got = true,
+                        size = 108.dp,
                         modifier = Modifier
-                            .offset(y = drop.value.dp)
-                            .alpha(stamperAlpha.value),
+                            .graphicsLayer {
+                                val scale: Float = 1.4f - 0.4f * f
+                                scaleX = scale
+                                scaleY = scale
+                                translationY = (-22f * (1f - f)).dp.toPx()
+                                rotationZ = -10f * (1f - f)
+                                alpha = shown.value
+                            }
+                            .blur(((1f - f) * 1.5f).dp, BlurredEdgeTreatment.Unbounded),
                     )
+                    if (landed) InkSpecks(StampArt.ink(plant.shelf), specks.value)
                 }
-                StampTitle(plant.short, plant.story)
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.graphicsLayer {
+                        alpha = title.value
+                        translationY = (6f * (1f - title.value)).dp.toPx()
+                    },
+                ) {
+                    StampTitle(plant.short, plant.story)
+                }
             }
         },
         confirmButton = {
@@ -201,21 +245,31 @@ fun StampPressDialog(plants: List<Plant>, onDone: () -> Unit) {
     )
 }
 
-/** 나무 손잡이 도장. 고무 면이 그 스탬프의 잉크 색이다. */
+/** 닿는 순간 튀는 잉크 점 세 개. [t] 가 0→1 로 가며 가운데서 바깥으로 나간다. */
 @Composable
-private fun Stamper(rubber: Color, modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier.size(width = 64.dp, height = 78.dp)) {
-        val u: Float = size.width / 64f
-        // 손잡이(둥근 기둥) — 고무 면이 칸 가운데 닿도록 그림 전체가 위로 올라가 있다.
-        drawRoundRect(Wood, topLeft = Offset(22f * u, 0f), size = Size(20f * u, 30f * u), cornerRadius = CornerRadius(10f * u))
-        drawRoundRect(WoodLight, topLeft = Offset(26f * u, 4f * u), size = Size(5f * u, 20f * u), cornerRadius = CornerRadius(2.5f * u))
-        // 받침
-        drawRoundRect(WoodDark, topLeft = Offset(15f * u, 28f * u), size = Size(34f * u, 10f * u), cornerRadius = CornerRadius(3f * u))
-        // 고무 면
-        drawRoundRect(rubber, topLeft = Offset(5f * u, 38f * u), size = Size(54f * u, 9f * u), cornerRadius = CornerRadius(3f * u))
+private fun InkSpecks(ink: Color, t: Float) {
+    Canvas(Modifier.size(132.dp)) {
+        val center = Offset(this.size.width / 2f, this.size.height / 2f)
+        for ((dx: Float, dy: Float, r: Float) in SPECKS) {
+            drawCircle(
+                ink.copy(alpha = 0.8f * minOf(1f, t * 3f)),
+                radius = r.dp.toPx(),
+                center = center + Offset(dx.dp.toPx() * t, dy.dp.toPx() * t),
+            )
+        }
     }
 }
 
-private val Wood = Color(0xFFB98A62)
-private val WoodLight = Color(0xFFD4A97F)
-private val WoodDark = Color(0xFF8E6747)
+/** 처음에 빈 칸만 보여 주는 시간, 내려오는 시간. */
+private const val EMPTY_FIRST_MS = 800L
+private const val FALL_MS = 300
+
+/** 천천히 들어와 끝에서 확 꽂힌다 — «쾅». */
+private val SlamEasing = CubicBezierEasing(0.7f, 0f, 1f, 0.65f)
+
+/** 잉크 점: 가운데에서 (dx, dy) dp 만큼, 반지름 r dp. 칸 밖으로 나가지 않게 둔다. */
+private val SPECKS: List<Triple<Float, Float, Float>> = listOf(
+    Triple(-52f, -26f, 2.2f),
+    Triple(54f, -22f, 1.7f),
+    Triple(48f, 32f, 2.2f),
+)
