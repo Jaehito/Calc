@@ -21,5 +21,12 @@ enum class Purse(val key: String, private val koLabel: String) {
          * 자르는 건 저장할 때 한 번만 한다.
          */
         const val MAX_NAME_LENGTH = 8
+
+        /**
+         * 저장된 이름을 화면에 쓸 이름으로. 기본 이름(«개인»·«공용»)이 그대로 저장돼 있으면 — 한국어 폰에서
+         * 정한 가정 이름이 배우자의 스페인어 폰으로 넘어온 경우 등 — 지금 언어로 옮긴다. 직접 지은 이름은 그대로.
+         */
+        fun display(stored: String): String =
+            if (entries.any { it.koLabel == stored }) L10n.name(stored) else stored
     }
 }

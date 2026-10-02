@@ -294,7 +294,7 @@ private fun MainPage(
     Group(tr("지갑", "Wallets", "Carteras")) {
         ValueRow(
             tr("개인 지갑 이름", "Personal wallet name", "Nombre de la cartera personal"),
-            form.personalName.ifBlank { Purse.PERSONAL.defaultLabel },
+            Purse.display(form.personalName.ifBlank { Purse.PERSONAL.defaultLabel }),
         ) { onEdit(EditField.PERSONAL_NAME) }
         RowDivider()
         ValueRow(
@@ -404,7 +404,7 @@ private fun SharedPage(
         Group(tr("같이 쓰는 값", "Shared with your partner", "Compartido con tu pareja")) {
             ValueRow(
                 tr("공용 지갑 이름", "Shared wallet name", "Nombre de la cartera compartida"),
-                ui.form.sharedName.ifBlank { Purse.SHARED.defaultLabel },
+                Purse.display(ui.form.sharedName.ifBlank { Purse.SHARED.defaultLabel }),
             ) { onEdit(EditField.SHARED_NAME) }
             RowDivider()
             ValueRow(tr("공용 한 달 예산", "Shared monthly budget", "Presupuesto mensual compartido"), budgetLabel(ui.form.sharedBudgetText)) {

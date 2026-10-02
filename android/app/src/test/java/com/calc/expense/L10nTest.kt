@@ -182,4 +182,18 @@ class L10nTest {
             }
         }
     }
+
+    @Test
+    fun `기본 지갑 이름이 그대로 저장돼 있으면 지금 언어로 보인다`() {
+        val settings = Settings(personal = PurseSettings(name = "개인"), shared = PurseSettings(name = "공용"))
+        L10n.lang = Lang.ES
+        assertEquals("Compartido", settings.labelOf(Purse.SHARED))
+        assertEquals("Personal", settings.labelOf(Purse.PERSONAL))
+        L10n.lang = Lang.EN
+        assertEquals("Shared", settings.labelOf(Purse.SHARED))
+        // 직접 지은 이름은 옮기지 않는다.
+        assertEquals("우리집", Settings(shared = PurseSettings(name = "우리집")).labelOf(Purse.SHARED))
+        L10n.lang = Lang.KO
+        assertEquals("공용", settings.labelOf(Purse.SHARED))
+    }
 }
