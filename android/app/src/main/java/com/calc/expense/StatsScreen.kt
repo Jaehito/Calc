@@ -78,7 +78,7 @@ fun StatsScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 // 토글이 있으면 마지막 카드를 가리지 않게 아래를 넉넉히 비운다.
-                .padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = if (hasToggle) 96.dp else 24.dp),
+                .padding(start = 20.dp, end = 20.dp, top = TAB_TOP_PADDING, bottom = if (hasToggle) FLOATING_TOGGLE_SPACE else 24.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -130,7 +130,7 @@ fun StatsScreen(
                 selected = purse,
                 labels = purseLabels,
                 onSelect = onSelectPurse,
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 20.dp),
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = FLOATING_TOGGLE_BOTTOM),
             )
         }
     }

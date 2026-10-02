@@ -82,7 +82,7 @@ fun HomeScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 // 아래 토글·기록 버튼이 마지막 카드를 가리지 않게 넉넉히 비운다.
-                .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 120.dp),
+                .padding(start = 20.dp, end = 20.dp, top = TAB_TOP_PADDING, bottom = 120.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 AppLogo()
@@ -159,7 +159,7 @@ fun HomeScreen(
                 selected = purse,
                 labels = purseLabels,
                 onSelect = onSelectPurse,
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 26.dp),
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = FLOATING_TOGGLE_BOTTOM),
             )
         }
         RecordButton(onRecord, Modifier.align(Alignment.BottomEnd).padding(end = 20.dp, bottom = 20.dp))

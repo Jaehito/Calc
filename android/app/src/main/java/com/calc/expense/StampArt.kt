@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,7 +25,10 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 
@@ -128,7 +133,7 @@ fun Stamp(plant: Plant, got: Boolean, size: Dp, modifier: Modifier = Modifier, i
  * 잉크 얼룩. 그린 도장 위에 얼룩 무늬를 DstIn 으로 얹어, 무늬가 옅은 곳의 잉크를 지운다.
  * 따로 한 장(offscreen)에 그려야 칸 바탕까지 지워지지 않는다.
  */
-private fun Modifier.inkTexture(mask: ImageBitmap, seed: Int): Modifier = this
+internal fun Modifier.inkTexture(mask: ImageBitmap, seed: Int): Modifier = this
     .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
     .drawWithContent {
         drawContent()
@@ -142,3 +147,41 @@ private fun Modifier.inkTexture(mask: ImageBitmap, seed: Int): Modifier = this
             blendMode = BlendMode.DstIn,
         )
     }
+
+/**
+ * 글자 도장. 도감 스탬프와 같은 두 겹 동그라미·잉크 얼룩에 문양 대신 글자를 찍는다 —
+ * 어제 등급(«S»)과 리포트 영수증(«잘 지켰어요»)이 쓴다. 한 줄이면 크게, 여러 줄이면 작게.
+ */
+@Composable
+fun InkStamp(lines: List<String>, ink: Color, size: Dp, tilt: Float, modifier: Modifier = Modifier, seed: Int = 0) {
+    val mask: ImageBitmap = ImageBitmap.imageResource(R.drawable.stamp_ink_mask)
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .size(size)
+            .rotate(tilt)
+            .alpha(0.93f)
+            .inkTexture(mask, seed),
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val unit: Float = this.size.minDimension / 60f
+            val center = Offset(this.size.width / 2f, this.size.height / 2f)
+            drawCircle(ink, radius = 25.5f * unit, center = center, style = Stroke(width = 2.8f * unit))
+            drawCircle(ink, radius = 20.6f * unit, center = center, style = Stroke(width = 1f * unit))
+        }
+        val single: Boolean = lines.size == 1
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            for (line in lines) {
+                Text(
+                    text = line,
+                    color = ink,
+                    fontSize = (size.value * if (single) 0.42f else 0.15f).sp,
+                    lineHeight = (size.value * if (single) 0.48f else 0.19f).sp,
+                    fontWeight = FontWeight.Black,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                )
+            }
+        }
+    }
+}

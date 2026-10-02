@@ -69,7 +69,7 @@ fun DogamScreen(
             .fillMaxSize()
             .background(HomePalette.Ground)
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 24.dp),
+            .padding(start = 20.dp, end = 20.dp, top = TAB_TOP_PADDING, bottom = FLOATING_TOGGLE_SPACE),
     ) {
         // 나무 탭 안에서는 «나무 | 도감» 머리글을 함께 쓴다([TreeTab]).
         if (header != null) header() else Row(verticalAlignment = Alignment.CenterVertically) {

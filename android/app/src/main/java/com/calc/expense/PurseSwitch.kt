@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -43,9 +44,27 @@ fun PurseToggle(
     onSelect: (Purse) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    PillToggle(
+        labels = purses.map { labels[it] ?: it.defaultLabel },
+        selected = purses.indexOf(selected).coerceAtLeast(0),
+        onSelect = { onSelect(purses[it]) },
+        modifier = modifier,
+    )
+}
+
+/**
+ * 떠 있는 두 칸 알약. 개인·공용 토글과 나무 탭의 «나무 | 도감»이 같은 모양·같은 자리([FLOATING_TOGGLE_BOTTOM])를 쓴다.
+ * 탭을 오가도 토글이 같은 곳에 있어야 손이 헤매지 않는다.
+ */
+@Composable
+fun PillToggle(
+    labels: List<String>,
+    selected: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val pill = RoundedCornerShape(999.dp)
-    val index: Int = purses.indexOf(selected).coerceAtLeast(0)
-    val slide: Float by animateFloatAsState(index.toFloat(), tween(SWITCH_MS), label = "pursePill")
+    val slide: Float by animateFloatAsState(selected.toFloat(), tween(SWITCH_MS), label = "pursePill")
 
     Box(
         modifier = modifier
@@ -59,21 +78,21 @@ fun PurseToggle(
             Box(
                 Modifier
                     .fillMaxHeight()
-                    .fillMaxWidth(1f / purses.size.coerceAtLeast(1))
+                    .fillMaxWidth(1f / labels.size.coerceAtLeast(1))
                     .graphicsLayer { translationX = size.width * slide }
                     .clip(pill)
                     .background(ToggleOn),
             )
         }
         Row(Modifier.fillMaxWidth()) {
-            for (p in purses) {
+            labels.forEachIndexed { i, label ->
                 val color: Color by animateColorAsState(
-                    if (p == selected) Color.White else ToggleIdle,
+                    if (i == selected) Color.White else ToggleIdle,
                     tween(SWITCH_MS),
                     label = "purseLabel",
                 )
                 Text(
-                    text = labels[p] ?: p.defaultLabel,
+                    text = label,
                     color = color,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
@@ -82,13 +101,22 @@ fun PurseToggle(
                     modifier = Modifier
                         .weight(1f)
                         .clip(pill)
-                        .clickable { onSelect(p) }
+                        .clickable { onSelect(i) }
                         .padding(horizontal = 20.dp, vertical = 8.dp),
                 )
             }
         }
     }
 }
+
+/** 떠 있는 토글의 바닥 여백. 홈·통계·나무 세 탭이 같은 값을 쓴다. */
+val FLOATING_TOGGLE_BOTTOM: Dp = 26.dp
+
+/** 떠 있는 토글이 있는 화면에서 마지막 카드가 가려지지 않게 비우는 아래 여백. */
+val FLOATING_TOGGLE_SPACE: Dp = 96.dp
+
+/** 세 탭 공통 위 여백. 머리줄(로고·제목 + 톱니)이 같은 높이에 온다. */
+val TAB_TOP_PADDING: Dp = 16.dp
 
 private val ToggleTrack = Color(0xFFE5E8EB)
 private val ToggleOn = Color(0xFF333D4B)

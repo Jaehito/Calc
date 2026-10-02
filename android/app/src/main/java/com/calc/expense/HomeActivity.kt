@@ -218,6 +218,7 @@ class HomeActivity : ComponentActivity() {
                             DailyGradeDialog(
                                 grade = yesterday,
                                 saved = dailySaved,
+                                day = LocalDate.now().minusDays(1),
                                 onDismiss = { dailyGrade = null },
                             )
                         } else if (gift != null) {

@@ -1,9 +1,9 @@
 package com.calc.expense
 
-import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -41,6 +41,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.rotate
@@ -53,13 +54,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import kotlin.math.sin
 
 /**
- * 나무 탭. 위 «나무 | 도감» 두 칸 — 나무 칸은 벚꽃나무 한 그루, 도감 칸은 스탬프 북([DogamScreen]).
+ * 나무 탭. 아래 떠 있는 «나무 | 도감» 알약으로 두 칸을 오간다 — 나무 칸은 벚꽃나무 한 그루, 도감 칸은 스탬프 북([DogamScreen]).
  *
  * 나무 칸에는 단계 이름도 단계 줄도 없다. 다음에 어떤 모습이 될지는 자라서 보는 재미로 남기고,
  * «다음 모습까지 물 몇 방울»만 알려 준다. 나무를 누르면 물을 한 방울씩 준다.
@@ -76,22 +78,28 @@ fun TreeTab(
     onGive: () -> TreeState?,
     onOpenSettings: () -> Unit,
 ) {
-    val header: @Composable () -> Unit = {
-        TreeHeader(segment, dogam.result.blooms.size, onSegment, onOpenSettings)
-    }
-    if (segment == SEGMENT_STAMPS) {
-        DogamScreen(ui = dogam, today = today, onOpenSettings = onOpenSettings, header = header)
-        return
-    }
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(HomePalette.Ground)
-            .padding(horizontal = 20.dp, vertical = 24.dp),
-    ) {
-        header()
-        Spacer(Modifier.height(14.dp))
-        TreeScene(tree, onGive, Modifier.fillMaxWidth().weight(1f))
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (segment == SEGMENT_STAMPS) {
+            DogamScreen(ui = dogam, today = today, onOpenSettings = onOpenSettings, header = { TreeHeader(onOpenSettings) })
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(HomePalette.Ground)
+                    .padding(start = 20.dp, end = 20.dp, top = TAB_TOP_PADDING, bottom = FLOATING_TOGGLE_SPACE),
+            ) {
+                TreeHeader(onOpenSettings)
+                Spacer(Modifier.height(14.dp))
+                TreeScene(tree, onGive, Modifier.fillMaxWidth().weight(1f))
+            }
+        }
+        // 홈·통계의 개인·공용 토글과 같은 모양·같은 자리.
+        PillToggle(
+            labels = listOf(tr("나무", "Tree", "Árbol"), tr("도감", "Stamps", "Sellos") + " ${dogam.result.blooms.size}"),
+            selected = segment,
+            onSelect = onSegment,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = FLOATING_TOGGLE_BOTTOM),
+        )
     }
 }
 
@@ -99,75 +107,28 @@ fun TreeTab(
 const val SEGMENT_TREE = 0
 const val SEGMENT_STAMPS = 1
 
+/** 머리줄. 통계 탭과 같은 모양(제목 + 톱니)이다. */
 @Composable
-private fun TreeHeader(segment: Int, stamps: Int, onSegment: (Int) -> Unit, onOpenSettings: () -> Unit) {
-    Column {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = tr("나무", "Tree", "Árbol"),
-                color = HomePalette.Ink,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f),
-            )
-            SettingsGear(onOpenSettings)
-        }
-        Spacer(Modifier.height(14.dp))
-        TreeSegment(
-            selected = segment,
-            labels = listOf(tr("나무", "Tree", "Árbol"), tr("도감", "Stamps", "Sellos") + " $stamps"),
-            onSelect = onSegment,
+private fun TreeHeader(onOpenSettings: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = tr("나무", "Tree", "Árbol"),
+            color = HomePalette.Ink,
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.weight(1f),
         )
-    }
-}
-
-/** «나무 | 도감». 개인·공용 토글([PurseToggle])처럼 알약만 미끄러지고 화면은 바로 바뀐다. */
-@Composable
-private fun TreeSegment(selected: Int, labels: List<String>, onSelect: (Int) -> Unit) {
-    val pill = RoundedCornerShape(999.dp)
-    val slide: Float by animateFloatAsState(selected.toFloat(), tween(SEGMENT_MS), label = "treeSegment")
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(pill)
-            .background(SegmentTrack)
-            .padding(3.dp),
-    ) {
-        Box(Modifier.matchParentSize()) {
-            Box(
-                Modifier
-                    .fillMaxHeight()
-                    .fillMaxWidth(1f / labels.size)
-                    .graphicsLayer { translationX = size.width * slide }
-                    .clip(pill)
-                    .background(SegmentOn),
-            )
-        }
-        Row(Modifier.fillMaxWidth()) {
-            labels.forEachIndexed { i, label ->
-                Text(
-                    text = label,
-                    color = if (i == selected) Color.White else SegmentIdle,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(pill)
-                        .clickable { onSelect(i) }
-                        .padding(vertical = 8.dp),
-                )
-            }
-        }
+        SettingsGear(onOpenSettings)
     }
 }
 
 /**
  * 수채 풍경 속 나무. 그림이 칸을 다 쓰고, 막대는 그림 아래쪽에 얹는다.
  *
- * 누르면 물방울이 떨어져 나무가 살짝 출렁인다. 단계가 바뀌면 그림이 스르르 바뀌며 «새 모습이에요!»,
- * 다 자란 뒤에는 [TreeGrowth.PETAL_EVERY] 방울마다 꽃잎이 흩날린다.
+ * 누르면 물방울이 떨어져 나무가 살짝 출렁인다. 그 한 방울로 단계가 오르면 진짜 자라듯 —
+ * 나무가 빛나며 몸을 떨고, 땅으로 움츠러들었다가, 새 모습이 땅에서 솟아 출렁이며 자리 잡고 잎(꽃봉오리부터는
+ * 꽃잎)이 흩날린다. 그다음 «나무가 자랐어요!» 팝업([TreeGrowDialog]). 다 자란 뒤에는
+ * [TreeGrowth.PETAL_EVERY] 방울마다 꽃잎이 흩날린다.
  */
 @Composable
 private fun TreeScene(tree: TreeState, onGive: () -> TreeState?, modifier: Modifier) {
@@ -175,34 +136,67 @@ private fun TreeScene(tree: TreeState, onGive: () -> TreeState?, modifier: Modif
     val drop = remember { Animatable(1f) }
     val bounce = remember { Animatable(1f) }
     val petals = remember { Animatable(1f) }
+    // 자람: 빛(0→1→0), 떨림(도), 움츠림(0→1), 솟음(0→1, 스프링이라 1을 살짝 넘는다), 잎 흩날림(0→1).
+    val halo = remember { Animatable(0f) }
+    val shake = remember { Animatable(0f) }
+    val sink = remember { Animatable(0f) }
+    val rise = remember { Animatable(1f) }
+    val burst = remember { Animatable(1f) }
     val stage: Int = tree.stage
-    var shownStage: Int by remember { mutableIntStateOf(stage) }
-    var newLook: Boolean by remember { mutableStateOf(false) }
-    val lookAlpha: Float by animateFloatAsState(if (newLook) 1f else 0f, tween(260), label = "newLook")
+    // 지금 그리고 있는 단계. 자라는 동안에는 옛 모습을 들고 있다가 움츠러든 뒤 바꾼다.
+    var shown: Int by remember { mutableIntStateOf(stage) }
+    var growing: Boolean by remember { mutableStateOf(false) }
+    var grewTo: Int? by remember { mutableStateOf(null) }
     val progress: Float by animateFloatAsState(TreeGrowth.progress(tree.given), tween(320), label = "treeProgress")
 
-    LaunchedEffect(stage) {
-        val grew: Boolean = stage > shownStage
-        shownStage = stage
-        if (grew) {
-            newLook = true
-            delay(NEW_LOOK_MS)
-            newLook = false
+    // 물 주기 말고 단계가 바뀐 경우(계정에서 되찾음 등)는 연출 없이 맞춘다.
+    LaunchedEffect(stage) { if (!growing) shown = stage }
+
+    val grow: suspend (Int) -> Unit = { next ->
+        coroutineScope {
+            launch { halo.animateTo(1f, tween(300)) }
+            repeat(3) {
+                shake.animateTo(2.4f, tween(50))
+                shake.animateTo(-2.4f, tween(50))
+            }
+            shake.animateTo(0f, tween(40))
+            sink.animateTo(1f, tween(220, easing = FastOutLinearInEasing))
+            shown = next
+            sink.snapTo(0f)
+            rise.snapTo(0f)
+            launch {
+                burst.snapTo(0f)
+                burst.animateTo(1f, tween(BURST_MS, easing = LinearOutSlowInEasing))
+            }
+            rise.animateTo(1f, spring(dampingRatio = 0.42f, stiffness = 240f))
+            launch { halo.animateTo(0f, tween(500)) }
+            delay(260)
         }
+        grewTo = next
+        growing = false
     }
 
     val give: () -> Unit = {
-        val after: TreeState? = onGive()
+        val before: Int = shown
+        val after: TreeState? = if (growing) null else onGive()
         if (after != null) {
             scope.launch {
                 drop.snapTo(0f)
                 drop.animateTo(1f, tween(DROP_MS, easing = FastOutLinearInEasing))
             }
-            scope.launch {
-                delay(DROP_MS * 4L / 5L)
-                bounce.snapTo(1f)
-                bounce.animateTo(1.04f, tween(110))
-                bounce.animateTo(1f, spring(dampingRatio = 0.4f))
+            if (after.stage > before) {
+                growing = true
+                scope.launch {
+                    delay(DROP_MS.toLong())
+                    grow(after.stage)
+                }
+            } else {
+                scope.launch {
+                    delay(DROP_MS * 4L / 5L)
+                    bounce.snapTo(1f)
+                    bounce.animateTo(1.04f, tween(110))
+                    bounce.animateTo(1f, spring(dampingRatio = 0.4f))
+                }
             }
             if (TreeGrowth.petalsAt(after.given)) {
                 scope.launch {
@@ -220,7 +214,7 @@ private fun TreeScene(tree: TreeState, onGive: () -> TreeState?, modifier: Modif
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = give),
     ) {
         Image(
-            painter = painterResource(if (stage >= BLOSSOM_STAGE) R.drawable.tree_wash_pink else R.drawable.tree_wash_green),
+            painter = painterResource(if (shown >= BLOSSOM_STAGE) R.drawable.tree_wash_pink else R.drawable.tree_wash_green),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize(),
@@ -230,24 +224,59 @@ private fun TreeScene(tree: TreeState, onGive: () -> TreeState?, modifier: Modif
         val soilY: Dp = maxHeight - BAR_SPACE
         val art: Dp = minOf(maxWidth * 0.92f, (soilY - 44.dp) / SOIL_AT)
         val top: Dp = soilY - art * SOIL_AT
-        Crossfade(
-            targetState = stage,
-            animationSpec = tween(STAGE_FADE_MS),
-            label = "treeStage",
+
+        // 자랄 때 나무 뒤로 번지는 빛.
+        if (halo.value > 0f) {
+            Canvas(Modifier.fillMaxSize()) {
+                val center = Offset(this.size.width / 2f, (top + art * 0.55f).toPx())
+                drawCircle(
+                    Brush.radialGradient(
+                        listOf(HaloCream.copy(alpha = 0.95f * halo.value), Color.Transparent),
+                        center = center,
+                        radius = (art * 0.62f).toPx(),
+                    ),
+                    radius = (art * 0.62f).toPx(),
+                    center = center,
+                )
+            }
+        }
+
+        Image(
+            painter = painterResource(TREE_ART[shown]),
+            contentDescription = tr("벚꽃나무", "Cherry tree", "Cerezo"),
             modifier = Modifier
                 .offset(x = (maxWidth - art) / 2, y = top)
                 .size(art)
                 .graphicsLayer {
-                    scaleX = bounce.value
-                    scaleY = bounce.value
+                    val s: Float = sink.value
+                    val r: Float = rise.value
+                    scaleX = bounce.value * (1f - 0.1f * s) * (0.5f + 0.5f * r)
+                    scaleY = bounce.value * (1f - 0.3f * s) * (0.12f + 0.88f * r)
+                    alpha = 1f - s
+                    rotationZ = shake.value
                     transformOrigin = TransformOrigin(0.5f, SOIL_AT)
                 },
-        ) { s ->
-            Image(
-                painter = painterResource(STAGE_ART[s]),
-                contentDescription = tr("벚꽃나무", "Cherry tree", "Cerezo"),
-                modifier = Modifier.fillMaxSize(),
-            )
+        )
+
+        if (burst.value < 1f) {
+            val t: Float = burst.value
+            val colors: List<Color> = if (shown >= BLOSSOM_STAGE) PetalColors else LeafColors
+            Canvas(Modifier.fillMaxSize()) {
+                val origin = Offset(this.size.width / 2f, (top + art * 0.5f).toPx())
+                val leaf = Size(10.dp.toPx(), 6.dp.toPx())
+                BURST.forEachIndexed { i, (dx, dy) ->
+                    // 위로 퍼졌다가 천천히 떨어진다.
+                    val x: Float = origin.x + dx.dp.toPx() * t
+                    val y: Float = origin.y + dy.dp.toPx() * t + 70.dp.toPx() * t * t
+                    rotate(degrees = i * 47f + t * 260f, pivot = Offset(x, y)) {
+                        drawOval(
+                            colors[i % colors.size].copy(alpha = (1f - t).coerceIn(0f, 1f)),
+                            topLeft = Offset(x - leaf.width / 2, y - leaf.height / 2),
+                            size = leaf,
+                        )
+                    }
+                }
+            }
         }
 
         if (drop.value < 1f) {
@@ -284,22 +313,11 @@ private fun TreeScene(tree: TreeState, onGive: () -> TreeState?, modifier: Modif
         )
         WaterPill(tree.water, Modifier.align(Alignment.TopEnd).padding(12.dp))
 
-        Text(
-            text = tr("새 모습이에요!", "A new look!", "¡Nueva forma!"),
-            color = HomePalette.Ink,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 56.dp)
-                .alpha(lookAlpha)
-                .clip(RoundedCornerShape(999.dp))
-                .background(Color.White.copy(alpha = 0.92f))
-                .padding(horizontal = 14.dp, vertical = 7.dp),
-        )
-
         GrowthBar(tree.given, progress, Modifier.align(Alignment.BottomCenter).padding(12.dp))
     }
+
+    val grown: Int? = grewTo
+    if (grown != null) TreeGrowDialog(grown, onDismiss = { grewTo = null })
 }
 
 @Composable
@@ -400,8 +418,8 @@ private fun GrowthBar(given: Int, progress: Float, modifier: Modifier) {
     }
 }
 
-/** 단계별 그림. 목업(수채 C, 꽃봉오리는 새잎 G2)에서 그려 넣었다. */
-private val STAGE_ART: List<Int> = listOf(
+/** 단계별 그림. 목업(수채 C, 꽃봉오리는 새잎 G2)에서 그려 넣었다. 자람 팝업([TreeGrowDialog])도 쓴다. */
+internal val TREE_ART: List<Int> = listOf(
     R.drawable.tree_stage_0,
     R.drawable.tree_stage_1,
     R.drawable.tree_stage_2,
@@ -421,15 +439,19 @@ private const val SOIL_AT = 0.87f
 /** 그림 아래 막대가 차지하는 자리. */
 private val BAR_SPACE: Dp = 86.dp
 
-private const val SEGMENT_MS = 280
 private const val DROP_MS = 520
 private const val PETAL_MS = 2400
-private const val STAGE_FADE_MS = 700
-private const val NEW_LOOK_MS = 1800L
+private const val BURST_MS = 1100
 private const val PETAL_COUNT = 16
 
 private val Paper = Color(0xFFFBF8F3)
 private val PetalPink = Color(0xFFF7B6CA)
-private val SegmentTrack = Color(0xFFE5E8EB)
-private val SegmentOn = Color(0xFF333D4B)
-private val SegmentIdle = Color(0xFF4E5968)
+private val HaloCream = Color(0xFFFFF4CC)
+private val LeafColors = listOf(Color(0xFF5DBB7A), Color(0xFFA6DDB0), Color(0xFF3E9A62))
+private val PetalColors = listOf(Color(0xFFF7B6CA), Color(0xFFFBCFDD), Color(0xFFF49AB8))
+
+/** 자랄 때 흩날리는 잎: 가운데에서 (dx, dy) dp 쪽으로. 위로 퍼지게 둔다. */
+private val BURST: List<Pair<Float, Float>> = listOf(
+    -90f to -60f, 80f to -80f, -60f to -120f, 70f to -40f, -110f to -20f, 100f to -110f,
+    -20f to -140f, 30f to -100f, -40f to -70f, 120f to -50f, -130f to -90f, 10f to -60f,
+)

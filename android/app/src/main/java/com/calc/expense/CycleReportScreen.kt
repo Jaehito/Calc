@@ -1,7 +1,16 @@
 package com.calc.expense
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,41 +19,61 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.format.DateTimeFormatter
 
-private val DayFormat: DateTimeFormatter get() = L10n.monthDay()
-
 /**
- * 주기 리포트 화면.
+ * 주기 리포트 화면 — 한 주기를 **영수증 한 장**으로 보여 준다.
  *
- * 화면의 중심은 **고정비 후보**다. «얼마 썼나»는 결산 팝업이 이미 말했고, 사용자가 답을 못
- * 내고 있는 질문은 그 다음 것이다 — «그래서 다음 달은 얼마로 잡아야 하나». 그 답을 막는 것이
- * 자기 고정비를 모르는 것이라, 쓴 돈 요약은 한 카드로 줄이고 후보 목록에 자리를 준다.
+ * 홈은 «오늘»을 문장 하나로 말하는 화면이라, 리포트까지 같은 문장 머리·점 줄을 쓰면 두 화면이 구별되지 않는다.
+ * 리포트는 «끝난 기간의 정산»이라 영수증이 맞다 — 카테고리가 품목처럼 찍히고(금액 큰 순, 다섯 줄 넘으면
+ * «그 밖 N개»로 접힘), 쓴 돈·예산, 맨 아래 «남김»에 도장(«잘 지켰어요» / «조금 넘겼어요»). 앱의 영수증 스티커,
+ * 도감의 잉크 도장과 같은 결이다.
  *
- * **처음에 모두 골라져 있다.** 앱이 제안하고 사용자가 빼는 순서라야 «하나씩 고르기»라는 일이
- * 생기지 않는다. 틀린 것을 빼는 일은 열 줄이어도 몇 초지만, 맞는 것을 고르는 일은 그 열 줄을
- * 전부 읽게 만든다.
+ * 고정비 후보는 영수증 아래 **한 줄 띠**로 접어 둔다. 누르면 아래에서 시트가 올라와 고른다 — 처음부터 펼쳐 두면
+ * 영수증보다 후보 목록이 화면을 차지한다. **시트에서는 처음에 모두 골라져 있다.** 앱이 제안하고 사용자가 빼는
+ * 순서라야 «하나씩 고르기»라는 일이 생기지 않는다.
  *
  * @param selected 고른 후보의 이름 키([RecurringCosts.normalize])
  */
@@ -59,175 +88,303 @@ fun CycleReportScreen(
     onOpenCategory: (String) -> Unit = {},
     onClose: () -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(HomePalette.Ground)
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 24.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(tr("지난 주기 리포트", "Last cycle report", "Informe del ciclo anterior"), color = HomePalette.Ink, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                if (report != null) {
-                    Spacer(Modifier.height(3.dp))
-                    Text(
-                        text = "$purseLabel · ${report.cycle.start.format(DayFormat)} ~ ${report.cycle.lastDay.format(DayFormat)}",
-                        color = HomePalette.Muted,
-                        fontSize = 12.sp,
+    var sheetOpen: Boolean by rememberSaveable { mutableStateOf(false) }
+    BackHandler(enabled = sheetOpen) { sheetOpen = false }
+
+    Box(modifier = Modifier.fillMaxSize().background(HomePalette.Ground)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(start = 20.dp, end = 20.dp, top = TAB_TOP_PADDING, bottom = 24.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(HomePalette.Card)
+                        .clickable(onClick = onClose),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_chevron_left),
+                        contentDescription = tr("닫기", "Close", "Cerrar"),
+                        tint = HomePalette.Ink2,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+                Spacer(Modifier.width(10.dp))
+                Text(tr("지난 주기 리포트", "Last cycle report", "Informe del ciclo anterior"), color = HomePalette.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            }
+            Spacer(Modifier.height(16.dp))
+
+            if (report == null) {
+                Text(tr("불러오는 중이에요", "Loading…", "Cargando…"), color = HomePalette.Ink2, fontSize = 14.sp)
+                return@Column
+            }
+
+            Receipt(report, purseLabel, onOpenCategory)
+
+            if (report.showsFixedCosts) {
+                Spacer(Modifier.height(12.dp))
+                if (report.hasCandidates) {
+                    FixedStrip(
+                        title = tr("고정비 ${report.candidates.size}개를 찾았어요", "Found ${report.candidates.size} fixed costs", "Encontramos ${report.candidates.size} gastos fijos"),
+                        line = tr("골라 두면 예산이 정확해져요", "Pick them for a truer budget", "Elígelos para un presupuesto más justo"),
+                        onClick = { sheetOpen = true },
+                    )
+                } else {
+                    FixedStrip(
+                        title = tr("고정비 직접 적기", "Enter fixed costs", "Anotar gastos fijos"),
+                        line = tr("월세·통신비처럼 매달 나가는 돈", "Rent, phone — money that leaves monthly", "Alquiler, móvil: lo que sale cada mes"),
+                        onClick = onEditFixed,
                     )
                 }
             }
-            TextButton(onClick = onClose) { Text(tr("닫기", "Close", "Cerrar"), color = HomePalette.Ink2) }
-        }
-        Spacer(Modifier.height(16.dp))
 
-        if (report == null) {
-            CardBox { Text(tr("불러오는 중이에요", "Loading…", "Cargando…"), color = HomePalette.Ink2, fontSize = 14.sp) }
-            return@Column
-        }
-
-        SpentCard(report)
-        if (report.showsFixedCosts) {
-            Spacer(Modifier.height(12.dp))
-            CandidateCard(report, selected, onToggle, onApply, onEditFixed)
-        }
-
-        if (report.categories.isNotEmpty()) {
-            Spacer(Modifier.height(12.dp))
-            CategoryCard(report, onOpenCategory)
-        }
-
-        val error: String? = report.error
-        if (error != null) {
-            Spacer(Modifier.height(12.dp))
-            Text(error, color = HomePalette.Muted, fontSize = 12.sp)
-        }
-        Spacer(Modifier.height(24.dp))
-    }
-}
-
-/** 이 주기에 얼마 썼나. 예산이 있으면 남은 돈, 앞 주기가 있으면 그것과의 차이. */
-@Composable
-private fun SpentCard(report: CycleReport) {
-    CardBox {
-        Text(tr("쓴 돈", "Spent", "Gastado"), color = HomePalette.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(10.dp))
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(
-                text = StatusText.won(report.spent),
-                color = HomePalette.Ink,
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Bold,
-                style = Figures,
-                modifier = Modifier.weight(1f),
-            )
-            if (report.hasBudget) {
-                Text(
-                    text = tr("예산 ", "Budget ", "Presupuesto ") + StatusText.won(report.budget),
-                    color = HomePalette.Muted,
-                    fontSize = 12.sp,
-                    style = Figures,
-                )
+            val error: String? = report.error
+            if (error != null) {
+                Spacer(Modifier.height(12.dp))
+                Text(error, color = HomePalette.Muted, fontSize = 12.sp)
             }
         }
 
-        if (report.hasBudget) {
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text =
-                    if (report.left >= 0L) tr(
-                        StatusText.won(report.left) + " 남기고 끝냈어요",
-                        "Ended with " + StatusText.won(report.left) + " left",
-                        "Terminó con " + StatusText.won(report.left) + " de sobra",
-                    )
-                    else StatusText.won(-report.left) + tr(" 넘겼어요", " over", " de más"),
-                color = if (report.left >= 0L) HomePalette.Accent else HomePalette.Over,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                style = Figures,
-            )
+        if (report != null) {
+            AnimatedVisibility(visible = sheetOpen, enter = fadeIn(), exit = fadeOut()) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(Dim)
+                        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { sheetOpen = false },
+                )
+            }
+            AnimatedVisibility(
+                visible = sheetOpen,
+                enter = slideInVertically { it },
+                exit = slideOutVertically { it },
+                modifier = Modifier.align(Alignment.BottomCenter),
+            ) {
+                CandidateSheet(report, selected, onToggle, onApply, onEditFixed)
+            }
         }
+    }
+}
 
-        if (report.hasPrev) {
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text =
-                    if (report.diff >= 0L) tr(
-                        "앞 주기보다 " + StatusText.won(report.diff) + " 더",
-                        StatusText.won(report.diff) + " more than the cycle before",
-                        StatusText.won(report.diff) + " más que el ciclo previo",
-                    )
-                    else tr(
-                        "앞 주기보다 " + StatusText.won(-report.diff) + " 덜",
-                        StatusText.won(-report.diff) + " less than the cycle before",
-                        StatusText.won(-report.diff) + " menos que el ciclo previo",
-                    ),
-                color = HomePalette.Ink2,
-                fontSize = 12.5f.sp,
-                style = Figures,
+/** 영수증 한 장. 지갑·기간 → 품목(카테고리) → 쓴 돈·예산 → 남김과 도장. */
+@Composable
+private fun Receipt(report: CycleReport, purseLabel: String, onOpenCategory: (String) -> Unit) {
+    var expanded: Boolean by rememberSaveable { mutableStateOf(false) }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(elevation = CARD_ELEVATION, shape = ReceiptShape)
+            .clip(ReceiptShape)
+            .background(HomePalette.Card)
+            .padding(start = 18.dp, end = 18.dp, top = 18.dp, bottom = 26.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Image(
+                painter = painterResource(R.drawable.ic_sticker_receipt),
+                contentDescription = null,
+                modifier = Modifier.size(38.dp).rotate(-8f),
             )
+            Spacer(Modifier.width(10.dp))
+            Column {
+                Text(purseLabel, color = HomePalette.Ink, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    text = report.cycle.start.format(ReceiptDate) + " – " + report.cycle.lastDay.format(ReceiptDate),
+                    color = HomePalette.Muted,
+                    fontSize = 11.5f.sp,
+                    style = Mono,
+                )
+            }
         }
+        DashLine()
+
+        val slices: List<CategorySlice> = report.categories
+        if (slices.isEmpty()) {
+            Text(tr("적은 게 없어요", "Nothing logged", "Nada anotado"), color = HomePalette.Muted, fontSize = 13.5f.sp, modifier = Modifier.padding(vertical = 4.dp))
+        } else {
+            slices.take(RECEIPT_LINES).forEach { ItemLine(it, light = false, onOpenCategory) }
+            val rest: List<CategorySlice> = slices.drop(RECEIPT_LINES)
+            if (rest.isNotEmpty()) {
+                if (expanded) rest.forEach { ItemLine(it, light = true, onOpenCategory) }
+                MoreLine(
+                    label = if (expanded) tr("접기", "Less", "Menos") + " ▲"
+                    else tr("그 밖 ${rest.size}개", "${rest.size} more", "${rest.size} más") + " ▼",
+                    amount = if (expanded) null else rest.sumOf { it.amount },
+                    onClick = { expanded = !expanded },
+                )
+            }
+        }
+        DashLine()
+
+        ReceiptLine(tr("쓴 돈", "Spent", "Gastado"), StatusText.figure(report.spent), strong = true)
+        if (report.hasBudget) {
+            ReceiptLine(tr("예산", "Budget", "Presupuesto"), StatusText.figure(report.budget), strong = false)
+            DashLine()
+            val kept: Boolean = report.left >= 0L
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
+                Text(
+                    text = if (kept) tr("남김", "Left", "Sobró") else tr("넘김", "Over", "De más"),
+                    color = if (kept) HomePalette.Accent else HomePalette.Over,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Black,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = StatusText.figure(if (kept) report.left else -report.left),
+                    color = if (kept) HomePalette.Accent else HomePalette.Over,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Black,
+                    style = Mono,
+                )
+            }
+            Box(contentAlignment = Alignment.CenterEnd, modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
+                InkStamp(
+                    lines = if (kept) listOf(tr("잘", "Well", "Bien"), tr("지켰어요", "kept", "hecho"))
+                    else listOf(tr("조금", "Went", "Te"), tr("넘겼어요", "over", "pasaste")),
+                    ink = if (kept) HomePalette.Accent else HomePalette.Over,
+                    size = 64.dp,
+                    tilt = -12f,
+                    seed = report.cycle.start.dayOfYear,
+                )
+            }
+        }
+    }
+}
+
+/** 품목 한 줄. 누르면 그 카테고리가 이름별로 펼쳐진다(통계 탭과 같은 문). */
+@Composable
+private fun ItemLine(slice: CategorySlice, light: Boolean, onOpenCategory: (String) -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(6.dp))
+            .background(if (light) LightRow else Color.Transparent)
+            .clickable { onOpenCategory(slice.name) }
+            .padding(horizontal = if (light) 6.dp else 0.dp, vertical = 5.dp),
+    ) {
+        Text(L10n.name(slice.name), color = HomePalette.Ink2, fontSize = 13.5f.sp, modifier = Modifier.weight(1f))
+        Text(StatusText.figure(slice.amount), color = HomePalette.Ink, fontSize = 13.5f.sp, fontWeight = FontWeight.Bold, style = Mono)
+    }
+}
+
+@Composable
+private fun MoreLine(label: String, amount: Long?, onClick: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(6.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 6.dp),
+    ) {
+        Text(label, color = HomePalette.Accent, fontSize = 13.5f.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+        if (amount != null) Text(StatusText.figure(amount), color = HomePalette.Ink2, fontSize = 13.5f.sp, fontWeight = FontWeight.Bold, style = Mono)
+    }
+}
+
+@Composable
+private fun ReceiptLine(label: String, value: String, strong: Boolean) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
+        Text(
+            label,
+            color = if (strong) HomePalette.Ink else HomePalette.Ink2,
+            fontSize = if (strong) 14.5f.sp else 13.5f.sp,
+            fontWeight = if (strong) FontWeight.Bold else FontWeight.Normal,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            value,
+            color = if (strong) HomePalette.Ink else HomePalette.Ink2,
+            fontSize = if (strong) 14.5f.sp else 13.5f.sp,
+            fontWeight = if (strong) FontWeight.Bold else FontWeight.Normal,
+            style = Mono,
+        )
+    }
+}
+
+/** 영수증의 점선. */
+@Composable
+private fun DashLine() {
+    Canvas(Modifier.fillMaxWidth().padding(vertical = 10.dp).height(1.5.dp)) {
+        drawLine(
+            color = DashColor,
+            start = Offset(0f, size.height / 2f),
+            end = Offset(size.width, size.height / 2f),
+            strokeWidth = size.height,
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 4.dp.toPx())),
+        )
+    }
+}
+
+/** 영수증 아래 한 줄 띠. 고정비 후보가 있으면 시트를, 없으면 직접 적기를 연다. */
+@Composable
+private fun FixedStrip(title: String, line: String, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(20.dp)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(elevation = CARD_ELEVATION, shape = shape)
+            .clip(shape)
+            .background(HomePalette.Card)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+    ) {
+        Image(painterResource(R.drawable.ic_budget_wallet), contentDescription = null, modifier = Modifier.size(40.dp).rotate(-8f))
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, color = HomePalette.Ink, fontSize = 14.5f.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            Text(line, color = HomePalette.Ink2, fontSize = 12.sp, maxLines = 1)
+        }
+        Chevron(size = 18.dp)
     }
 }
 
 /**
- * 고정비 후보. 이 화면의 본문이다.
- *
- * 맨 아래에 «이걸 빼면 얼마 남나»를 함께 보여준다 — 체크를 하나 뺄 때마다 숫자가 움직여야
- * 사용자가 «이 줄이 내 다음 달을 얼마나 바꾸나»를 느낄 수 있다. 그게 이 화면의 전부다.
+ * 아래에서 올라오는 고정비 시트. 맨 아래에 «이걸 빼면 얼마 남나»를 함께 보여준다 — 체크를 하나 뺄 때마다
+ * 숫자가 움직여야 사용자가 «이 줄이 내 다음 달을 얼마나 바꾸나»를 느낄 수 있다.
  */
 @Composable
-private fun CandidateCard(
+private fun CandidateSheet(
     report: CycleReport,
     selected: Set<String>,
     onToggle: (FixedCostCandidate) -> Unit,
     onApply: () -> Unit,
     onEditFixed: () -> Unit,
 ) {
-    CardBox {
-        Text(tr("고정비로 보이는 것", "Looks like fixed costs", "Parecen gastos fijos"), color = HomePalette.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(4.dp))
-        // 근거가 다르면 안내 문구도 달라야 한다. 「되풀이를 찾았다」와 「아직 못 찾아서 큰 것만
-        // 늘어놨다」를 같은 말로 소개하면, 사용자가 뒤쪽을 앞쪽만큼 믿어 버린다.
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp))
+            .background(HomePalette.Card)
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
+            .navigationBarsPadding()
+            .heightIn(max = 620.dp)
+            .verticalScroll(rememberScrollState())
+            .padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 16.dp),
+    ) {
+        Box(Modifier.align(Alignment.CenterHorizontally).size(width = 40.dp, height = 4.dp).clip(CircleShape).background(HomePalette.Line))
+        Spacer(Modifier.height(14.dp))
+        Text(tr("고정비로 보여요", "Looks like fixed costs", "Parecen gastos fijos"), color = HomePalette.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(3.dp))
+        // 근거가 다르면 안내도 달라야 한다. 「되풀이를 찾았다」와 「아직 한 주기뿐」을 같은 말로 소개하면
+        // 사용자가 뒤쪽을 앞쪽만큼 믿어 버린다.
         val confirmed: Boolean = report.candidates.any { it.repeated }
         Text(
-            text =
-                if (confirmed) tr(
-                    "손으로 적은 기록과 결제 알림에서 달마다 되풀이된 것들이에요. 아닌 건 체크를 빼 주세요.",
-                    "These repeated every month in your entries and payment alerts. Uncheck any that aren't fixed costs.",
-                    "Se repitieron cada mes en tus gastos y avisos de pago. Desmarca los que no sean fijos.",
-                )
-                else tr(
-                    "아직 한 주기뿐이라 되풀이는 확인하지 못했어요. 큰 금액부터 늘어놨으니 고정비인 것만 골라 주세요.",
-                    "Only one cycle so far, so repeats can't be confirmed yet. Largest first — pick only the fixed costs.",
-                    "Solo hay un ciclo, así que aún no se pueden confirmar repeticiones. De mayor a menor: elige solo los fijos.",
-                ),
+            text = if (confirmed) tr("아닌 건 체크를 빼 주세요", "Uncheck any that aren't fixed", "Desmarca los que no sean fijos")
+            else tr("아직 한 주기뿐이라 큰 금액부터 늘어놨어요", "Only one cycle so far — largest first", "Solo un ciclo: de mayor a menor"),
             color = HomePalette.Ink2,
-            fontSize = 12.sp,
+            fontSize = 12.5f.sp,
         )
-        Spacer(Modifier.height(14.dp))
-
-        if (!report.hasCandidates) {
-            Text(
-                text = tr(
-                    "아직 찾을 만한 게 없어요. 지출을 적거나 결제 알림이 쌓이면 여기에 나와요.",
-                    "Nothing to show yet. It will appear here as you log spending or payment alerts pile up.",
-                    "Aún no hay nada. Aparecerá aquí a medida que anotes gastos o lleguen avisos de pago.",
-                ),
-                color = HomePalette.Muted,
-                fontSize = 13.sp,
-            )
-            Spacer(Modifier.height(14.dp))
-            TextButton(onClick = onEditFixed, modifier = Modifier.fillMaxWidth()) {
-                Text(tr("고정비 직접 적기", "Enter fixed costs yourself", "Anotar gastos fijos a mano"), color = HomePalette.Accent, fontWeight = FontWeight.SemiBold)
-            }
-            return@CardBox
-        }
+        Spacer(Modifier.height(8.dp))
 
         val chosen: List<FixedCostCandidate> =
             report.candidates.filter { RecurringCosts.normalize(it.name) in selected }
-
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             for (candidate in report.candidates) {
                 CandidateRow(
@@ -238,68 +395,34 @@ private fun CandidateCard(
             }
         }
 
-        // 기록에서 온 줄은 사용자가 지금까지 「지출」로 적어 오던 것이다. 고정비로 옮기고도
-        // 계속 적으면 예산에서 한 번, 지출에서 또 한 번 빠져 두 번 깎인다. 그 말을 여기서 한다 —
-        // 화면이 말해 주지 않으면 숫자가 왜 안 맞는지 사용자가 알아낼 방법이 없다.
+        // 기록에서 온 줄은 사용자가 지금까지 「지출」로 적어 오던 것이다. 고정비로 옮기고도 계속 적으면
+        // 예산에서 한 번, 지출에서 또 한 번 빠져 두 번 깎인다. 화면이 말해 주지 않으면 알 방법이 없다.
         if (chosen.any { it.fromRecord }) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
             Text(
                 text = tr(
-                    "‘기록’에서 온 건 고정비에 넣은 뒤로는 따로 적지 않아도 돼요. " +
-                        "고정비로도 넣고 지출로도 적으면 같은 돈이 두 번 빠져요.",
-                    "Once an ‘entry’ item is a fixed cost, you don't need to log it anymore. " +
-                        "Fixed costs set how much you can spend, so doing both counts it twice.",
-                    "Cuando un «gasto» pasa a ser fijo, ya no hace falta anotarlo. " +
-                        "Los gastos fijos definen cuánto puedes gastar; si haces ambas cosas, se descuenta dos veces.",
+                    "‘기록’에서 온 건 고정비에 넣은 뒤로는 따로 적지 않아도 돼요. 둘 다 하면 같은 돈이 두 번 빠져요.",
+                    "Once an ‘entry’ item is a fixed cost, stop logging it — doing both counts it twice.",
+                    "Cuando un «gasto» pasa a fijo, deja de anotarlo: si haces ambas cosas, se descuenta dos veces.",
                 ),
                 color = HomePalette.Muted,
                 fontSize = 11.5f.sp,
             )
         }
 
-        Spacer(Modifier.height(14.dp))
-        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(HomePalette.Line))
-        Spacer(Modifier.height(14.dp))
-
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(tr("고른 고정비", "Selected fixed costs", "Gastos fijos elegidos"), color = HomePalette.Ink2, fontSize = 13.sp, modifier = Modifier.weight(1f))
-            Text(
-                text = StatusText.won(CycleReports.candidateTotal(chosen)),
-                color = HomePalette.Ink,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                style = Figures,
-            )
-        }
-
         val next: Long = report.recommendedWith(chosen)
         if (next > 0L) {
             Spacer(Modifier.height(12.dp))
-            Column(
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
                     .background(HomePalette.Soft)
-                    .padding(14.dp),
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
             ) {
-                Text(tr("이번 주기 예산", "This cycle's budget", "Presupuesto de este ciclo"), color = HomePalette.Accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(3.dp))
-                Text(
-                    text = StatusText.won(next),
-                    color = HomePalette.Ink,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    style = Figures,
-                )
-                Spacer(Modifier.height(3.dp))
-                Text(
-                    text = tr("월급", "Income", "Sueldo") + " ${StatusText.figure(report.plan.monthlyIncome)} − " +
-                        tr("고정비", "fixed costs", "gastos fijos") + " " +
-                        StatusText.figure(report.planWith(chosen).fixedTotal),
-                    color = HomePalette.Ink2,
-                    fontSize = 11.sp,
-                    style = Figures,
-                )
+                Text(tr("이번 주기 예산", "This cycle's budget", "Presupuesto de este ciclo"), color = HomePalette.Accent, fontSize = 12.5f.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Text(StatusText.won(next), color = HomePalette.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, style = Figures)
             }
         } else if (report.plan.monthlyIncome <= 0L) {
             Spacer(Modifier.height(10.dp))
@@ -314,7 +437,7 @@ private fun CandidateCard(
             )
         }
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(14.dp))
         Button(
             onClick = onApply,
             enabled = chosen.isNotEmpty(),
@@ -329,7 +452,6 @@ private fun CandidateCard(
         ) {
             Text(tr("고정비에 넣기", "Add to fixed costs", "Añadir a gastos fijos"), fontSize = 15.sp, fontWeight = FontWeight.Bold)
         }
-        Spacer(Modifier.height(4.dp))
         TextButton(onClick = onEditFixed, modifier = Modifier.fillMaxWidth()) {
             Text(tr("직접 더하거나 고치기", "Add or edit yourself", "Añadir o editar a mano"), color = HomePalette.Ink2)
         }
@@ -390,76 +512,38 @@ private fun CandidateRow(candidate: FixedCostCandidate, checked: Boolean, onTogg
     }
 }
 
-/** 어디에 썼나. 통계 탭의 도넛과 달리 막대 한 줄씩 — 리포트에서는 순위만 알면 된다. */
-@Composable
-private fun CategoryCard(report: CycleReport, onOpenCategory: (String) -> Unit) {
-    CardBox {
-        Text(tr("어디에 썼나", "Where it went", "En qué se gastó"), color = HomePalette.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(14.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            report.categories.take(5).forEach { slice ->
-                // 통계 탭과 같은 문이다 — 누르면 그 카테고리 안이 이름별로 펼쳐진다.
-                Column(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(10.dp))
-                        .clickable { onOpenCategory(slice.name) }
-                        .padding(vertical = 2.dp),
-                ) {
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Box(
-                            modifier = Modifier
-                                .size(9.dp)
-                                .clip(RoundedCornerShape(3.dp))
-                                .background(Color(IconHues.category(slice.name))),
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = L10n.name(slice.name),
-                            color = HomePalette.Ink,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.weight(1f),
-                        )
-                        Text(
-                            text = StatusText.won(slice.amount),
-                            color = HomePalette.Ink2,
-                            fontSize = 12.sp,
-                            style = Figures,
-                        )
-                        Spacer(Modifier.width(5.dp))
-                        Chevron(size = 16.dp)
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(6.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(HomePalette.Line),
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(slice.percent.coerceIn(1, 100) / 100f)
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(3.dp))
-                                .background(Color(IconHues.category(slice.name))),
-                        )
-                    }
-                }
+
+/** 영수증 모양: 위는 둥글고 아래는 톱니. */
+private object ReceiptShape : Shape {
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
+        val tooth: Float = with(density) { 8.dp.toPx() }
+        val corner: Float = with(density) { 16.dp.toPx() }
+        val w: Float = size.width
+        val h: Float = size.height
+        val teeth: Int = maxOf(1, (w / (tooth * 2f)).toInt())
+        val step: Float = w / teeth
+        val path = Path().apply {
+            moveTo(0f, corner)
+            cubicTo(0f, corner * 0.45f, corner * 0.45f, 0f, corner, 0f)
+            lineTo(w - corner, 0f)
+            cubicTo(w - corner * 0.45f, 0f, w, corner * 0.45f, w, corner)
+            lineTo(w, h - tooth)
+            for (i in 0 until teeth) {
+                val right: Float = w - i * step
+                lineTo(right - step / 2f, h)
+                lineTo(right - step, h - tooth)
             }
+            close()
         }
+        return Outline.Generic(path)
     }
 }
 
-@Composable
-private fun CardBox(content: @Composable () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
-            .background(HomePalette.Card)
-            .padding(20.dp),
-    ) {
-        content()
-    }
-}
+/** 영수증 숫자 — 고정폭이라 자릿수가 세로로 맞는다. */
+private val Mono: TextStyle = TextStyle(fontFamily = FontFamily.Monospace, fontFeatureSettings = "tnum")
+
+private const val RECEIPT_LINES = 5
+private val ReceiptDate: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd")
+private val DashColor = Color(0xFFD7DEDA)
+private val LightRow = Color(0xFFF6FBF8)
+private val Dim = Color(0x730F1A17)
