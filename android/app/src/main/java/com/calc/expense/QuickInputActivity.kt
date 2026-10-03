@@ -559,7 +559,7 @@ class QuickInputActivity : AppCompatActivity() {
         val water: Int = refreshWater()
         val view: View = layoutInflater.inflate(R.layout.popup_water_bubble, ui.sheetRoot, false)
         view.findViewById<TextView>(R.id.textBubble).text = tr(
-            "물방울을 누르면 나무에게 물을 줄 수 있어요!",
+            "물방울을 누르면\n나무에게 물을 줄 수 있어요!",
             "Tap the drops to water your tree!",
             "¡Toca las gotas para regar tu árbol!",
         )

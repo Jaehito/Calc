@@ -5,7 +5,7 @@
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/bubbleRoot"
-    android:layout_width="230dp"
+    android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:orientation="vertical">
 
@@ -29,7 +29,8 @@
 
         <TextView
             android:id="@+id/textBubble"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
+            android:maxWidth="260dp"
             android:layout_height="wrap_content"
             android:lineSpacingExtra="2dp"
             android:text="물방울을 누르면 나무에게 물을 줄 수 있어요!"
@@ -39,7 +40,8 @@
 
         <TextView
             android:id="@+id/textBubbleSub"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
+            android:maxWidth="260dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="3dp"
             android:text="지금 7방울 · 나무 탭에서 주기 ›"

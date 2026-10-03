@@ -536,6 +536,17 @@ class HomeActivity : ComponentActivity() {
         refreshInbox()
     }
 
+    override fun onStart() {
+        super.onStart()
+        // 물을 얻은 곳이 어디든(이 화면의 수집함 기록, 위에 뜬 기록 창, 잠금화면 답장) 나무 탭 숫자를 바로 맞춘다.
+        TreeStore.onChange = { state -> tree = state }
+    }
+
+    override fun onStop() {
+        TreeStore.onChange = null
+        super.onStop()
+    }
+
     override fun onDestroy() {
         io.shutdown()
         super.onDestroy()

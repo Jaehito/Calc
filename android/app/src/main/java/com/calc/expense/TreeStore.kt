@@ -2,6 +2,8 @@ package com.calc.expense
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Handler
+import android.os.Looper
 import java.time.LocalDate
 import java.time.YearMonth
 
@@ -22,6 +24,14 @@ object TreeStore {
     private const val KEY_BUBBLE_SEEN = "bubbleSeen"
 
     private val lock = Any()
+    private val main = Handler(Looper.getMainLooper())
+
+    /**
+     * 나무가 바뀌면 부르는 곳(메인 스레드). 홈이 떠 있는 동안 등록해, 어디서 물을 얻든(기록 창·잠금화면 답장·
+     * 수집함·아침 보너스) 나무 탭 숫자가 바로 바뀌게 한다. 한 번에 하나만 둔다 — 홈은 하나뿐이다.
+     */
+    @Volatile
+    var onChange: ((TreeState) -> Unit)? = null
 
     private fun prefs(context: Context): SharedPreferences =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -121,6 +131,8 @@ object TreeStore {
     }
 
     private fun write(context: Context, state: TreeState) {
+        val listener: ((TreeState) -> Unit)? = onChange
+        if (listener != null) main.post { listener(state) }
         prefs(context).edit()
             .putInt(KEY_WATER, state.water)
             .putInt(KEY_GIVEN, state.given)
