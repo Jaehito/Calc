@@ -32,9 +32,6 @@ object HomePalette {
 
     val Over = Color(0xFFF0544B)
 
-    /** 앱 아이콘(웃는 지갑)의 크림 바탕. 홈 머리 줄의 작은 앱 아이콘이 쓴다. */
-    val Cream = Color(0xFFFFF1D6)
-
     /** 나무에 줄 물. 💧 숫자와 «+1» 글자. */
     val Water = Color(0xFF2C7FBF)
     val WaterSoft = Color(0xFFE6F2FC)

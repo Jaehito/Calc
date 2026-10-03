@@ -2,6 +2,7 @@ package com.calc.expense
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -180,8 +181,10 @@ private fun AppLogo() {
         modifier = Modifier
             .size(36.dp)
             .clip(RoundedCornerShape(11.dp))
-            .background(HomePalette.Cream),
+            .background(HomePalette.Card)
+            .border(1.dp, HomePalette.Line, RoundedCornerShape(11.dp)),
     ) {
+        // 앱 아이콘과 같은 흰 바탕. 홈 바닥도 밝아서 옅은 테두리로 모양을 잡는다.
         // 앞 레이어는 108 칸 중 가운데 72 칸에 그림이 있다 — 그만큼 키워서 가장자리를 잘라 낸다.
         Image(
             painter = painterResource(R.drawable.ic_launcher_foreground),

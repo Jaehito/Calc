@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    앱 아이콘 앞 레이어: 웃는 민트 지갑이 금색 띠 일력 한 장(하루치)을 물고 있다.
+    앱 아이콘 앞 레이어: 웃는 민트 지갑 위로 떡잎 두 장이 났다(아끼면 자라는 나무).
     지갑 잠금 부분은 오른쪽 가장자리에서 잘리게 크게 그렸다 — 가운데 작은 기호처럼 보이지 않게.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -8,27 +8,25 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <group android:rotation="-9" android:pivotX="52" android:pivotY="36">
-        <path android:fillColor="#FFFFFF" android:pathData="M38,18 H66 A4,4 0 0 1 70,22 V44 A4,4 0 0 1 66,48 H38 A4,4 0 0 1 34,44 V22 A4,4 0 0 1 38,18 Z" />
-        <path android:fillColor="#E9A23B" android:pathData="M38,18 H66 A4,4 0 0 1 70,22 V26 H34 V22 A4,4 0 0 1 38,18 Z" />
-        <path
-            android:fillColor="#00000000"
-            android:strokeColor="#15352B"
-            android:strokeWidth="3.6"
-            android:strokeLineCap="round"
-            android:strokeLineJoin="round"
-            android:pathData="M48,36 L53,33 V45" />
-    </group>
-    <path android:fillColor="#12C08B" android:pathData="M27,42 H81 A13,13 0 0 1 94,55 V85 A13,13 0 0 1 81,98 H27 A13,13 0 0 1 14,85 V55 A13,13 0 0 1 27,42 Z" />
-    <path android:fillColor="#0E9A6F" android:pathData="M81,56 H93 A7,7 0 0 1 100,63 V67 A7,7 0 0 1 93,74 H81 A7,7 0 0 1 74,67 V63 A7,7 0 0 1 81,56 Z" />
-    <path android:fillColor="#E9A23B" android:pathData="M79.6,65 A3.4,3.4 0 1 0 86.4,65 A3.4,3.4 0 1 0 79.6,65 Z" />
-    <!-- 얼굴: 눈 둘, 웃는 입, 볼 -->
-    <path android:fillColor="#15352B" android:pathData="M30.8,63 A3.2,3.2 0 1 0 37.2,63 A3.2,3.2 0 1 0 30.8,63 Z M52.8,63 A3.2,3.2 0 1 0 59.2,63 A3.2,3.2 0 1 0 52.8,63 Z" />
+    <!-- 떡잎: 줄기, 왼쪽 잎, 오른쪽 잎 -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#3E8F52"
+        android:strokeWidth="3.6"
+        android:strokeLineCap="round"
+        android:pathData="M50,47 C50,42 50.4,38 50,34" />
+    <path android:fillColor="#8ED16B" android:pathData="M50,35 C49.4,25 40.6,24.8 35.5,28.2 C36.2,34.4 41.9,40.9 50,35 Z" />
+    <path android:fillColor="#B9E58F" android:pathData="M50,35 C58.1,40.9 63.8,34.4 64.5,28.2 C59.4,24.8 50.6,25 50,35 Z" />
+    <!-- 지갑 -->
+    <path android:fillColor="#12C08B" android:pathData="M27,46 H81 A13,13 0 0 1 94,59 V89 A13,13 0 0 1 81,102 H27 A13,13 0 0 1 14,89 V59 A13,13 0 0 1 27,46 Z" />
+    <path android:fillColor="#0E9A6F" android:pathData="M81,60 H93 A7,7 0 0 1 100,67 V71 A7,7 0 0 1 93,78 H81 A7,7 0 0 1 74,71 V67 A7,7 0 0 1 81,60 Z" />
+    <path android:fillColor="#E9A23B" android:pathData="M79.6,69 A3.4,3.4 0 1 0 86.4,69 A3.4,3.4 0 1 0 79.6,69 Z" />
+    <!-- 얼굴: 눈 둘, 웃는 입 -->
+    <path android:fillColor="#15352B" android:pathData="M30.8,67 A3.2,3.2 0 1 0 37.2,67 A3.2,3.2 0 1 0 30.8,67 Z M52.8,67 A3.2,3.2 0 1 0 59.2,67 A3.2,3.2 0 1 0 52.8,67 Z" />
     <path
         android:fillColor="#00000000"
         android:strokeColor="#15352B"
         android:strokeWidth="3"
         android:strokeLineCap="round"
-        android:pathData="M38,70 Q45,76.3 52,70" />
-    <path android:fillColor="#FF9DAE" android:fillAlpha="0.8" android:pathData="M25.4,70 A3.6,3.6 0 1 0 32.6,70 A3.6,3.6 0 1 0 25.4,70 Z M57.4,70 A3.6,3.6 0 1 0 64.6,70 A3.6,3.6 0 1 0 57.4,70 Z" />
+        android:pathData="M38,74 Q45,80.3 52,74" />
 </vector>

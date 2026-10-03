@@ -1,23 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     테마 아이콘(안드로이드 13+)용 한 색 레이어. 시스템이 이 모양만 보고 배경색에 맞춰 칠한다.
-    지갑은 채우고 얼굴(눈·입)은 뚫고, 물고 있는 일력은 테두리만.
+    지갑은 채우고 얼굴(눈·입)은 뚫고, 위의 떡잎은 채운다.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <group android:rotation="-9" android:pivotX="52" android:pivotY="40">
-        <path
-            android:fillColor="#00000000"
-            android:strokeColor="#FFFFFF"
-            android:strokeWidth="4.5"
-            android:pathData="M43,27 H63 A3,3 0 0 1 66,30 V44 A3,3 0 0 1 63,47 H43 A3,3 0 0 1 40,44 V30 A3,3 0 0 1 43,27 Z" />
-    </group>
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3.2"
+        android:strokeLineCap="round"
+        android:pathData="M53,51 V41" />
+    <path android:fillColor="#FFFFFF" android:pathData="M53,41 C52.5,33 45.5,32.8 41.5,35.5 C42,40.5 46.5,45.7 53,41 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M53,41 C59.5,45.7 64,40.5 64.5,35.5 C60.5,32.8 53.5,33 53,41 Z" />
     <!-- 지갑 몸통에서 눈과 웃는 입을 뚫어 낸다(evenOdd). -->
     <path
         android:fillColor="#FFFFFF"
         android:fillType="evenOdd"
-        android:pathData="M33,46 H75 A9,9 0 0 1 84,55 V75 A9,9 0 0 1 75,84 H33 A9,9 0 0 1 24,75 V55 A9,9 0 0 1 33,46 Z M42.2,61 A2.8,2.8 0 1 0 47.8,61 A2.8,2.8 0 1 0 42.2,61 Z M58.2,61 A2.8,2.8 0 1 0 63.8,61 A2.8,2.8 0 1 0 58.2,61 Z M46.5,67 Q53,75 59.5,67 Q53,71.2 46.5,67 Z" />
+        android:pathData="M33,50 H75 A9,9 0 0 1 84,59 V79 A9,9 0 0 1 75,88 H33 A9,9 0 0 1 24,79 V59 A9,9 0 0 1 33,50 Z M41.2,65 A2.8,2.8 0 1 0 46.8,65 A2.8,2.8 0 1 0 41.2,65 Z M57.2,65 A2.8,2.8 0 1 0 62.8,65 A2.8,2.8 0 1 0 57.2,65 Z M45.5,71 Q52,79 58.5,71 Q52,75.2 45.5,71 Z" />
 </vector>

@@ -1,5 +1,6 @@
 package com.calc.expense
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -31,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -151,6 +153,9 @@ private fun PendingRow(
     var name: String by remember(item.id) { mutableStateOf(item.merchant) }
     var amountText: String by remember(item.id) { mutableStateOf(item.amount.toString()) }
     var category: String by remember(item.id) { mutableStateOf(item.category) }
+    /** 칩을 직접 눌렀으면 이름을 고쳐도 카테고리를 다시 짐작하지 않는다(기록 창과 같다). */
+    var categoryPicked: Boolean by remember(item.id) { mutableStateOf(false) }
+    val context: Context = LocalContext.current
     var purse: Purse by remember(item.id) { mutableStateOf(ui.purses.firstOrNull() ?: Purse.PERSONAL) }
     /** 「⋯」 을 눌렀을 때만 나오는 것들 — 차단. 이름·금액은 이제 늘 펼쳐져 있다. */
     var moreOpen: Boolean by remember(item.id) { mutableStateOf(false) }
@@ -178,7 +183,15 @@ private fun PendingRow(
         Spacer(Modifier.height(10.dp))
         OutlinedTextField(
             value = name,
-            onValueChange = { name = it },
+            onValueChange = {
+                name = it
+                // 이름을 고치면 카테고리도 다시 짐작한다 — 기억이 낱말 규칙을 이긴다
+                // ([QuickInputActivity.applyAutoCategory] 와 같은 순서).
+                if (!categoryPicked) {
+                    category = CategoryMemoryStore.recall(context, it, ui.categories)
+                        ?: CategoryClassifier.classify(it, ui.categories).orEmpty()
+                }
+            },
             label = { Text(tr("이름", "Name", "Nombre")) },
             singleLine = true,
             shape = RoundedCornerShape(14.dp),
@@ -221,7 +234,10 @@ private fun PendingRow(
                     Pill(
                         text = L10n.name(catName),
                         on = category == catName,
-                        onClick = { category = if (category == catName) "" else catName },
+                        onClick = {
+                            categoryPicked = true
+                            category = if (category == catName) "" else catName
+                        },
                     )
                     if (index < ui.categories.lastIndex) Spacer(Modifier.width(7.dp))
                 }

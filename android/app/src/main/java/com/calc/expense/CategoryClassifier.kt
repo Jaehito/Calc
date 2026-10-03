@@ -14,6 +14,10 @@ package com.calc.expense
  *
  * **«기타» 는 규칙이 없다** — 무엇이든 «기타» 로 밀어넣는 건 분류가 아니다.
  *
+ * **영어·스페인어는 낱말 단위로 맞춘다.** 한국어는 「다나약국」처럼 붙여 쓰니 글자 속 어디에
+ * 있어도 잡지만, 띄어 쓰는 말을 그렇게 잡으면 bar 가 barber 에, tea 가 steak 에 걸린다.
+ * 뒤에 s·es 가 붙은 복수형(tacos·panes)은 같은 낱말로 보고, 악센트는 떼고 본다(café = cafe).
+ *
  * Android 에 의존하지 않아 단위 테스트로 고정한다.
  */
 object CategoryClassifier {
@@ -112,26 +116,190 @@ object CategoryClassifier {
     )
 
     /**
+     * 영어·스페인어 낱말([RULES] 와 같은 모양·같은 순서). 칸 이름은 저장되는 한국어 그대로다 —
+     * 화면에서만 번역된다([L10n.name]). 각 칸의 번역 이름(Food·Comida 등)도 낱말로 넣었다.
+     *
+     * 뜻이 둘인 말은 뺐다 — 「ticket」(차표·공연표), 「agua」(생수·수도 요금), 「té」(차·대명사 te).
+     */
+    private val WORDS: List<Pair<String, List<String>>> = listOf(
+        "육아" to listOf(
+            "kids", "baby", "diaper", "nappy", "nappies", "baby wipes", "stroller", "car seat", "daycare",
+            "kindergarten", "preschool", "nursery", "babysitter", "pacifier", "toy", "baby food",
+            "niños", "bebé", "pañal", "toallita", "carrito", "guardería", "chupete", "juguete", "papilla",
+        ),
+        "과일" to listOf(
+            "fruit", "apple", "banana", "strawberry", "strawberries", "grape", "watermelon", "orange",
+            "peach", "blueberry", "blueberries", "kiwi", "mango", "cherry", "cherries", "melon", "tomato",
+            "fruta", "manzana", "plátano", "fresa", "uva", "sandía", "naranja", "melocotón", "durazno",
+            "cereza", "melón",
+        ),
+        "간식" to listOf(
+            "snack", "chocolate", "candy", "ice cream", "icecream", "gelato", "cookie", "chips", "crisps",
+            "donut", "doughnut", "waffle", "popcorn", "nuts", "gum", "bread",
+            "chuches", "golosina", "helado", "galleta", "palomitas", "dulce", "chicle", "merienda", "pan",
+        ),
+        "카페" to listOf(
+            "café", "coffee", "latte", "cappuccino", "espresso", "americano", "mocha", "starbucks",
+            "dunkin", "tim hortons", "tea", "bubble tea", "boba", "smoothie", "bakery", "cake",
+            "dessert", "pastry", "croissant", "muffin",
+            "cafetería", "panadería", "pastelería", "pastel", "tarta", "postre", "batido",
+        ),
+        "술" to listOf(
+            "drinks", "beer", "wine", "soju", "whisky", "whiskey", "vodka", "gin", "rum", "tequila",
+            "cocktail", "sake", "bar", "pub", "brewery", "liquor", "booze", "alcohol", "happy hour", "karaoke",
+            "bebidas", "cerveza", "caña", "vino", "cóctel", "cubata", "licor", "mezcal", "sidra",
+        ),
+        "식비" to listOf(
+            "food", "lunch", "dinner", "breakfast", "brunch", "meal", "restaurant", "takeout", "takeaway",
+            "delivery", "pizza", "burger", "hamburger", "sushi", "ramen", "noodles", "pasta", "sandwich",
+            "taco", "burrito", "kebab", "chicken", "steak", "salad", "soup", "rice", "bbq", "eggs", "meat",
+            "fish", "milk", "mcdonald", "mcdonalds", "kfc", "domino", "dominos", "chipotle", "doordash",
+            "uber eats", "ubereats", "grubhub", "deliveroo", "just eat", "glovo", "rappi", "pedidosya",
+            "comida", "almuerzo", "cena", "desayuno", "restaurante", "menú", "tapas", "hamburguesa",
+            "pollo", "carne", "pescado", "ensalada", "sopa", "arroz", "paella", "bocadillo", "empanada",
+            "huevo", "leche",
+        ),
+        "생활" to listOf(
+            "household", "toilet paper", "detergent", "laundry", "cleaning", "soap", "shampoo",
+            "toothpaste", "toothbrush", "tissues", "paper towels", "trash bags", "batteries", "light bulb",
+            "dry cleaning", "sponge", "ikea", "daiso", "dollar store",
+            "hogar", "detergente", "lavandería", "limpieza", "jabón", "champú", "papel higiénico",
+            "pasta de dientes", "cepillo de dientes", "pañuelos", "basura", "pila", "bombilla",
+            "tintorería", "suavizante", "lejía",
+        ),
+        "병원" to listOf(
+            "hospital", "clinic", "doctor", "dentist", "dental", "pharmacy", "drugstore", "medicine",
+            "prescription", "urgent care", "walgreens", "cvs",
+            "clínica", "médico", "dentista", "farmacia", "medicina", "medicamento", "urgencias",
+        ),
+        "건강" to listOf(
+            "health", "gym", "vitamin", "supplement", "protein", "massage", "yoga", "pilates", "fitness",
+            "physio", "physiotherapy", "checkup",
+            "salud", "gimnasio", "vitamina", "suplemento", "proteína", "masaje", "fisio", "fisioterapia",
+        ),
+        "마트" to listOf(
+            "groceries", "grocery", "supermarket", "market", "walmart", "costco", "aldi", "lidl",
+            "trader joe", "whole foods", "kroger", "tesco", "7-eleven", "seven eleven",
+            "convenience store", "soda", "coke", "juice", "bottled water", "sparkling water",
+            "súper", "supermercado", "mercado", "mercadona", "carrefour", "oxxo", "soriana", "la compra",
+            "refresco", "zumo", "jugo",
+        ),
+        "교통" to listOf(
+            "transport", "taxi", "cab", "uber", "lyft", "cabify", "bus", "metro", "subway", "train", "tram",
+            "gas", "gas station", "fuel", "petrol", "parking", "toll", "flight", "airline", "plane",
+            "car rental", "transit", "fare",
+            "transporte", "autobús", "tren", "gasolina", "gasolinera", "aparcamiento", "estacionamiento",
+            "peaje", "vuelo", "avión", "renfe",
+        ),
+        "문화" to listOf(
+            "leisure", "movie", "cinema", "theater", "theatre", "concert", "museum", "book", "bookstore",
+            "netflix", "spotify", "youtube", "disney", "hbo", "prime video", "game", "steam", "playstation",
+            "xbox", "nintendo", "amusement park", "theme park", "zoo",
+            "ocio", "cine", "película", "teatro", "concierto", "museo", "libro", "librería", "juego",
+            "videojuego", "parque de atracciones",
+        ),
+        "패션" to listOf(
+            "fashion", "clothes", "clothing", "shoe", "sneaker", "shirt", "dress", "jeans", "pants",
+            "jacket", "coat", "bag", "handbag", "cosmetics", "makeup", "haircut", "barber", "salon",
+            "nails", "manicure", "perfume", "glasses", "sunglasses", "sock", "underwear", "hat", "belt",
+            "wallet", "zara", "h&m", "uniqlo", "nike", "adidas",
+            "moda", "ropa", "zapato", "zapatilla", "camiseta", "camisa", "vestido", "pantalón", "chaqueta",
+            "abrigo", "bolso", "maquillaje", "cosmético", "peluquería", "corte de pelo", "manicura",
+            "gafas", "calcetín", "gorra", "cinturón", "cartera",
+        ),
+        "주거" to listOf(
+            "housing", "rent", "electricity", "electric bill", "gas bill", "water bill", "utilities",
+            "internet", "wifi", "phone bill", "mortgage", "insurance",
+            "vivienda", "alquiler", "luz", "electricidad", "factura del gas", "butano", "hipoteca",
+            "seguro", "comunidad",
+        ),
+
+        // 대비책 — [RULES] 의 대비책과 같다.
+        "생활" to listOf("diaper", "nappy", "nappies", "baby wipes", "pañal", "toallita"),
+        "식비" to listOf("baby food", "papilla", "bar", "pub", "beer", "wine", "cerveza", "vino"),
+        "문화" to listOf("karaoke"),
+        "간식" to listOf("ice cream", "icecream", "gelato", "helado", "chocolate", "cookie", "galleta", "candy"),
+        "건강" to listOf(
+            "hospital", "clinic", "doctor", "dentist", "dental", "pharmacy", "medicine",
+            "clínica", "médico", "dentista", "farmacia", "medicina", "medicamento",
+        ),
+        "마트" to listOf("fruit", "fruta", "apple", "manzana", "banana", "plátano"),
+    )
+
+    /** 두 목록을 한 번만 접어 둔다(소문자·악센트 뗌). 순서가 동점을 가르므로 한국어가 앞이다. */
+    private val TABLE: List<Pair<String, List<String>>> =
+        (RULES + WORDS).map { (category, keywords) -> category to keywords.map(::fold) }
+
+    /**
      * [name] 에서 카테고리를 짐작한다. 맞는 규칙이 없거나, 맞는 카테고리가 지금 칩 목록
      * ([categories]) 에 없으면 null — 그러면 화면은 «없음» 을 유지한다.
      *
      * 가장 긴 낱말이 이기고, 길이가 같으면 [RULES] 의 앞엣것이 이긴다.
      */
     fun classify(name: String, categories: List<String>): String? {
-        val lower: String = name.lowercase()
-        if (lower.isEmpty()) return null
+        val text: String = fold(name)
+        if (text.isEmpty()) return null
 
         var best: String? = null
         var bestLength: Int = 0
-        for ((category, keywords) in RULES) {
+        for ((category, keywords) in TABLE) {
             if (category !in categories) continue
             for (keyword in keywords) {
                 if (keyword.length <= bestLength) continue
-                if (!lower.contains(keyword.lowercase())) continue
+                if (!matches(text, keyword)) continue
                 best = category
                 bestLength = keyword.length
             }
         }
         return best
+    }
+
+    /** 한글이 든 낱말은 글자 속 어디서든, 아니면 낱말 단위로([containsWord]). */
+    private fun matches(text: String, keyword: String): Boolean =
+        if (keyword.any { it in '가'..'힣' }) text.contains(keyword) else containsWord(text, keyword)
+
+    /**
+     * [word] 가 앞뒤로 다른 영문자·숫자에 붙지 않고 들어 있는지. 뒤에 s·es 가 붙은 것까지 본다.
+     * 한글은 낱말 글자로 치지 않는다 — 「cu편의점」의 cu 도 잡힌다.
+     */
+    private fun containsWord(text: String, word: String): Boolean {
+        var from: Int = 0
+        while (true) {
+            val start: Int = text.indexOf(word, from)
+            if (start < 0) return false
+            from = start + 1
+            if (start > 0 && isWordChar(text[start - 1])) continue
+            val end: Int = start + word.length
+            if (endsWord(text, end) || (text.startsWith("s", end) && endsWord(text, end + 1)) ||
+                (text.startsWith("es", end) && endsWord(text, end + 2))
+            ) return true
+        }
+    }
+
+    private fun endsWord(text: String, at: Int): Boolean = at >= text.length || !isWordChar(text[at])
+
+    private fun isWordChar(c: Char): Boolean = c in 'a'..'z' || c in '0'..'9'
+
+    /**
+     * 소문자로 바꾸고 라틴 악센트를 뗀다. 유니코드 분해(NFD)는 쓰지 않는다 — 한글 음절까지
+     * 자모로 쪼개져 「약」이 「야구」 속에서 잡힌다.
+     */
+    private fun fold(raw: String): String {
+        val out = StringBuilder(raw.length)
+        for (c in raw.lowercase()) {
+            out.append(
+                when (c) {
+                    'á', 'à', 'â', 'ä', 'ã' -> 'a'
+                    'é', 'è', 'ê', 'ë' -> 'e'
+                    'í', 'ì', 'î', 'ï' -> 'i'
+                    'ó', 'ò', 'ô', 'ö', 'õ' -> 'o'
+                    'ú', 'ù', 'û', 'ü' -> 'u'
+                    'ñ' -> 'n'
+                    'ç' -> 'c'
+                    else -> c
+                },
+            )
+        }
+        return out.toString()
     }
 }

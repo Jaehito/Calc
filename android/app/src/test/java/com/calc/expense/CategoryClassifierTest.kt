@@ -161,4 +161,64 @@ class CategoryClassifierTest {
         assertEquals("식비", CategoryClassifier.classify("점심", onlyFood))
         assertNull(CategoryClassifier.classify("커피", onlyFood))
     }
+
+    @Test
+    fun `영어로 적어도 분류된다`() {
+        assertEquals("카페", CategoryClassifier.classify("Starbucks latte", all))
+        assertEquals("식비", CategoryClassifier.classify("Lunch with Sam", all))
+        assertEquals("교통", CategoryClassifier.classify("Uber", all))
+        assertEquals("마트", CategoryClassifier.classify("Costco groceries", all))
+        assertEquals("주거", CategoryClassifier.classify("Rent", all))
+    }
+
+    @Test
+    fun `스페인어로 적어도 분류된다`() {
+        assertEquals("식비", CategoryClassifier.classify("almuerzo", all))
+        assertEquals("교통", CategoryClassifier.classify("gasolina", all))
+        assertEquals("술", CategoryClassifier.classify("cervezas con Ana", all))
+        assertEquals("육아", CategoryClassifier.classify("pañales", all))
+    }
+
+    @Test
+    fun `악센트를 빼고 적어도 같은 말이다`() {
+        assertEquals("카페", CategoryClassifier.classify("cafe", all))
+        assertEquals("카페", CategoryClassifier.classify("Café", all))
+        assertEquals("생활", CategoryClassifier.classify("jabon", all))
+        assertEquals("문화", CategoryClassifier.classify("película", all))
+    }
+
+    @Test
+    fun `복수형도 같은 말이다`() {
+        assertEquals("식비", CategoryClassifier.classify("tacos", all))
+        assertEquals("문화", CategoryClassifier.classify("movies", all))
+        assertEquals("간식", CategoryClassifier.classify("panes", all))
+    }
+
+    @Test
+    fun `영어 낱말은 다른 낱말 속에서 잡지 않는다`() {
+        // bar 가 barber 에, tea 가 steak 에 걸리면 안 된다.
+        assertEquals("패션", CategoryClassifier.classify("barber", all))
+        assertEquals("식비", CategoryClassifier.classify("steak", all))
+        assertNull(CategoryClassifier.classify("biscuit", listOf("마트")))
+        assertEquals("건강", CategoryClassifier.classify("pilates", all))
+    }
+
+    @Test
+    fun `영어 낱말이 한글에 붙어도 알아본다`() {
+        assertEquals("마트", CategoryClassifier.classify("cu편의점", all))
+        assertEquals("카페", CategoryClassifier.classify("starbucks라떼", all))
+    }
+
+    @Test
+    fun `영어도 긴 낱말이 이긴다`() {
+        assertEquals("식비", CategoryClassifier.classify("Uber Eats", all))
+        assertEquals("간식", CategoryClassifier.classify("candy bar", all))
+        assertEquals("주거", CategoryClassifier.classify("gas bill", all))
+    }
+
+    @Test
+    fun `영어도 칩이 없으면 대비책으로 내려간다`() {
+        assertEquals("식비", CategoryClassifier.classify("beer", all - "술"))
+        assertEquals("생활", CategoryClassifier.classify("diapers", all - "육아"))
+    }
 }
