@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    알림 작은 아이콘(상단 알림줄). 앱 아이콘(웃는 지갑)을 그대로 줄이면 지갑 위에 가운데로 얹힌
-    종이 테두리가 손잡이처럼 보여 가방으로 읽혔다. 그래서 알림줄 전용으로 따로 그렸다.
+    알림 작은 아이콘(상단 알림줄). 앱 아이콘(떡잎 난 웃는 지갑)을 실루엣으로 줄였다.
+    얼굴은 뺐다 — 18px 에서는 눈·입 구멍이 뭉개져 얼룩처럼 보인다.
     - 오른쪽으로 튀어나온 잠금 탭 + 단추 구멍 → 지갑으로 읽힌다.
-    - 종이(하루치 한 장)는 테두리가 아니라 채운 한 장을 비스듬히 꽂고, 지갑과의 사이를 잘라 낸다.
+    - 위에 떡잎 두 장 → 앱 아이콘과 같은 앱으로 읽힌다.
     알림 아이콘은 모양(알파)만 쓰이고 색은 시스템이 칠한다 — 틈은 바탕색이 아니라 잘라서 만든다.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -11,12 +11,14 @@
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-    <group>
-        <clip-path android:pathData="M0,0 H24 V7.4 H0 Z" />
-        <group android:rotation="-14" android:pivotX="9" android:pivotY="9">
-            <path android:fillColor="#FFFFFF" android:pathData="M6,2.6 H12.6 A1.4,1.4 0 0 1 14,4 V9.8 A1.4,1.4 0 0 1 12.6,11.2 H6 A1.4,1.4 0 0 1 4.6,9.8 V4 A1.4,1.4 0 0 1 6,2.6 Z" />
-        </group>
-    </group>
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M10.9,8.6 V5.6" />
+    <path android:fillColor="#FFFFFF" android:pathData="M10.9,5.8 C10.7,2.5 7.8,2.3 5.9,3.4 C6.1,5.6 8.2,7.7 10.9,5.8 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M10.9,5.8 C13.6,7.7 15.7,5.6 15.9,3.4 C14,2.3 11.1,2.5 10.9,5.8 Z" />
     <path
         android:fillColor="#FFFFFF"
         android:fillType="evenOdd"
