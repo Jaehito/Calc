@@ -22,6 +22,7 @@ object TreeStore {
     private const val KEY_SETTLED = "settledThrough"
     private const val KEY_RESTORED = "restoreChecked"
     private const val KEY_BUBBLE_SEEN = "bubbleSeen"
+    private const val KEY_MY_SHARED = "mySharedRows"
 
     private val lock = Any()
     private val main = Handler(Looper.getMainLooper())
@@ -51,15 +52,47 @@ object TreeStore {
         update(context) { if (it.plantedOn == null) it.copy(plantedOn = today, settledThrough = today.minusDays(1)) else it }
     }
 
-    /** 개인 지갑에 한 건 적었다. */
-    fun earnRecord(context: Context) {
-        update(context) { it.copy(water = it.water + WaterRules.PER_RECORD, plantedOn = it.plantedOn ?: LocalDate.now()) }
+    /**
+     * 내가 한 건 적었다 — 개인이든 공용이든. 이 폰에서 적은 것은 언제나 내가 적은 것이다.
+     * 공용 줄은 [rowId] 를 기억해 둔다 — 지울 때 배우자가 적은 줄인지 가려야 해서([loseRecord]).
+     */
+    fun earnRecord(context: Context, purse: Purse, rowId: String) {
+        synchronized(lock) {
+            if (purse == Purse.SHARED && rowId.isNotBlank()) {
+                val mine: Set<String> = mySharedRows(context)
+                prefs(context).edit().putStringSet(KEY_MY_SHARED, mine + rowId).commit()
+            }
+            update(context) { it.copy(water = it.water + WaterRules.PER_RECORD, plantedOn = it.plantedOn ?: LocalDate.now()) }
+        }
     }
 
-    /** 개인 지갑에서 한 건 지웠다. 0 밑으로는 안 내려간다 — 이미 준 물은 돌려받지 않는다. */
-    fun loseRecord(context: Context) {
-        update(context) { it.copy(water = maxOf(0, it.water - WaterRules.PER_RECORD)) }
+    /**
+     * 한 건 지웠다. 공용은 내가 적은 줄일 때만 물을 뺀다 — 배우자 기록을 지웠다고 내 물이 줄면 안 된다.
+     * 0 밑으로는 안 내려간다 — 이미 준 물은 돌려받지 않는다.
+     */
+    fun loseRecord(context: Context, purse: Purse, rowId: String) {
+        synchronized(lock) {
+            if (purse == Purse.SHARED) {
+                val mine: Set<String> = mySharedRows(context)
+                if (rowId !in mine) return
+                prefs(context).edit().putStringSet(KEY_MY_SHARED, mine - rowId).commit()
+            }
+            update(context) { it.copy(water = maxOf(0, it.water - WaterRules.PER_RECORD)) }
+        }
     }
+
+    /** 내가 적은 공용 줄을 고치면 id 가 바뀐다([RecordExpense.edit]). 새 id 로 옮겨 적는다. */
+    fun moveRecord(context: Context, oldRowId: String, newRowId: String) {
+        synchronized(lock) {
+            val mine: Set<String> = mySharedRows(context)
+            if (oldRowId !in mine) return
+            prefs(context).edit().putStringSet(KEY_MY_SHARED, mine - oldRowId + newRowId).commit()
+        }
+    }
+
+    /** 복사해서 돌려준다 — SharedPreferences 가 준 집합을 그대로 고치면 안 된다. */
+    private fun mySharedRows(context: Context): Set<String> =
+        HashSet(prefs(context).getStringSet(KEY_MY_SHARED, null).orEmpty())
 
     /** 나무에 한 방울 준다. 물이 없으면 null. */
     fun give(context: Context): TreeState? {

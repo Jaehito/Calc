@@ -495,7 +495,7 @@ class QuickInputActivity : AppCompatActivity() {
 
                     val e: Expense? = result.expense
                     if (e != null) addEntryRow(e, result.rowId, purse, day)
-                    if (purse == GradeRepository.GRADED) bumpWater()
+                    bumpWater()
                     showResult(
                         if (e == null) tr("기록됨", "Logged", "Anotado") else StatusText.entered(e.name, e.amount, recorded),
                         Tone.of(ok = true, snapshot = after),
@@ -522,7 +522,7 @@ class QuickInputActivity : AppCompatActivity() {
     }
 
     /**
-     * 개인 지갑에 적었다 — 숫자가 톡 오르며 «+1» 이 떠오른다([RecordExpense] 가 물을 이미 더했다).
+     * 한 건 적었다(개인·공용 모두) — 숫자가 톡 오르며 «+1» 이 떠오른다([RecordExpense] 가 물을 이미 더했다).
      * 처음 물을 받을 때 한 번은 말풍선을 저절로 띄워 무엇에 쓰는 물인지 알려 준다.
      */
     private fun bumpWater() {

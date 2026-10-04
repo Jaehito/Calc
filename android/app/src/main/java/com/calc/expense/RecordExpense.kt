@@ -87,8 +87,9 @@ object RecordExpense {
                 // 이 이름을 어디에 넣었는지 기억한다. 다음에 같은 이름을 적으면 칩이 저절로 켜진다.
                 // 금액만 적어 카테고리 이름을 빌려 쓴 기록은 기억하지 않는다 — «카페»→카페는 배울 게 없다.
                 if (rememberName) CategoryMemoryStore.remember(context, parsed.name, parsed.category)
-                // 개인 지갑에 적을 때마다 나무에 줄 물 한 방울. 공용은 배우자 기록이 섞여 세지 않는다(등급과 같다).
-                if (purse == GradeRepository.GRADED) TreeStore.earnRecord(context)
+                // 내가 적을 때마다 나무에 줄 물 한 방울 — 공용에 적어도 준다. 배우자가 적은 건은 이 폰을
+                // 거치지 않으니 저절로 빠진다. 보너스 물(등급·무지출)은 여전히 개인 지갑만 본다.
+                TreeStore.earnRecord(context, purse, r.id)
                 // 저장소를 다시 읽지 않는다 — 로컬 사본만으로 계산하고, 대조는 앱을 열 때 한다.
                 RecordResult(
                     ok = true,
@@ -126,7 +127,7 @@ object RecordExpense {
             is FirestoreExpenseStore.Outcome.Err -> DeleteResult(ok = false, message = r.message)
             is FirestoreExpenseStore.Outcome.Ok -> {
                 Ledger.unrecord(context, purse, day, amount)
-                if (purse == GradeRepository.GRADED) TreeStore.loseRecord(context)
+                TreeStore.loseRecord(context, purse, rowId)
                 DeleteResult(ok = true)
             }
         }
@@ -166,6 +167,7 @@ object RecordExpense {
                     )
                     is FirestoreExpenseStore.Outcome.Ok -> {
                         Ledger.unrecord(context, purse, day, oldAmount)
+                        TreeStore.moveRecord(context, oldRowId, created.id)
                         EditResult(ok = true)
                     }
                 }
