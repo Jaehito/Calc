@@ -92,8 +92,11 @@ object PendingPayments {
 
     /** 두 후보가 같은 결제인가. 금액이 같고 시각이 [DUPLICATE_WINDOW_MINUTES] 분 안이면 같다고 본다. */
     fun isSamePayment(a: PendingPayment, b: PendingPayment): Boolean =
-        a.amount == b.amount &&
-            kotlin.math.abs(a.postedAt - b.postedAt) <= DUPLICATE_WINDOW_MINUTES * MINUTE_MS
+        isSameMoment(a.amount, a.postedAt, b.amount, b.postedAt)
+
+    /** [isSamePayment] 의 값만 받는 꼴. 하단 팝업도 같은 기준으로 거른다([AnnouncedPayments]). */
+    fun isSameMoment(amountA: Long, atA: Long, amountB: Long, atB: Long): Boolean =
+        amountA == amountB && kotlin.math.abs(atA - atB) <= DUPLICATE_WINDOW_MINUTES * MINUTE_MS
 
     /**
      * 같은 결제 둘을 하나로 합친다. **이름을 더 잘 읽은 쪽을 남긴다** — 한쪽은 «최재호» 만,
