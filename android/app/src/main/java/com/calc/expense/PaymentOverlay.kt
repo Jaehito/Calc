@@ -94,11 +94,6 @@ object PaymentOverlay {
         }
     }
 
-    /** 떠 있는 팝업을 닫는다. 하루치 화면이 앞으로 나올 때 부른다([AppForeground]). 어느 스레드에서 불러도 된다. */
-    fun dismiss() {
-        main.post { hide() }
-    }
-
     private fun show(app: Context, amount: Long, merchant: String): Boolean {
         val title: String = if (merchant.isBlank()) StatusText.won(amount) else StatusText.won(amount) + " · " + merchant
         val action: String = tr("눌러서 기록", "Tap to log", "Toca para anotar")

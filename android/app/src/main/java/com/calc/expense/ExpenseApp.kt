@@ -12,7 +12,6 @@ class ExpenseApp : Application() {
     override fun onCreate() {
         super.onCreate()
         LanguageStore.apply(this)
-        AppForeground.register(this)
     }
 
     /** «폰 언어 따라가기» 일 때 폰 언어를 바꾸면 따라간다. */
