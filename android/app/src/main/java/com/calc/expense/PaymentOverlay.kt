@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
+import android.os.SystemClock
 import android.provider.Settings as AndroidSettings
 import android.util.Log
 import android.view.Gravity
@@ -30,8 +31,8 @@ import kotlin.math.abs
  * «다른 앱 위에 표시» 권한이 있고, 화면이 켜져 잠금이 풀려 있을 때만 쓴다. 잠금화면 위에는
  * 이 창이 그려지지 않는다. 쓸 수 없으면 예전 배너로 떨어진다 — 결제를 알리는 길은 늘 하나다.
  *
- * 누르면 수집함, 옆·아래로 밀면 닫힘. 결제가 잇따라 오면 떠 있는 팝업의 글자만 바꾸고 시간을
- * 다시 센다(두 장 겹쳐 뜨지 않는다).
+ * 누르면 수집함, 옆·아래로 밀면 닫힘. **10초에 한 번만 띄운다**([throttle]) — 한 결제가 카드사·카카오페이
+ * 두 알림으로 오면 둘째는 띄우지 않는다. 막힌 결제도 수집함에는 담긴다. 배너도 같은 제한을 따른다.
  *
  * **은행 앱 위에서는 안 보인다.** 금융 앱은 보안 때문에 자기 화면이 떠 있는 동안 다른 앱 위의
  * 창을 전부 숨긴다. 그때는 창을 붙여 둔 채 기다리다가, 그 앱을 나가는 순간 뜬다
@@ -57,6 +58,10 @@ object PaymentOverlay {
 
     private val main = Handler(Looper.getMainLooper())
 
+    /** 팝업·배너 사이 최소 간격. */
+    private const val GAP_MS = 10_000L
+    private val throttle = PopupThrottle(GAP_MS)
+
     // 메인 스레드에서만 만진다.
     private var card: View? = null
     private var lastAmount: Long = 0L
@@ -78,6 +83,7 @@ object PaymentOverlay {
     /** 팝업을 띄우고, 띄울 수 없으면 배너로 알린다. 어느 스레드에서 불러도 된다. */
     fun showOrBanner(context: Context, amount: Long, merchant: String) {
         val app: Context = context.applicationContext
+        if (!throttle.tryAcquire(SystemClock.elapsedRealtime())) return
         if (!canShow(app)) {
             NotificationHelper.showPaymentBanner(app, amount, merchant)
             return
