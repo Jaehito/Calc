@@ -149,12 +149,14 @@ object RecordExpense {
         oldRowId: String,
         oldAmount: Long,
         newExpense: Expense,
+        /** 새 줄을 둘 지갑. 다르면 지갑을 옮기는 것이다 — 새 줄은 [target] 에, 옛 줄은 [purse] 에서 지운다. */
+        target: Purse = purse,
     ): EditResult {
-        return when (val created = FirestoreExpenseStore.add(context, purse, newExpense, day)) {
+        return when (val created = FirestoreExpenseStore.add(context, target, newExpense, day)) {
             is FirestoreExpenseStore.Outcome.Err -> EditResult(ok = false, message = created.message)
             is FirestoreExpenseStore.Outcome.Ok -> {
                 // 새 줄이 실제로 생겼으니 캐시에도 바로 반영한다.
-                Ledger.record(context, purse, day, newExpense.amount)
+                Ledger.record(context, target, day, newExpense.amount)
 
                 when (val archived = FirestoreExpenseStore.archive(context, purse, oldRowId)) {
                     is FirestoreExpenseStore.Outcome.Err -> EditResult(
@@ -167,7 +169,7 @@ object RecordExpense {
                     )
                     is FirestoreExpenseStore.Outcome.Ok -> {
                         Ledger.unrecord(context, purse, day, oldAmount)
-                        TreeStore.moveRecord(context, oldRowId, created.id)
+                        TreeStore.moveRecord(context, purse, target, oldRowId, created.id)
                         EditResult(ok = true)
                     }
                 }

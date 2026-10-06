@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.format.DateTimeFormatter
@@ -59,6 +60,11 @@ data class HistoryUi(
      * 주기 전환을 뺀다.
      */
     val singleDay: Boolean = false,
+    /** 이 내역의 지갑. 수정 창의 «지갑» 줄이 여기서 시작한다. */
+    val purse: Purse = Purse.PERSONAL,
+    /** 옮길 수 있는 지갑들(연결된 것). 둘이면 수정 창에 «지갑» 줄이 생긴다. */
+    val purses: List<Purse> = emptyList(),
+    val purseLabels: Map<Purse, String> = emptyMap(),
     val loading: Boolean = false,
     val total: Long = 0L,
     val groups: List<DayGroup> = emptyList(),
@@ -80,7 +86,7 @@ fun HistoryScreen(
     onBack: () -> Unit,
     onToggleMonth: () -> Unit,
     onRefresh: () -> Unit,
-    onEditRow: (row: ExpenseRow, name: String, amount: Long, category: String) -> Unit,
+    onEditRow: (row: ExpenseRow, name: String, amount: Long, category: String, purse: Purse) -> Unit,
     onDeleteRow: (row: ExpenseRow) -> Unit,
 ) {
     var editingRow: ExpenseRow? by remember { mutableStateOf(null) }
@@ -187,8 +193,11 @@ fun HistoryScreen(
         EditRowDialog(
             row = row,
             categories = categories,
-            onSave = { name, amount, category ->
-                onEditRow(row, name, amount, category)
+            purse = ui.purse,
+            purses = ui.purses,
+            purseLabels = ui.purseLabels,
+            onSave = { name, amount, category, purse ->
+                onEditRow(row, name, amount, category, purse)
                 editingRow = null
             },
             onDelete = {
@@ -255,19 +264,25 @@ private fun ExpenseItem(row: ExpenseRow, onClick: () -> Unit) {
 /**
  * 항목 하나 수정·삭제. «저장» 은 새 값이 있어야 눌린다(이름 필수·금액 0보다 커야).
  *
+ * 지갑이 둘이면 «지갑» 줄이 생긴다 — 개인에 잘못 적은 걸 공용으로(또는 반대로) 옮긴다.
+ *
  * 삭제는 되묻지 않는다 — 빠른 입력 화면의 ✕ 와 같은 방식이라 배울 게 없다.
  */
 @Composable
 private fun EditRowDialog(
     row: ExpenseRow,
     categories: List<String>,
-    onSave: (name: String, amount: Long, category: String) -> Unit,
+    purse: Purse,
+    purses: List<Purse>,
+    purseLabels: Map<Purse, String>,
+    onSave: (name: String, amount: Long, category: String, purse: Purse) -> Unit,
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     var name: String by remember { mutableStateOf(row.name) }
     var amountText: String by remember { mutableStateOf(row.amount.toString()) }
     var category: String by remember { mutableStateOf(row.category) }
+    var target: Purse by remember { mutableStateOf(purse) }
 
     val amount: Long? = ExpenseParser.parseAmount(amountText)
     val canSave: Boolean = name.isNotBlank() && amount != null && amount > 0L
@@ -299,6 +314,35 @@ private fun EditRowDialog(
                     colors = mintFieldColors(),
                     modifier = Modifier.fillMaxWidth(),
                 )
+                if (purses.size > 1) {
+                    Spacer(Modifier.height(14.dp))
+                    Text(text = tr("지갑", "Wallet", "Cartera"), color = HomePalette.Muted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(7.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(HomePalette.Chip)
+                            .padding(3.dp),
+                    ) {
+                        for (choice in purses) {
+                            val on: Boolean = target == choice
+                            Text(
+                                text = purseLabels[choice] ?: choice.defaultLabel,
+                                color = if (on) HomePalette.Accent else HomePalette.Ink2,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(11.dp))
+                                    .background(if (on) HomePalette.Card else Color.Transparent)
+                                    .clickable { target = choice }
+                                    .padding(vertical = 9.dp),
+                            )
+                        }
+                    }
+                }
                 Spacer(Modifier.height(14.dp))
                 Text(text = tr("카테고리", "Category", "Categoría"), color = HomePalette.Muted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(7.dp))
@@ -335,7 +379,7 @@ private fun EditRowDialog(
         },
         confirmButton = {
             Button(
-                onClick = { onSave(name.trim(), amount ?: 0L, category) },
+                onClick = { onSave(name.trim(), amount ?: 0L, category, target) },
                 enabled = canSave,
                 shape = RoundedCornerShape(999.dp),
                 colors = ButtonDefaults.buttonColors(

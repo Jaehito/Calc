@@ -60,7 +60,7 @@ class PurseHistoryActivity : ComponentActivity() {
                     load()
                 },
                 onRefresh = { load() },
-                onEditRow = { row, name, amount, category -> editRow(row, name, amount, category) },
+                onEditRow = { row, name, amount, category, target -> editRow(row, name, amount, category, target) },
                 onDeleteRow = { row -> deleteRow(row) },
             )
         }
@@ -86,6 +86,8 @@ class PurseHistoryActivity : ComponentActivity() {
             if (oneDay != null) BudgetCycle(oneDay, oneDay.plusDays(1))
             else Payday.cycleBefore(LocalDate.now(), settings.payDayOf(purse), cycleBack)
         val singleDay: Boolean = oneDay != null
+        val linked: List<Purse> = PurseAccess.linked(this)
+        val labels: Map<Purse, String> = linked.associateWith { settings.labelOf(it) }
         val periodName: String = if (cycleBack == 0) tr("이번 주기", "This cycle", "Este ciclo") else tr("지난 주기", "Last cycle", "Ciclo anterior")
         val periodRange: String = StatusText.cycleRange(cycle)
         val shared: Boolean = purse == Purse.SHARED
@@ -97,6 +99,9 @@ class PurseHistoryActivity : ComponentActivity() {
             isThisPeriod = cycleBack == 0,
             shared = shared,
             singleDay = singleDay,
+            purse = purse,
+            purses = linked,
+            purseLabels = labels,
             loading = true,
         )
 
@@ -118,6 +123,9 @@ class PurseHistoryActivity : ComponentActivity() {
                         isThisPeriod = cycleBack == 0,
                         shared = shared,
                         singleDay = singleDay,
+                        purse = purse,
+                        purses = linked,
+                        purseLabels = labels,
                         loading = false,
                         total = result.total,
                         groups = result.groups,
@@ -130,6 +138,9 @@ class PurseHistoryActivity : ComponentActivity() {
                         isThisPeriod = cycleBack == 0,
                         shared = shared,
                         singleDay = singleDay,
+                        purse = purse,
+                        purses = linked,
+                        purseLabels = labels,
                         loading = false,
                         error = result.message,
                     )
@@ -138,15 +149,15 @@ class PurseHistoryActivity : ComponentActivity() {
         }
     }
 
-    /** 옛 기록 한 줄을 고친다. 성공하면 목록을 다시 읽어 맞춘다. */
-    private fun editRow(row: ExpenseRow, name: String, amount: Long, category: String) {
+    /** 옛 기록 한 줄을 고친다. [target] 이 지금 지갑과 다르면 그 지갑으로 옮긴다. 성공하면 목록을 다시 읽어 맞춘다. */
+    private fun editRow(row: ExpenseRow, name: String, amount: Long, category: String, target: Purse) {
         ui = ui.copy(loading = true)
         val app = applicationContext
         val newExpense = Expense(name, amount, category)
 
         io.execute {
             val result: EditResult = try {
-                RecordExpense.edit(app, purse, row.date, row.id, row.amount, newExpense)
+                RecordExpense.edit(app, purse, row.date, row.id, row.amount, newExpense, target)
             } catch (e: Exception) {
                 EditResult(ok = false, message = StatusText.error(e))
             }

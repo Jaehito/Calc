@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- 기록 창 위쪽 개인·공용 탭의 바탕. 고른 탭만 흰 알약([bg_tab_on])으로 떠 보인다. -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="@color/app_chip" />
-    <corners android:radius="999dp" />
-</shape>

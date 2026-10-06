@@ -81,12 +81,17 @@ object TreeStore {
         }
     }
 
-    /** 내가 적은 공용 줄을 고치면 id 가 바뀐다([RecordExpense.edit]). 새 id 로 옮겨 적는다. */
-    fun moveRecord(context: Context, oldRowId: String, newRowId: String) {
+    /**
+     * 줄을 고치면 id 가 바뀐다([RecordExpense.edit]). 지갑을 옮길 수도 있다. 물 수는 그대로 두고,
+     * «내가 적은 공용 줄» 목록만 맞춘다 — 개인 줄은 언제나 내가 적은 것이다.
+     */
+    fun moveRecord(context: Context, from: Purse, to: Purse, oldRowId: String, newRowId: String) {
         synchronized(lock) {
             val mine: Set<String> = mySharedRows(context)
-            if (oldRowId !in mine) return
-            prefs(context).edit().putStringSet(KEY_MY_SHARED, mine - oldRowId + newRowId).commit()
+            val wasMine: Boolean = from == Purse.PERSONAL || oldRowId in mine
+            var next: Set<String> = mine - oldRowId
+            if (to == Purse.SHARED && wasMine && newRowId.isNotBlank()) next = next + newRowId
+            if (next != mine) prefs(context).edit().putStringSet(KEY_MY_SHARED, next).commit()
         }
     }
 

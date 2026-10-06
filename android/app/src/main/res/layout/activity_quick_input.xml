@@ -34,7 +34,8 @@
         android:paddingBottom="16dp">
 
         <!--
-            맨 위 줄: 개인·공용 탭(왼쪽)과 나무에 줄 물(오른쪽, W2). 물 칸을 누르면 말풍선이 뜬다(코드).
+            맨 위 줄: 나무에 줄 물(오른쪽, W2). 물 칸을 누르면 말풍선이 뜬다(코드).
+            개인·공용은 입력 칸 안 왼쪽 알약([chipPurse])에서 고른다 — 맨 위는 엄지에서 멀어 잘못 누르기 쉬웠다.
         -->
         <LinearLayout
             android:id="@+id/rowTop"
@@ -43,48 +44,6 @@
             android:layout_marginBottom="12dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
-
-            <!--
-                개인·공용 탭. 맨 위에 두어 아래 숫자가 어느 지갑 것인지 먼저 보이게 한다.
-                연결된 지갑이 하나뿐이면 숨긴다(코드).
-            -->
-            <LinearLayout
-                android:id="@+id/groupPurse"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_tabs"
-                android:orientation="horizontal"
-                android:padding="3dp"
-                android:visibility="gone">
-
-                <TextView
-                    android:id="@+id/tabPersonal"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:minWidth="64dp"
-                    android:gravity="center"
-                    android:paddingStart="14dp"
-                    android:paddingTop="5dp"
-                    android:paddingEnd="14dp"
-                    android:paddingBottom="5dp"
-                    android:text="개인"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tabShared"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:minWidth="64dp"
-                    android:gravity="center"
-                    android:paddingStart="14dp"
-                    android:paddingTop="5dp"
-                    android:paddingEnd="14dp"
-                    android:paddingBottom="5dp"
-                    android:text="공용"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
 
             <Space
                 android:layout_width="0dp"
@@ -263,7 +222,10 @@
                 android:src="@drawable/ic_tip_pointer" />
         </LinearLayout>
 
-        <!-- 입력 칸 하나 + 칸 안 오른쪽의 기록 버튼. 금액 부분은 칸 안에서 초록 알약으로 그린다. -->
+        <!--
+            입력 칸 하나 + 칸 안 오른쪽의 기록 버튼. 금액 부분은 칸 안에서 초록 알약으로 그린다.
+            지갑이 둘이면 칸 안 왼쪽에 «개인 ⇄» 알약이 붙는다 — 누를 때마다 개인↔공용(코드).
+        -->
         <FrameLayout
             android:id="@+id/groupInput"
             android:layout_width="match_parent"
@@ -288,6 +250,23 @@
                 android:textColor="@color/app_ink"
                 android:textColorHint="@color/app_muted"
                 android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/chipPurse"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start|center_vertical"
+                android:layout_marginStart="7dp"
+                android:background="@drawable/bg_purse_chip"
+                android:minHeight="38dp"
+                android:gravity="center"
+                android:paddingStart="11dp"
+                android:paddingEnd="11dp"
+                android:text="개인 ⇄"
+                android:textColor="@color/app_accent"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
 
             <ImageButton
                 android:id="@+id/buttonSend"

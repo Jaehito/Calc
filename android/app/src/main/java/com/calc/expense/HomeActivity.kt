@@ -195,8 +195,10 @@ class HomeActivity : ComponentActivity() {
                             onOpenSettings = { openSettings() },
                             onOpenHistory = { p -> openHistory(p) },
                             onRecord = {
+                                // 보고 있던 지갑으로 연다 — 공용을 보다가 누르면 공용에 적는다.
                                 startActivity(
-                                    Intent(this@HomeActivity, QuickInputActivity::class.java),
+                                    Intent(this@HomeActivity, QuickInputActivity::class.java)
+                                        .putExtra(QuickInputActivity.EXTRA_PURSE, purse.key),
                                 )
                             },
                             onEditBudget = { p -> openSettings(if (p == Purse.SHARED) MainActivity.EDIT_SHARED_BUDGET else MainActivity.EDIT_BUDGET) },

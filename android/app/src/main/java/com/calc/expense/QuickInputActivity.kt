@@ -64,6 +64,12 @@ class QuickInputActivity : AppCompatActivity() {
         private const val WATER_FLOAT_MS = 700L
         private const val WATER_POP_SCALE = 1.15f
         private const val WATER_POP_MS = 260L
+
+        /** 지갑 알약 오른쪽 끝에서 입력 글자까지. 알약 왼쪽 여백(7)과 같은 결로 조금 더 띄운다. */
+        private const val PURSE_CHIP_GAP_DP = 15f
+
+        /** 어느 지갑으로 열지(«personal»/«shared»). 없으면 첫 지갑. 앱 안에서 열 때 보고 있던 지갑을 싣는다. */
+        const val EXTRA_PURSE = "purse"
     }
 
     private lateinit var ui: ActivityQuickInputBinding
@@ -226,40 +232,56 @@ class QuickInputActivity : AppCompatActivity() {
         }
     }
 
-    /** 연결된 곳간이 하나뿐이면 고르게 하지 않는다. 멈칫하는 3초가 이탈 지점이다. */
+    /**
+     * 연결된 곳간이 하나뿐이면 고르게 하지 않는다. 멈칫하는 3초가 이탈 지점이다.
+     *
+     * 둘이면 입력 칸 안 왼쪽 «개인 ⇄» 알약으로 고른다. 누를 때마다 개인↔공용. 예전에는 맨 위 왼쪽
+     * 탭이었는데, 엄지에서 멀고 작아서 잘못 누르기 쉬웠다 — 적는 칸에 붙어 있으면 보내기 전에 꼭 보인다.
+     *
+     * 앱 안(홈·통계)에서 열면 보고 있던 지갑([EXTRA_PURSE])으로 연다.
+     */
     private fun setUpPurses() {
-        val settings = SettingsStore.load(this)
         purses = PurseAccess.linked(this)
-        selected = purses.firstOrNull() ?: Purse.PERSONAL
+        val asked: String? = intent.getStringExtra(EXTRA_PURSE)
+        selected = purses.firstOrNull { it.key == asked } ?: purses.firstOrNull() ?: Purse.PERSONAL
 
         if (purses.size < 2) {
-            ui.groupPurse.visibility = View.GONE
+            ui.chipPurse.visibility = View.GONE
             return
         }
 
-        ui.groupPurse.visibility = View.VISIBLE
-        ui.tabPersonal.text = settings.labelOf(Purse.PERSONAL)
-        ui.tabShared.text = settings.labelOf(Purse.SHARED)
-        ui.tabPersonal.setOnClickListener { selectPurse(Purse.PERSONAL) }
-        ui.tabShared.setOnClickListener { selectPurse(Purse.SHARED) }
-        refreshTabs()
+        ui.chipPurse.visibility = View.VISIBLE
+        // 글자가 알약에 가리지 않게 입력 칸 왼쪽 여백을 알약 폭만큼 둔다. 지갑 이름 길이가 달라 폭이 바뀌면 따라간다.
+        ui.chipPurse.addOnLayoutChangeListener { chip, _, _, _, _, _, _, _, _ ->
+            val gap: Int = Math.round(PURSE_CHIP_GAP_DP * resources.displayMetrics.density)
+            val input: View = ui.inputExpense
+            val start: Int = chip.width + gap
+            if (input.paddingStart != start) {
+                input.setPaddingRelative(start, input.paddingTop, input.paddingEnd, input.paddingBottom)
+            }
+        }
+        ui.chipPurse.setOnClickListener {
+            selectPurse(if (selected == Purse.PERSONAL) Purse.SHARED else Purse.PERSONAL)
+        }
+        refreshPurseChip()
     }
 
     private fun selectPurse(purse: Purse) {
         if (selected == purse) return
         selected = purse
-        refreshTabs()
+        refreshPurseChip()
         refreshNumbers()
     }
 
-    /** 고른 탭만 흰 알약에 초록 글자, 나머지는 회색 글자. */
-    private fun refreshTabs() {
-        for ((tab, purse) in listOf(ui.tabPersonal to Purse.PERSONAL, ui.tabShared to Purse.SHARED)) {
-            val on: Boolean = selected == purse
-            tab.setBackgroundResource(if (on) R.drawable.bg_tab_on else 0)
-            tab.setTextColor(ContextCompat.getColor(this, if (on) R.color.app_accent else R.color.app_muted))
-            tab.isSelected = on
-        }
+    /** 알약 글자를 고른 지갑으로 바꾼다. */
+    private fun refreshPurseChip() {
+        val label: String = SettingsStore.load(this).labelOf(selected)
+        ui.chipPurse.text = "$label ⇄"
+        ui.chipPurse.contentDescription = tr(
+            "$label 지갑에 기록 · 눌러서 바꾸기",
+            "Logging to $label · tap to switch",
+            "Anotando en $label · toca para cambiar",
+        )
     }
 
     /**
