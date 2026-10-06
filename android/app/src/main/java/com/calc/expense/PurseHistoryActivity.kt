@@ -11,6 +11,7 @@ import java.util.concurrent.Executors
 
 /**
  * 곳간 하나의 지출 내역 화면. 홈의 곳간 카드를 눌러 들어온다.
+ * 통계의 막대·달력 날짜를 누르면 [EXTRA_DAY] 를 실어 **그 하루만** 보여 준다.
  *
  * 읽기는 [ExpenseHistory] seam 한 곳으로만 나간다 — 나중에 저장소를 바꿔도 이 액티비티는
  * 그대로다. 열 때와 «새로고침» 때 저장소를 다시 읽는다.
@@ -23,11 +24,15 @@ class PurseHistoryActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_PURSE = "purse"
+        /** «2026-10-03». 있으면 그 하루만 본다. */
+        const val EXTRA_DAY = "day"
     }
 
     private val io = Executors.newSingleThreadExecutor()
 
     private lateinit var purse: Purse
+    /** 하루만 볼 때 그 날. null 이면 주기 단위. */
+    private var day: LocalDate? = null
     /** 0 = 이번 주기, 1 = 지난 주기. 달력 달이 아니라 월급날 기준이다. */
     private var cycleBack: Int by mutableStateOf(0)
     private var ui: HistoryUi by mutableStateOf(HistoryUi(loading = true))
@@ -37,6 +42,13 @@ class PurseHistoryActivity : ComponentActivity() {
 
         val key: String = intent.getStringExtra(EXTRA_PURSE).orEmpty()
         purse = Purse.entries.firstOrNull { it.key == key } ?: Purse.PERSONAL
+        day = intent.getStringExtra(EXTRA_DAY)?.let { raw ->
+            try {
+                LocalDate.parse(raw)
+            } catch (_: Exception) {
+                null
+            }
+        }
 
         setContent {
             HistoryScreen(
@@ -66,8 +78,14 @@ class PurseHistoryActivity : ComponentActivity() {
 
     private fun load() {
         val settings: Settings = SettingsStore.load(this)
-        val title: String = tr("${settings.labelOf(purse)} 내역", "${settings.labelOf(purse)} history", "Historial de ${settings.labelOf(purse)}")
-        val cycle: BudgetCycle = Payday.cycleBefore(LocalDate.now(), settings.payDayOf(purse), cycleBack)
+        val oneDay: LocalDate? = day
+        val title: String =
+            if (oneDay != null) oneDay.format(L10n.fullDay())
+            else tr("${settings.labelOf(purse)} 내역", "${settings.labelOf(purse)} history", "Historial de ${settings.labelOf(purse)}")
+        val cycle: BudgetCycle =
+            if (oneDay != null) BudgetCycle(oneDay, oneDay.plusDays(1))
+            else Payday.cycleBefore(LocalDate.now(), settings.payDayOf(purse), cycleBack)
+        val singleDay: Boolean = oneDay != null
         val periodName: String = if (cycleBack == 0) tr("이번 주기", "This cycle", "Este ciclo") else tr("지난 주기", "Last cycle", "Ciclo anterior")
         val periodRange: String = StatusText.cycleRange(cycle)
         val shared: Boolean = purse == Purse.SHARED
@@ -78,6 +96,7 @@ class PurseHistoryActivity : ComponentActivity() {
             periodRange = periodRange,
             isThisPeriod = cycleBack == 0,
             shared = shared,
+            singleDay = singleDay,
             loading = true,
         )
 
@@ -98,6 +117,7 @@ class PurseHistoryActivity : ComponentActivity() {
                         periodRange = periodRange,
                         isThisPeriod = cycleBack == 0,
                         shared = shared,
+                        singleDay = singleDay,
                         loading = false,
                         total = result.total,
                         groups = result.groups,
@@ -109,6 +129,7 @@ class PurseHistoryActivity : ComponentActivity() {
                         periodRange = periodRange,
                         isThisPeriod = cycleBack == 0,
                         shared = shared,
+                        singleDay = singleDay,
                         loading = false,
                         error = result.message,
                     )

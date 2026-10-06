@@ -66,6 +66,15 @@ fun StatsScreen(
     onOpenRecords: () -> Unit = {},
     onOpenCategory: (String) -> Unit = {},
     onOpenSettings: () -> Unit = {},
+    /** 첫 카드를 달력으로 보는가. 머리줄 단추([StatsViewToggle])로 바꾼다. */
+    calendarMode: Boolean = false,
+    /** 달력 한 달치. 아직 없으면 null — 그동안은 7일 막대를 그린다. */
+    calendar: StatsCalendarUi? = null,
+    onToggleView: () -> Unit = {},
+    onPrevMonth: () -> Unit = {},
+    onNextMonth: () -> Unit = {},
+    /** 막대·달력 날짜를 눌렀다 — 그날 목록 화면을 연다. */
+    onOpenDay: (LocalDate) -> Unit = {},
 ) {
     val hasToggle: Boolean = purses.size > 1
     Box(
@@ -88,11 +97,17 @@ fun StatsScreen(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f),
                 )
+                StatsViewToggle(calendarMode, onToggleView)
+                Spacer(Modifier.width(8.dp))
                 SettingsGear(onOpenSettings)
             }
             Spacer(Modifier.height(16.dp))
 
-            TrendCard(data)
+            if (calendarMode && calendar != null) {
+                CalendarCard(calendar, onPrev = onPrevMonth, onNext = onNextMonth, onOpenDay = onOpenDay)
+            } else {
+                TrendCard(data, onOpenDay)
+            }
             Spacer(Modifier.height(12.dp))
             CategoryCard(data, onToggleCategoryMonth, onOpenAllCategories)
             Spacer(Modifier.height(12.dp))
@@ -234,7 +249,7 @@ private fun ReportCard(purse: Purse, onOpenReport: () -> Unit) {
  * 판정은 [WeekTrends] 가 한다 — 여기서는 그리기만 한다.
  */
 @Composable
-private fun TrendCard(data: StatsData) {
+private fun TrendCard(data: StatsData, onOpenDay: (LocalDate) -> Unit) {
     val trend: WeekTrend = WeekTrends.of(
         spent = data.recent7,
         budget = data.week7Budget,
@@ -290,6 +305,7 @@ private fun TrendCard(data: StatsData) {
         WeekChart(
             days = data.daily14.takeLast(7),
             dailyTarget = if (trend.hasBudget) trend.budget / 7L else 0L,
+            onOpenDay = onOpenDay,
         )
 
         // 견줄 지난주가 없으면 줄 자체가 없다 — Ledger.vsLastCycle 과 같은 규칙.
@@ -336,9 +352,11 @@ private fun TrendCard(data: StatsData) {
  * 요일별 막대 7개. 하루 목표를 점선으로 긋고, 넘긴 날만 빨강으로 칠해 금액을 얹는다.
  *
  * 예전에는 이전 7일까지 14개를 요일도 금액도 없이 그려서 어느 막대가 무슨 날인지 읽을 수 없었다.
+ *
+ * 막대 한 줄(요일 글자까지)을 누르면 그날 목록 화면이 열린다. 누르는 동안 그 줄에 옅은 물결이 번진다.
  */
 @Composable
-private fun WeekChart(days: List<Long>, dailyTarget: Long) {
+private fun WeekChart(days: List<Long>, dailyTarget: Long, onOpenDay: (LocalDate) -> Unit) {
     // 첫 화면에 리포트·내 기록 칸까지 들어오도록 낮게 둔다.
     val chartHeight = 104.dp
     val top: Long = maxOf(days.maxOrNull() ?: 0L, dailyTarget).coerceAtLeast(1L)
@@ -351,10 +369,18 @@ private fun WeekChart(days: List<Long>, dailyTarget: Long) {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxSize(),
         ) {
-            days.forEach { amount ->
+            days.forEachIndexed { index, amount ->
                 val fraction: Float = (amount * scale).coerceIn(0f, 1f)
                 val over: Boolean = dailyTarget > 0L && amount > dailyTarget
-                Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.BottomCenter) {
+                val day: LocalDate = today.minusDays((days.size - 1 - index).toLong())
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { onOpenDay(day) },
+                    contentAlignment = Alignment.BottomCenter,
+                ) {
                     if (amount > 0L) {
                         Box(
                             modifier = Modifier
@@ -420,7 +446,10 @@ private fun WeekChart(days: List<Long>, dailyTarget: Long) {
                 fontSize = 12.sp,
                 textAlign = TextAlign.Center,
                 maxLines = 1,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { onOpenDay(day) },
             )
         }
     }

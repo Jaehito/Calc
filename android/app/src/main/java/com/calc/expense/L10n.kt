@@ -1,6 +1,7 @@
 package com.calc.expense
 
 import java.text.NumberFormat
+import java.time.DayOfWeek
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -104,6 +105,16 @@ object L10n {
         Lang.KO -> DateTimeFormatter.ofPattern("M월", locale)
         else -> DateTimeFormatter.ofPattern("MMM", locale)
     }
+
+    /** «2026년 10월» / «Oct 2026» / «oct 2026». */
+    fun yearMonth(): DateTimeFormatter = when (lang) {
+        Lang.KO -> DateTimeFormatter.ofPattern("yyyy년 M월", locale)
+        else -> DateTimeFormatter.ofPattern("MMM yyyy", locale)
+    }
+
+    /** 달력이 한 주를 시작하는 요일. 스페인어권은 월요일, 나머지는 일요일. */
+    val firstDayOfWeek: DayOfWeek
+        get() = if (lang == Lang.ES) DayOfWeek.MONDAY else DayOfWeek.SUNDAY
 
     /** 요일 한 글자 이름. «월» / «Mon» / «lun». */
     fun weekday(): DateTimeFormatter = when (lang) {

@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.YearMonth
 import java.util.concurrent.Executors
 
 /**
@@ -56,6 +57,8 @@ class HomeActivity : ComponentActivity() {
         private const val STATE_INBOX_ASKED = "inboxAsked"
         private const val PREFS = "home"
         private const val KEY_PURSE = "purse"
+        /** 통계 첫 카드를 달력으로 보는가. 다음에 열어도 같은 모습. */
+        private const val KEY_STATS_CALENDAR = "statsCalendar"
     }
 
     private val io = Executors.newSingleThreadExecutor()
@@ -85,6 +88,9 @@ class HomeActivity : ComponentActivity() {
 
     /** 통계 «내 기록» 칸에 올릴 기록 하나. 통계를 그릴 때 도감 계산에서 고른다. */
     private var recordHighlight: RecordHighlight? by mutableStateOf(null)
+    private var statsCalendar: Boolean by mutableStateOf(false)
+    private var calendarMonth: YearMonth by mutableStateOf(YearMonth.now())
+    private var calendar: StatsCalendarUi? by mutableStateOf(null)
 
     /** 아직 찍어 주지 않은 새 스탬프. 등급 팝업 다음에 [StampPressDialog] 로 찍는다. 도감 탭에서 이미 봤으면 비운다. */
     private var newBlooms: List<Plant> by mutableStateOf(emptyList())
@@ -161,6 +167,12 @@ class HomeActivity : ComponentActivity() {
                             onOpenRecords = { startActivity(Intent(this@HomeActivity, RecordsActivity::class.java)) },
                             onOpenCategory = { name -> openCategoryDetail(name) },
                             onOpenSettings = { openSettings() },
+                            calendarMode = statsCalendar,
+                            calendar = calendar?.takeIf { it.month == calendarMonth },
+                            onToggleView = { toggleStatsView() },
+                            onPrevMonth = { stepCalendar(-1) },
+                            onNextMonth = { stepCalendar(1) },
+                            onOpenDay = { day -> openDay(day) },
                         )
                         2 -> TreeTab(
                             tree = tree,
@@ -567,6 +579,60 @@ class HomeActivity : ComponentActivity() {
         if (tab == 1) loadStats()
     }
 
+    /** 통계 첫 카드: 최근 7일 막대 ↔ 달력. 달력으로 바꿀 때는 이번 달부터. */
+    private fun toggleStatsView() {
+        statsCalendar = !statsCalendar
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(KEY_STATS_CALENDAR, statsCalendar).apply()
+        if (statsCalendar) {
+            calendarMonth = YearMonth.now()
+            loadCalendar()
+        }
+    }
+
+    private fun stepCalendar(delta: Long) {
+        val next: YearMonth = calendarMonth.plusMonths(delta)
+        if (next.isAfter(YearMonth.now())) return
+        calendarMonth = next
+        loadCalendar()
+    }
+
+    /**
+     * 달력 한 달치. 캐시로 바로 그리고, 저장소에서 그 달을 읽어 맞춘다 — 캐시는 이번·지난 주기만
+     * 들고 있어서 그보다 앞선 달은 저장소에서 와야 채워진다. 읽은 값은 캐시에도 넣는다.
+     * 지갑·달을 빨리 바꿔도 늦게 온 옛 결과가 덮어쓰지 않는다.
+     */
+    private fun loadCalendar() {
+        val target: Purse = purse
+        val month: YearMonth = calendarMonth
+        calendar = StatsRepository.calendar(this, target, month, SpendingCache.totals(this, target, month))
+        val app = applicationContext
+        io.execute {
+            val rows: List<ExpenseRow>? = try {
+                FirestoreExpenseReader.monthRows(app, target, month)
+            } catch (_: Exception) {
+                null
+            }
+            if (rows == null) return@execute
+            val totals = LinkedHashMap<LocalDate, Long>()
+            for (row in rows) totals[row.date] = (totals[row.date] ?: 0L) + row.amount
+            SpendingCache.replaceMonth(app, target, month, totals)
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                if (purse != target || calendarMonth != month) return@runOnUiThread
+                calendar = StatsRepository.calendar(this, target, month, totals)
+            }
+        }
+    }
+
+    /** 막대·달력 날짜를 눌렀다 — 그 지갑의 그날 목록. 내역 화면을 하루짜리로 연다. */
+    private fun openDay(day: LocalDate) {
+        startActivity(
+            Intent(this, PurseHistoryActivity::class.java)
+                .putExtra(PurseHistoryActivity.EXTRA_PURSE, purse.key)
+                .putExtra(PurseHistoryActivity.EXTRA_DAY, day.toString()),
+        )
+    }
+
     private fun openHistory(purse: Purse) {
         startActivity(
             Intent(this, PurseHistoryActivity::class.java)
@@ -638,6 +704,7 @@ class HomeActivity : ComponentActivity() {
 
     /** 고른 지갑의 통계를 채운다. 토글·주기를 빨리 오가도 늦게 온 옛 결과가 덮어쓰지 않는다. */
     private fun loadStats() {
+        if (statsCalendar) loadCalendar()
         val today: LocalDate = LocalDate.now()
         val target: Purse = purse
         val back: Int = categoryCycleBack
@@ -753,6 +820,7 @@ class HomeActivity : ComponentActivity() {
         // 기억해 둔 지갑이 연결에서 빠졌으면(가정 연결 해제 등) 개인으로 돌아온다.
         val saved: String? = getSharedPreferences(PREFS, MODE_PRIVATE).getString(KEY_PURSE, null)
         purse = linked.firstOrNull { it.key == saved } ?: linked.firstOrNull() ?: Purse.PERSONAL
+        statsCalendar = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(KEY_STATS_CALENDAR, false)
     }
 
     /**

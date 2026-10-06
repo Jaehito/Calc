@@ -54,6 +54,11 @@ data class HistoryUi(
     val isThisPeriod: Boolean = true,
     /** 공용 곳간이면 "함께 보는 목록" 안내를 띄운다. */
     val shared: Boolean = false,
+    /**
+     * 하루만 보는가 — 통계의 막대·달력 날짜를 눌러 들어왔다. 제목이 이미 그 날짜라 날짜 머리줄과
+     * 주기 전환을 뺀다.
+     */
+    val singleDay: Boolean = false,
     val loading: Boolean = false,
     val total: Long = 0L,
     val groups: List<DayGroup> = emptyList(),
@@ -117,8 +122,12 @@ fun HistoryScreen(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(text = tr("${ui.periodName} 지출", "${ui.periodName} spending", "Gastos · ${ui.periodName}"), color = HomePalette.Ink2, fontSize = 12.sp)
-                    Text(text = ui.periodRange, color = HomePalette.Muted, fontSize = 11.5f.sp, style = Figures)
+                    if (ui.singleDay) {
+                        Text(text = tr("이날 쓴 돈", "Spent this day", "Gastado este día"), color = HomePalette.Ink2, fontSize = 12.sp)
+                    } else {
+                        Text(text = tr("${ui.periodName} 지출", "${ui.periodName} spending", "Gastos · ${ui.periodName}"), color = HomePalette.Ink2, fontSize = 12.sp)
+                        Text(text = ui.periodRange, color = HomePalette.Muted, fontSize = 11.5f.sp, style = Figures)
+                    }
                     Spacer(Modifier.height(2.dp))
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(text = L10n.wonPrefix + StatusText.figure(ui.total), color = HomePalette.Ink, fontSize = 30.sp, fontWeight = FontWeight.Bold, style = Figures)
@@ -127,7 +136,7 @@ fun HistoryScreen(
                         }
                     }
                 }
-                Text(
+                if (!ui.singleDay) Text(
                     text = if (ui.isThisPeriod) tr("지난 주기", "Last cycle", "Ciclo anterior") else tr("이번 주기", "This cycle", "Este ciclo"),
                     color = HomePalette.Accent,
                     fontSize = 12.sp,
@@ -163,9 +172,10 @@ fun HistoryScreen(
         when {
             ui.loading -> Note(tr("불러오는 중…", "Loading…", "Cargando…"))
             ui.error != null -> Note(ui.error, HomePalette.Over)
+            ui.groups.isEmpty() && ui.singleDay -> EmptyMonth(tr("이날은 기록이 없어요.", "Nothing logged this day.", "No hay gastos este día."))
             ui.groups.isEmpty() -> EmptyMonth(tr("이 주기에는 기록이 없어요.", "Nothing logged this cycle.", "No hay gastos en este ciclo."))
             else -> for (group in ui.groups) {
-                DaySection(group, onRowClick = { row -> editingRow = row })
+                DaySection(group, showDate = !ui.singleDay, onRowClick = { row -> editingRow = row })
             }
         }
 
@@ -191,11 +201,13 @@ fun HistoryScreen(
 }
 
 @Composable
-private fun DaySection(group: DayGroup, onRowClick: (ExpenseRow) -> Unit) {
+private fun DaySection(group: DayGroup, showDate: Boolean, onRowClick: (ExpenseRow) -> Unit) {
     Spacer(Modifier.height(14.dp))
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp)) {
-        Text(text = group.date.format(DayFormat), color = HomePalette.Muted, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-        Text(text = StatusText.won(group.total), color = HomePalette.Ink2, fontSize = 12.sp, style = Figures)
+    if (showDate) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp)) {
+            Text(text = group.date.format(DayFormat), color = HomePalette.Muted, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            Text(text = StatusText.won(group.total), color = HomePalette.Ink2, fontSize = 12.sp, style = Figures)
+        }
     }
     Column(
         modifier = Modifier

@@ -2,6 +2,7 @@ package com.calc.expense
 
 import android.content.Context
 import java.time.LocalDate
+import java.time.YearMonth
 
 /** 통계 화면이 쓰는 한 벌. 기간 비교는 로컬 캐시, 카테고리 막대는 저장소에서 온다. */
 data class StatsData(
@@ -110,5 +111,27 @@ object StatsRepository {
             merged[row.category] = (merged[row.category] ?: 0L) + row.amount
         }
         return merged to null
+    }
+
+    /**
+     * 통계 달력 한 달치. [totals] 는 그 달 날짜별 합계 — 캐시([SpendingCache])든 저장소에서 막 읽은 것이든.
+     * 넘김은 그날이 든 주기의 하루치([dailyBudget] 과 같은 기준)로 가린다.
+     */
+    fun calendar(context: Context, purse: Purse, month: YearMonth, totals: Map<LocalDate, Long>, today: LocalDate = LocalDate.now()): StatsCalendarUi {
+        val settings: Settings = SettingsStore.load(context)
+        val monthly: Long = settings.of(purse).monthlyBudget
+        val payDay: Int = settings.payDayOf(purse)
+        return StatsCalendarUi(
+            month = month,
+            cells = MonthCalendar.cells(
+                month = month,
+                totals = totals,
+                dailyTarget = { day -> Budget.baseRate(monthly, Payday.cycleOf(day, payDay)) },
+                today = today,
+                firstDay = L10n.firstDayOfWeek,
+            ),
+            total = totals.filterKeys { YearMonth.from(it) == month }.values.sum(),
+            canNext = month.isBefore(YearMonth.from(today)),
+        )
     }
 }
