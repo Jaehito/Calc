@@ -27,6 +27,13 @@ object CategoryMemoryStore {
         prefs(context).edit().putString(KEY, CategoryMemoryCodec.encode(next)).apply()
     }
 
+    /** 지난 기록에서 배운 것을 보탠다([CategoryLearning]). 이 폰에서 정한 것은 덮지 않는다. */
+    fun seed(context: Context, learned: List<Pair<String, String>>) {
+        if (learned.isEmpty()) return
+        val next: Map<String, String> = CategoryMemories.seed(load(context), learned)
+        prefs(context).edit().putString(KEY, CategoryMemoryCodec.encode(next)).apply()
+    }
+
     /** 기억해 둔 카테고리. 없으면 null — 그러면 부른 쪽이 낱말 규칙으로 넘어간다. */
     fun recall(context: Context, name: String, categories: List<String>): String? =
         CategoryMemories.lookup(load(context), name, categories)

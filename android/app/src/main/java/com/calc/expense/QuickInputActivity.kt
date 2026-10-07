@@ -380,7 +380,7 @@ class QuickInputActivity : AppCompatActivity() {
      */
     private fun applyAutoCategory(text: String) {
         val guess: String? = CategoryMemoryStore.recall(this, text, categoryLabels)
-            ?: CategoryClassifier.classify(text, categoryLabels)
+            ?: CategoryClassifier.classify(text, categoryLabels, typing = true)
         checkCell(guess ?: CATEGORY_NONE)
     }
 

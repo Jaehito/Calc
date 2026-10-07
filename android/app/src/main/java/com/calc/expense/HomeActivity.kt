@@ -862,6 +862,11 @@ class HomeActivity : ComponentActivity() {
                 }
                 if (error != null && failure == null) failure = error
             }
+            // 하루 한 번 지난 기록에서 카테고리를 배운다. 실패해도 숫자 맞추기와 무관하다 — 내일 다시.
+            try {
+                CategoryLearning.learnIfDue(app, purses)
+            } catch (_: Exception) {
+            }
 
             runOnUiThread {
                 if (isFinishing || isDestroyed) return@runOnUiThread

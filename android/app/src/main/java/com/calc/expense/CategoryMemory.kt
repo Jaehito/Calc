@@ -17,16 +17,37 @@ import org.json.JSONObject
  */
 object CategoryMemories {
 
-    /** 기억하는 이름 수의 상한. 넘으면 오래 안 쓴 것부터 버린다. */
-    const val MAX_ENTRIES = 300
+    /** 기억하는 이름 수의 상한. 넘으면 오래 안 쓴 것부터 버린다. 지난 기록에서 배운 것까지 담도록 넉넉히. */
+    const val MAX_ENTRIES = 500
 
     /** 이 길이보다 짧은 이름은 부분 일치에 쓰지 않는다 — 한 글자가 아무 데나 걸린다. */
     const val MIN_PARTIAL_LENGTH = 2
 
     /**
      * 이름을 견주기 좋게 다듬는다. 띄어쓰기를 없애고 소문자로 — 「GS25」와 「gs 25」는 같은 곳이다.
+     * 결제 알림에 붙어 오는 회사 꼴(«(주)»·«㈜»·«주식회사»)도 뗀다.
      */
-    fun normalize(raw: String): String = raw.filterNot { it.isWhitespace() }.lowercase()
+    fun normalize(raw: String): String {
+        var text: String = raw
+        for (mark in COMPANY_MARKS) text = text.replace(mark, "")
+        return text.filterNot { it.isWhitespace() }.lowercase()
+    }
+
+    /**
+     * 맨 끝 지점 이름을 뗀 꼴. «스타벅스 강남점» → «스타벅스». 띄어 쓴 마지막 낱말이 «점»으로 끝날 때만 —
+     * «편의점» 하나만 적은 이름은 그대로다. 지점이 없으면 null.
+     *
+     * 찾을 때 마지막에 한 번 더 본다([lookup]) — 지점마다 따로 기억하면 «스타벅스 역삼점»에서 처음부터다.
+     */
+    fun withoutBranch(raw: String): String? {
+        var text: String = raw
+        for (mark in COMPANY_MARKS) text = text.replace(mark, " ")
+        val words: List<String> = text.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
+        if (words.size < 2 || words.last().length < 2 || !words.last().endsWith("점")) return null
+        return normalize(words.dropLast(1).joinToString(" "))
+    }
+
+    private val COMPANY_MARKS: List<String> = listOf("(주)", "㈜", "주식회사", "(유)", "유한회사")
 
     /**
      * [name] 을 [category] 로 기억한다. 이미 있으면 새 값으로 덮고 **맨 뒤로 보낸다** —
@@ -56,7 +77,13 @@ object CategoryMemories {
      * 적었을 때 예전에 「스타벅스」로 정해 둔 것이 걸리게 하기 위해서다.
      */
     fun lookup(memory: Map<String, String>, name: String, categories: List<String>): String? {
-        val key: String = normalize(name)
+        val found: String? = find(memory, normalize(name), categories)
+        if (found != null) return found
+        val branchless: String = withoutBranch(name) ?: return null
+        return find(memory, branchless, categories)
+    }
+
+    private fun find(memory: Map<String, String>, key: String, categories: List<String>): String? {
         if (key.isEmpty()) return null
 
         val exact: String? = memory[key]
@@ -65,9 +92,61 @@ object CategoryMemories {
         for ((remembered, category) in memory.entries.reversed()) {
             if (category !in categories) continue
             if (remembered.length < MIN_PARTIAL_LENGTH) continue
-            if (key.contains(remembered) || remembered.contains(key)) return category
+            if (key.contains(remembered)) return category
+            // 적는 중인 앞부분(«스타»)이 기억한 이름(«스타벅스»)에 들어 있는 경우. 한 글자는 아무 데나 걸린다.
+            if (key.length >= MIN_PARTIAL_LENGTH && remembered.contains(key)) return category
         }
         return null
+    }
+
+    /**
+     * 지난 기록([rows], 오래된 것 → 최근 것, (이름, 카테고리))에서 이름마다 카테고리 하나를 뽑는다.
+     *
+     * 가장 많이 쓴 카테고리가 이기고, 같으면 최근 것이 이긴다. 카테고리가 빈 줄은 건너뛴다 — «미분류»는
+     * 고른 게 아니라 아직 안 고른 것이다. 돌려주는 순서는 마지막으로 쓴 때가 이른 것부터다([seed] 가 그대로 쌓는다).
+     */
+    fun learn(rows: List<Pair<String, String>>): List<Pair<String, String>> {
+        val counts = LinkedHashMap<String, LinkedHashMap<String, Int>>()
+        val lastSeen = LinkedHashMap<String, Int>()
+        val lastCategory = HashMap<String, String>()
+        for ((index, row) in rows.withIndex()) {
+            val key: String = normalize(row.first)
+            val category: String = row.second.trim()
+            if (key.isEmpty() || category.isEmpty()) continue
+            val perName: LinkedHashMap<String, Int> = counts.getOrPut(key) { LinkedHashMap() }
+            perName[category] = (perName[category] ?: 0) + 1
+            lastSeen.remove(key)
+            lastSeen[key] = index
+            lastCategory[key] = category
+        }
+        return lastSeen.keys.map { key ->
+            val perName: Map<String, Int> = counts.getValue(key)
+            val top: Int = perName.values.maxOrNull() ?: 0
+            val latest: String = lastCategory.getValue(key)
+            val winner: String = if (perName[latest] == top) latest else perName.entries.first { it.value == top }.key
+            key to winner
+        }
+    }
+
+    /**
+     * 지난 기록에서 배운 것([learned])을 기억에 보탠다. **이 폰에서 정한 것이 이긴다** — 이미 있는 이름은
+     * 건드리지 않는다. 배운 것은 기억의 앞(오래된 쪽)에 둔다: 부분 일치는 최근 것부터 보므로 이 폰에서 막
+     * 정한 것이 먼저 걸리고, 넘치면 배운 것부터 버린다.
+     */
+    fun seed(memory: Map<String, String>, learned: List<Pair<String, String>>): Map<String, String> {
+        val next = LinkedHashMap<String, String>()
+        for ((name, category) in learned) {
+            val key: String = normalize(name)
+            if (key.isEmpty() || category.isBlank() || key in memory) continue
+            next[key] = category.trim()
+        }
+        if (next.isEmpty()) return memory
+        for ((key, category) in memory) {
+            next.remove(key)
+            next[key] = category
+        }
+        if (next.size <= MAX_ENTRIES) return next
+        return next.entries.drop(next.size - MAX_ENTRIES).associate { it.key to it.value }
     }
 }
 

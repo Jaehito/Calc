@@ -161,6 +161,8 @@ class PurseHistoryActivity : ComponentActivity() {
             } catch (e: Exception) {
                 EditResult(ok = false, message = StatusText.error(e))
             }
+            // 고친 카테고리도 배운다 — 다음에 같은 이름을 적으면 이 칸이 켜진다.
+            if (result.ok) CategoryMemoryStore.remember(app, name, category)
 
             runOnUiThread {
                 if (isFinishing || isDestroyed) return@runOnUiThread

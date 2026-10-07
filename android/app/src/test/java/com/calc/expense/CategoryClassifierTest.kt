@@ -221,4 +221,29 @@ class CategoryClassifierTest {
         assertEquals("식비", CategoryClassifier.classify("beer", all - "술"))
         assertEquals("생활", CategoryClassifier.classify("diapers", all - "육아"))
     }
+
+    @Test
+    fun `자주 쓰는 가게 이름을 알아본다`() {
+        assertEquals("문화", CategoryClassifier.classify("메가박스 코엑스", all))
+        assertEquals("교통", CategoryClassifier.classify("카카오T 택시", all))
+        assertEquals("카페", CategoryClassifier.classify("할리스", all))
+        assertEquals("주거", CategoryClassifier.classify("KT 통신요금", all))
+        assertEquals("교통", CategoryClassifier.classify("KTX", all))
+        assertEquals("간식", CategoryClassifier.classify("배스킨라빈스", all))
+    }
+
+    @Test
+    fun `적는 중이면 앞부분만으로도 짐작한다`() {
+        assertEquals("카페", CategoryClassifier.classify("스타벅", all, typing = true))
+        assertEquals("카페", CategoryClassifier.classify("coff", all, typing = true))
+        // 금액은 건너뛰고 이름의 마지막 낱말을 본다.
+        assertEquals("카페", CategoryClassifier.classify("스타벅 4500", all, typing = true))
+    }
+
+    @Test
+    fun `다 친 이름이나 너무 짧은 앞부분으로는 짐작하지 않는다`() {
+        assertNull(CategoryClassifier.classify("스타벅", all))
+        assertNull(CategoryClassifier.classify("스타", all, typing = true))
+        assertNull(CategoryClassifier.classify("cof", all, typing = true))
+    }
 }

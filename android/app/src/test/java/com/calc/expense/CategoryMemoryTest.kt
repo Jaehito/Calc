@@ -131,4 +131,52 @@ class CategoryMemoryTest {
         assertTrue(CategoryMemoryCodec.decode("이건 JSON 이 아니다").isEmpty())
         assertTrue(CategoryMemoryCodec.decode(null).isEmpty())
     }
+
+    @Test
+    fun `지점 이름과 회사 꼴은 떼고 기억한다`() {
+        // «스타벅스 강남점»으로 정해 두면 «스타벅스 역삼점»에도 걸린다.
+        val memory = CategoryMemories.put(emptyMap(), "스타벅스 강남점", "카페")
+        assertEquals("카페", CategoryMemories.lookup(memory, "스타벅스 역삼점", listOf("카페")))
+        assertEquals("우아한형제들", CategoryMemories.normalize("(주)우아한형제들"))
+        assertEquals("우아한형제들", CategoryMemories.normalize("주식회사 우아한형제들"))
+        assertEquals("스타벅스", CategoryMemories.withoutBranch("스타벅스 강남점"))
+        // 한 낱말짜리 «편의점»은 지점이 아니다.
+        assertNull(CategoryMemories.withoutBranch("편의점"))
+    }
+
+    @Test
+    fun `한 글자만 친 것으로는 기억을 꺼내지 않는다`() {
+        val memory = CategoryMemories.put(emptyMap(), "스타벅스", "카페")
+        assertNull(CategoryMemories.lookup(memory, "스", listOf("카페")))
+        assertEquals("카페", CategoryMemories.lookup(memory, "스타", listOf("카페")))
+    }
+
+    @Test
+    fun `지난 기록에서는 가장 많이 쓴 카테고리를 배운다`() {
+        val rows = listOf("스타벅스" to "카페", "스타벅스" to "식비", "스타벅스" to "카페", "점심" to "식비")
+        val learned = CategoryMemories.learn(rows).toMap()
+        assertEquals("카페", learned["스타벅스"])
+        assertEquals("식비", learned["점심"])
+    }
+
+    @Test
+    fun `같은 횟수면 최근 것을 배운다`() {
+        val rows = listOf("다이소" to "생활", "다이소" to "문화")
+        assertEquals("문화", CategoryMemories.learn(rows).toMap()["다이소"])
+    }
+
+    @Test
+    fun `카테고리가 빈 기록은 배우지 않는다`() {
+        assertTrue(CategoryMemories.learn(listOf("4500" to "", "미분류" to " ")).isEmpty())
+    }
+
+    @Test
+    fun `이 폰에서 정한 것은 배운 것이 덮지 않는다`() {
+        val memory = CategoryMemories.put(emptyMap(), "스타벅스", "식비")
+        val seeded = CategoryMemories.seed(memory, listOf("스타벅스" to "카페", "다이소" to "생활"))
+        assertEquals("식비", seeded["스타벅스"])
+        assertEquals("생활", seeded["다이소"])
+        // 배운 것은 앞(오래된 쪽)에 — 부분 일치는 이 폰에서 정한 것부터 본다.
+        assertEquals(listOf("다이소", "스타벅스"), seeded.keys.toList())
+    }
 }

@@ -116,6 +116,51 @@ object CategoryClassifier {
     )
 
     /**
+     * 자주 쓰는 한국 가게·서비스 이름. 결제 알림은 물건이 아니라 상호로 오므로([PaymentParse]) 이 목록이
+     * 그 몫을 한다. 흔한 낱말과 겹치는 이름(«자주»·«타다»·«플로» 등)은 뺐다 — 한글은 글자 속 어디서든 잡히니까.
+     */
+    private val BRANDS: List<Pair<String, List<String>>> = listOf(
+        "육아" to listOf("키즈카페", "아기용품", "유아용품", "베이비페어", "맘큐"),
+        "간식" to listOf("배스킨라빈스", "베스킨라빈스", "설빙", "던킨", "크리스피크림", "와플대학"),
+        "카페" to listOf(
+            "할리스", "탐앤탐스", "폴바셋", "커피빈", "블루보틀", "매머드", "더벤티", "텐퍼센트", "파스쿠찌",
+            "엔제리너스", "커피에반하다", "바나프레소", "하삼동", "감성커피", "카페베네", "파리바게뜨", "뚜레쥬르",
+            "성심당", "투썸플레이스",
+        ),
+        "술" to listOf("와인앤모어", "생활맥주", "역전할머니맥주", "투다리", "봉구비어"),
+        "식비" to listOf(
+            "맘스터치", "노브랜드버거", "프랭크버거", "쉐이크쉑", "써브웨이", "교촌", "비비큐", "bhc", "굽네",
+            "네네치킨", "처갓집", "푸라닭", "도미노", "파파존스", "피자헛", "피자스쿨", "본죽", "김밥천국", "한솥",
+            "이삭토스트", "홍콩반점", "역전우동", "명륜진사갈비", "아웃백", "빕스", "애슐리", "쿠우쿠우", "땡겨요",
+            "김가네", "고봉민김밥", "죠스떡볶이", "엽기떡볶이", "신전떡볶이", "bbq", "kfc",
+        ),
+        "생활" to listOf("이케아", "모던하우스", "무인양품", "세탁특공대", "런드리고", "크린토피아"),
+        "병원" to listOf("동물병원", "치과의원", "한방병원"),
+        "건강" to listOf("헬스클럽", "피트니스", "크로스핏", "스포애니"),
+        "마트" to listOf(
+            "이마트24", "미니스톱", "이마트에브리데이", "gs더프레시", "롯데슈퍼", "하나로마트", "컬리", "ssg",
+            "홈플러스익스프레스", "킴스클럽", "농협하나로", "식자재마트",
+        ),
+        "교통" to listOf(
+            "카카오t", "카카오택시", "티머니", "코레일", "쏘카", "그린카", "gs칼텍스", "sk에너지",
+            "s-oil", "에쓰오일", "현대오일뱅크", "알뜰주유소", "대한항공", "아시아나", "제주항공", "진에어",
+            "티웨이", "에어부산", "공항철도", "고속도로", "주차장", "전기차충전",
+        ),
+        "문화" to listOf(
+            "cgv", "메가박스", "롯데시네마", "교보문고", "영풍문고", "예스24", "알라딘", "밀리의서재",
+            "쿠팡플레이", "인터파크", "티켓링크", "볼링", "당구", "pc방", "피씨방", "코인노래", "방탈출",
+        ),
+        "패션" to listOf(
+            "무신사", "지그재그", "에이블리", "29cm", "w컨셉", "유니클로", "탑텐", "스파오", "에잇세컨즈",
+            "나이키", "아디다스", "뉴발란스", "올리브영", "시코르", "아리따움", "다비치안경", "블루클럽",
+        ),
+        "주거" to listOf(
+            "kt", "skt", "lgu+", "lg유플러스", "엘지유플러스", "알뜰폰", "한국전력", "한전", "아파트관리비",
+            "수도요금", "코웨이", "sk매직", "쿠쿠렌탈", "청호나이스",
+        ),
+    )
+
+    /**
      * 영어·스페인어 낱말([RULES] 와 같은 모양·같은 순서). 칸 이름은 저장되는 한국어 그대로다 —
      * 화면에서만 번역된다([L10n.name]). 각 칸의 번역 이름(Food·Comida 등)도 낱말로 넣었다.
      *
@@ -226,9 +271,13 @@ object CategoryClassifier {
         "마트" to listOf("fruit", "fruta", "apple", "manzana", "banana", "plátano"),
     )
 
-    /** 두 목록을 한 번만 접어 둔다(소문자·악센트 뗌). 순서가 동점을 가르므로 한국어가 앞이다. */
+    /** 목록들을 한 번만 접어 둔다(소문자·악센트 뗌). 순서가 동점을 가르므로 한국어가 앞이다. */
     private val TABLE: List<Pair<String, List<String>>> =
-        (RULES + WORDS).map { (category, keywords) -> category to keywords.map(::fold) }
+        (RULES + BRANDS + WORDS).map { (category, keywords) -> category to keywords.map(::fold) }
+
+    /** 적는 중 앞부분으로 짐작할 때 최소 길이. 한글은 세 글자(«스타벅»), 로마자는 네 글자(«coff»). */
+    private const val MIN_PREFIX_HANGUL = 3
+    private const val MIN_PREFIX_LATIN = 4
 
     /**
      * [name] 에서 카테고리를 짐작한다. 맞는 규칙이 없거나, 맞는 카테고리가 지금 칩 목록
@@ -236,7 +285,7 @@ object CategoryClassifier {
      *
      * 가장 긴 낱말이 이기고, 길이가 같으면 [RULES] 의 앞엣것이 이긴다.
      */
-    fun classify(name: String, categories: List<String>): String? {
+    fun classify(name: String, categories: List<String>, typing: Boolean = false): String? {
         val text: String = fold(name)
         if (text.isEmpty()) return null
 
@@ -251,7 +300,27 @@ object CategoryClassifier {
                 bestLength = keyword.length
             }
         }
-        return best
+        if (best != null || !typing) return best
+        return completePrefix(text, categories)
+    }
+
+    /**
+     * 적는 중이면 마지막 낱말을 앞부분으로 보고 맞는 낱말을 찾는다 — «스타벅»까지 쳤으면 «스타벅스».
+     * 숫자가 든 낱말(금액)은 건너뛴다. 맞는 게 여럿이면 [TABLE] 앞엣것(더 구체적인 칸)이 이긴다.
+     * 다 친 이름에는 쓰지 않는다(결제 알림 상호 등) — 그건 앞부분이 아니라 다른 이름일 수 있다.
+     */
+    private fun completePrefix(text: String, categories: List<String>): String? {
+        val tail: String = text.split(' ', '\t').lastOrNull { word -> word.isNotEmpty() && word.none { it.isDigit() } }
+            ?: return null
+        val hangul: Boolean = tail.any { it in '가'..'힣' }
+        if (tail.length < (if (hangul) MIN_PREFIX_HANGUL else MIN_PREFIX_LATIN)) return null
+        for ((category, keywords) in TABLE) {
+            if (category !in categories) continue
+            for (keyword in keywords) {
+                if (keyword.length > tail.length && keyword.startsWith(tail)) return category
+            }
+        }
+        return null
     }
 
     /** 한글이 든 낱말은 글자 속 어디서든, 아니면 낱말 단위로([containsWord]). */

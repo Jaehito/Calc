@@ -189,7 +189,7 @@ private fun PendingRow(
                 // ([QuickInputActivity.applyAutoCategory] 와 같은 순서).
                 if (!categoryPicked) {
                     category = CategoryMemoryStore.recall(context, it, ui.categories)
-                        ?: CategoryClassifier.classify(it, ui.categories).orEmpty()
+                        ?: CategoryClassifier.classify(it, ui.categories, typing = true).orEmpty()
                 }
             },
             label = { Text(tr("이름", "Name", "Nombre")) },
